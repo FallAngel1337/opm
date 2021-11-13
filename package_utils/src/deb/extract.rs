@@ -6,6 +6,9 @@ use std::fs::{self, File};
 use std::io;
 use std::str;
 
+use super::conf;
+// use conf;
+
 pub fn extract(package: &str) -> io::Result<()> {
     let mut archive = Archive::new(File::open(package)?);
 
@@ -24,7 +27,7 @@ pub fn extract(package: &str) -> io::Result<()> {
                 let tar = XzDecoder::new(file);
                 let mut archive = tarar::new(tar);
 
-                archive.unpack(super::OUTDIR)?;
+                archive.unpack(conf::OUTDIR)?;
             }
             None => ()
         }

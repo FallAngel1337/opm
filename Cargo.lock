@@ -446,6 +446,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "package_utils"
+version = "0.1.0"
+dependencies = [
+ "ar",
+ "reqwest",
+ "tar",
+ "tokio",
+ "xz",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -590,11 +601,7 @@ dependencies = [
 name = "rpm"
 version = "0.1.0"
 dependencies = [
- "ar",
- "reqwest",
- "tar",
- "tokio",
- "xz",
+ "package_utils",
 ]
 
 [[package]]
