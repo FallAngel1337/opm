@@ -1,7 +1,8 @@
 use std::env;
 use std::process;
 
-use package_utils::deb;
+use rpm::repos;
+use repos::deb;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
