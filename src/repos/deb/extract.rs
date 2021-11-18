@@ -2,14 +2,15 @@ use ar::Archive;
 use tar::Archive as tarar;
 use xz::read::XzDecoder;
 
-use crate::repos::config;
-use super::deb_package::DebPackage;
-use super::deb_package::PkgKind;
 use std::fs::{self, File};
 use std::io;
 use std::str;
 
-pub fn extract(package: &str) -> io::Result<DebPackage> {
+use crate::repos::errors::InstallError;
+use super::deb_package::DebPackage;
+use super::deb_package::PkgKind;
+
+pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);
 
     while let Some(entry_result) = archive.next_entry() {
@@ -27,7 +28,7 @@ pub fn extract(package: &str) -> io::Result<DebPackage> {
                 let tar = XzDecoder::new(file);
                 let mut archive = tarar::new(tar);
 
-                archive.unpack(config::TMPDIR)?;
+                archive.unpack(to)?;
             }
             None => ()
         }
@@ -39,7 +40,7 @@ pub fn extract(package: &str) -> io::Result<DebPackage> {
                 let tar = XzDecoder::new(file);
                 let mut archive = tarar::new(tar);
 
-                archive.unpack(config::TMPDIR)?;
+                archive.unpack(to)?;
             }
             None => ()
         }
@@ -48,6 +49,6 @@ pub fn extract(package: &str) -> io::Result<DebPackage> {
     }
 
     Ok(
-        DebPackage::new(&format!("{}/control", config::TMPDIR), PkgKind::Binary)?
+        DebPackage::new(&format!("{}/control", to), PkgKind::Binary)?
     )
 }

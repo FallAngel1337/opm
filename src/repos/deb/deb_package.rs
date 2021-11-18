@@ -46,6 +46,7 @@ impl Paragraphs {
 #[derive(Debug, Clone)]
 pub struct DebPackage {
     pub control: Paragraphs,
+    pub control_path: String,
     pub kind: PkgKind,
 }
 
@@ -54,6 +55,7 @@ impl DebPackage {
         Ok(
             DebPackage {
                 control: Paragraphs::new(file)?,
+                control_path: String::from(file),
                 kind
             }
         )
