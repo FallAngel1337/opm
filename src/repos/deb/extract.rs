@@ -6,9 +6,6 @@ use std::fs::{self, File};
 use std::io;
 use std::str;
 
-use super::conf;
-// use conf;
-
 pub fn extract(package: &str) -> io::Result<()> {
     let mut archive = Archive::new(File::open(package)?);
 
@@ -20,14 +17,26 @@ pub fn extract(package: &str) -> io::Result<()> {
 
         io::copy(&mut entry, &mut file)?;
         
-        match filename.find("tar.xz") {
+        match filename.find("data.tar.xz") {
             Some(_) => {
                 let file = File::open(&filename)?;
 
                 let tar = XzDecoder::new(file);
                 let mut archive = tarar::new(tar);
 
-                archive.unpack(conf::OUTDIR)?;
+                archive.unpack("./.install/")?;
+            }
+            None => ()
+        }
+
+        match filename.find("control.tar.xz") {
+            Some(_) => {
+                let file = File::open(&filename)?;
+
+                let tar = XzDecoder::new(file);
+                let mut archive = tarar::new(tar);
+
+                archive.unpack("./.install/")?;
             }
             None => ()
         }

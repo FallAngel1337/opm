@@ -1,6 +1,6 @@
 mod extract;
 mod install;
-mod conf;
+mod deb_control;
+mod deb_package;
 
-pub use extract::extract;
 pub use install::install;
