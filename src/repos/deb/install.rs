@@ -1,8 +1,12 @@
-use super::deb_control::DebControl;
-use super::deb_package::DebPackage;
+///
+/// Debian package install
+/// 
+
+// use super::deb_package::DebPackage;
 use super::extract::extract;
 
 pub fn install(file: &str) {
     println!("installing ...");
-    extract(file);
+    println!("package: {:?}", extract(file).unwrap());
+
 }

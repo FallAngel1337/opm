@@ -2,11 +2,14 @@ use ar::Archive;
 use tar::Archive as tarar;
 use xz::read::XzDecoder;
 
+use crate::repos::config;
+use super::deb_package::DebPackage;
+use super::deb_package::PkgKind;
 use std::fs::{self, File};
 use std::io;
 use std::str;
 
-pub fn extract(package: &str) -> io::Result<()> {
+pub fn extract(package: &str) -> io::Result<DebPackage> {
     let mut archive = Archive::new(File::open(package)?);
 
     while let Some(entry_result) = archive.next_entry() {
@@ -24,7 +27,7 @@ pub fn extract(package: &str) -> io::Result<()> {
                 let tar = XzDecoder::new(file);
                 let mut archive = tarar::new(tar);
 
-                archive.unpack("./.install/")?;
+                archive.unpack(config::TMPDIR)?;
             }
             None => ()
         }
@@ -36,7 +39,7 @@ pub fn extract(package: &str) -> io::Result<()> {
                 let tar = XzDecoder::new(file);
                 let mut archive = tarar::new(tar);
 
-                archive.unpack("./.install/")?;
+                archive.unpack(config::TMPDIR)?;
             }
             None => ()
         }
@@ -44,5 +47,7 @@ pub fn extract(package: &str) -> io::Result<()> {
         fs::remove_file(&filename)?;
     }
 
-    Ok(())
+    Ok(
+        DebPackage::new(&format!("{}/control", config::TMPDIR), PkgKind::Binary)?
+    )
 }

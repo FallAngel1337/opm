@@ -1,3 +1,7 @@
+///
+/// Generic package install
+/// 
+
 use super::utils::Distribution;
 
 pub fn install(file: &str) {
