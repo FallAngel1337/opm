@@ -7,8 +7,7 @@ use std::io;
 use std::str;
 
 use crate::repos::errors::InstallError;
-use super::deb_package::DebPackage;
-use super::deb_package::PkgKind;
+use super::package::{DebPackage, PkgKind};
 
 pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);

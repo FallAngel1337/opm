@@ -17,7 +17,7 @@ pub enum PkgKind {
 ///
 #[derive(Debug, Clone)]
 pub struct Paragraphs {
-    fields: HashMap<String, String>
+    pub fields: HashMap<String, String>
 }
 
 // Note: Maybe I need to optize this in the future
