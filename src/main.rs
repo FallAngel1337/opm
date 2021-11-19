@@ -34,7 +34,6 @@ fn main() {
 				.get_matches();
 
     if let Some(package) = matches.subcommand_matches("install") {
-        // println!("=> {:?}", package.value_of("package").unwrap());
         repos::install(package.value_of("package").unwrap()).unwrap_or_else(|err| {
             println!("Got an error during installation :: {}", err);
             process::exit(1);

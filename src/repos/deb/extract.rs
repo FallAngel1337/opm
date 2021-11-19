@@ -12,10 +12,10 @@ use super::package::{DebPackage, PkgKind};
 
 pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);
-    let mut hasher = Sha256::new();
-
+    
     let mut bytes: Vec<u8> = Vec::new();
     let mut file = File::open(package)?;
+    let mut hasher = Sha256::new();
     file.read_to_end(&mut bytes)?;
 
     hasher.update(bytes);
