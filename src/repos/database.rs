@@ -1,6 +1,6 @@
 use super::deb::package::DebPackage;
 use rusqlite::{Connection, Result};
-use sha2::{Sha256, Digest};
+
 
 #[derive(Debug)]
 pub enum Packages {
@@ -50,22 +50,14 @@ impl<'a> SQLite<'a> {
     }
 
     pub fn register(&self, pkg: Packages) -> Result<()> {
-        let mut hasher = Sha256::new();
+        
 
         match pkg {
             Packages::DebPackage(pkg) => {
-                let nodep = String::from("NOPE");
-                let pkg_name = pkg.control.fields.get("Package").unwrap();
-                let pkg_version = pkg.control.fields.get("Version").unwrap();
-                let pkg_dependencies = pkg.control.fields.get("Depends").unwrap_or(&nodep); /* Turn this in to a Vec<Dependencies> */
-
-                hasher.update(format!("{}{}", pkg_name, pkg_version)); // Not sure if it's this way
-                let result = hasher.finalize();
-
                 self.conn.as_ref().unwrap().execute(
                     "insert into deb_pkgs (id, name, version, dependencies)
                     values (?, ?, ?, ?)",
-                    [&hex::encode(result), pkg_name, pkg_version, pkg_dependencies]
+                    [pkg.signature, pkg.control.package, pkg.control.version, pkg.control.depends]
                 )?;
             }
         };

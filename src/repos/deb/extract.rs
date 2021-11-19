@@ -1,9 +1,10 @@
 use ar::Archive;
 use tar::Archive as tarar;
 use xz::read::XzDecoder;
+use sha2::{Sha256, Digest};
 
 use std::fs::{self, File};
-use std::io;
+use std::io::{self, prelude::*};
 use std::str;
 
 use crate::repos::errors::InstallError;
@@ -11,6 +12,14 @@ use super::package::{DebPackage, PkgKind};
 
 pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);
+    let mut hasher = Sha256::new();
+
+    let mut bytes: Vec<u8> = Vec::new();
+    let mut file = File::open(package)?;
+    file.read_to_end(&mut bytes)?;
+
+    hasher.update(bytes);
+    let sig = hasher.finalize();
 
     while let Some(entry_result) = archive.next_entry() {
         let mut entry = entry_result?;
@@ -48,6 +57,6 @@ pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
     }
 
     Ok(
-        DebPackage::new(&format!("{}/control", to), PkgKind::Binary)?
+        DebPackage::new(&format!("{}/control", to), PkgKind::Binary, hex::encode(sig))?
     )
 }

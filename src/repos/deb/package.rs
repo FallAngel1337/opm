@@ -12,18 +12,40 @@ pub enum PkgKind {
     Source,
 }
 
+/**
+ * 
+    Package (mandatory)
+    Source
+    Version (mandatory)
+    Section (recommended)
+    Priority (recommended)
+    Architecture (mandatory)
+    Essential
+    Depends et al
+    Installed-Size
+    Maintainer (mandatory)
+    Description (mandatory)
+    Homepage
+    Built-Using
+ */
+
 ///
-/// Control file structures
+/// Debian's control file (mandatory fields)
 ///
 #[derive(Debug, Clone)]
-pub struct Paragraphs {
-    pub fields: HashMap<String, String>
+pub struct ControlFile { // We could improve by using lifetimes
+    pub package: String,
+    pub version: String,
+    pub architecture: String,
+    pub maintainer: String,
+    pub description: String,
+    pub depends: String
 }
 
-// Note: Maybe I need to optize this in the future
-impl Paragraphs {
-    pub fn new(ctrl_file: &str) -> Result<Self, Error> {
-        let contents = fs::read_to_string(ctrl_file)?;
+// TODO: Improve this in the future
+impl ControlFile {
+    fn new(file: &str) -> Result<Self, Error> {
+        let contents = fs::read_to_string(file)?;
 
         let mut map: HashMap<String, String> = HashMap::new();
 
@@ -33,8 +55,13 @@ impl Paragraphs {
         };
 
         Ok(
-            Paragraphs {
-                fields: map
+            ControlFile {
+                package: map.get("Package").unwrap().clone(),
+                version: map.get("Version").unwrap().clone(),
+                architecture: map.get("Architecture").unwrap().clone(),
+                maintainer: map.get("Maintainer").unwrap().clone(),
+                description: map.get("Description").unwrap().clone(),
+                depends: map.get("Depends").unwrap_or(&String::from("NONE")).clone(),
             }
         )
     }
@@ -45,17 +72,17 @@ impl Paragraphs {
 ///
 #[derive(Debug, Clone)]
 pub struct DebPackage {
-    pub control: Paragraphs,
-    pub control_path: String,
+    pub control: ControlFile,
+    pub signature: String,
     pub kind: PkgKind,
 }
 
 impl DebPackage {
-    pub fn new(file: &str, kind: PkgKind) -> Result<Self, Error> {
+    pub fn new(file: &str, kind: PkgKind, signature: String) -> Result<Self, Error> {
         Ok(
             DebPackage {
-                control: Paragraphs::new(file)?,
-                control_path: String::from(file),
+                control: ControlFile::new(file)?,
+                signature,
                 kind
             }
         )
