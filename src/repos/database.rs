@@ -57,7 +57,7 @@ impl<'a> SQLite<'a> {
                 let nodep = String::from("NOPE");
                 let pkg_name = pkg.control.fields.get("Package").unwrap();
                 let pkg_version = pkg.control.fields.get("Version").unwrap();
-                let pkg_dependencies = pkg.control.fields.get("Dependencies").unwrap_or(&nodep); /* Turn this in to a Vec<Dependencies> */
+                let pkg_dependencies = pkg.control.fields.get("Depends").unwrap_or(&nodep); /* Turn this in to a Vec<Dependencies> */
 
                 hasher.update(format!("{}{}", pkg_name, pkg_version)); // Not sure if it's this way
                 let result = hasher.finalize();
