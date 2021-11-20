@@ -1,8 +1,7 @@
-// use itertools::Itertools;
 use reqwest;
-use tempfile::Builder;
-use std::io;
+use std::io::{self, ErrorKind};
 use std::fs::{self, File};
+use std::str;
 
 use super::config::DebianSource;
 use crate::repos::errors::InstallError;
@@ -27,12 +26,54 @@ pub async fn download(config: &Config, repos: &Vec<DebianSource>) -> Result<(), 
                     .unwrap_or("tmp.bin");
         
                 println!("file to download: '{}'", fname);
-                let dir = config.cache.join(&source.distribution);
-                fs::create_dir(&dir)?;
+                let url = str::replace(&source.url, "http://", "");
+                let url = str::replace(&url, "/", "_");
+                
+                let dir = config.cache.join(format!("{}_{}_{}_binary-amd64_{}", url, source.distribution, perm, fname));
+                // let dir = config.cache.join(&source.distribution);
+                match fs::create_dir(&dir) {
+                    Ok(_) => (),
+                    Err(e) => match e.kind() {
+                        ErrorKind::AlreadyExists => (),
+                        _ => panic!("fuck {}", e)
+                    }
+                }
                 let fname = dir.join(&fname);
                 println!("will be located under: '{:?}'", fname);
                 File::create(fname)?
             };
+
+            let content =  response.text().await?;
+            io::copy(&mut content.as_bytes(), &mut dest)?;
+
+            let response = reqwest::get(pkgcache).await?;
+            
+            let mut dest = {
+                let fname = response
+                    .url()
+                    .path_segments()
+                    .and_then(|segments| segments.last())
+                    .and_then(|name| if name.is_empty() { None } else { Some(name) })
+                    .unwrap_or("tmp.bin");
+
+                // format!("{}_{}_{}_binary-amd64_{}", source.url, source.distribution, perm, fname)
+                let url = str::replace(&source.url, "http://", "");
+                let url = str::replace(&url, "/", "_");
+
+                let dir = config.cache.join(format!("{}_{}_{}_binary-amd64_{}", url, source.distribution, perm, fname));
+                println!("DIR = {:?}", dir);
+                match fs::create_dir(&dir) {
+                    Ok(_) => (),
+                    Err(e) => match e.kind() {
+                        ErrorKind::AlreadyExists => (),
+                        _ => panic!("fuck {}", e)
+                    }
+                }
+                let fname = dir.join(&fname);
+                println!("will be located under: '{:?}'", fname);
+                File::create(fname)?
+            };
+
             let content =  response.text().await?;
             io::copy(&mut content.as_bytes(), &mut dest)?;
         }

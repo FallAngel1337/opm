@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::Error;
 
-const deb_repos: &'static str = "/etc/apt/sources.list"; // TODO: add from /etc/apt/sources.list.d/*
+const DEB_REPOS: &'static str = "/etc/apt/sources.list"; // TODO: add from /etc/apt/sources.list.d/*
 
 #[derive(Debug, Clone)]
 pub struct DebianSource {
@@ -12,7 +12,7 @@ pub struct DebianSource {
 
 impl DebianSource {
     pub fn new() -> Result<Vec<DebianSource>, Error> {
-        let contents = fs::read_to_string(deb_repos)?;
+        let contents = fs::read_to_string(DEB_REPOS)?;
         let mut v: Vec<Self> = Vec::new();
 
         for d in contents.lines() {

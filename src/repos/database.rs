@@ -2,13 +2,6 @@ use std::path::PathBuf;
 use super::deb::package::DebPackage;
 use rusqlite::{Connection, Result};
 
-
-#[derive(Debug)]
-pub enum Packages {
-    DebPackage(DebPackage),
-}
-
-// TODO: add a `from` method
 #[derive(Debug)]
 pub struct SQLite<'a> {
     pub db: &'a PathBuf,
@@ -16,7 +9,8 @@ pub struct SQLite<'a> {
 }
 
 impl<'a> SQLite<'a> {
-    pub fn new(db: &'a PathBuf) -> Self {
+    pub fn new(db: &'a mut PathBuf) -> Self {
+        db.push("installed.db");
         SQLite {
             db,
             conn: None
@@ -51,19 +45,12 @@ impl<'a> SQLite<'a> {
         Ok(())
     }
 
-    pub fn register(&self, pkg: Packages) -> Result<()> {
-        
-
-        match pkg {
-            Packages::DebPackage(pkg) => {
-                self.conn.as_ref().unwrap().execute(
-                    "insert into deb_pkgs (id, name, version, dependencies)
-                    values (?, ?, ?, ?)",
-                    [pkg.signature, pkg.control.package, pkg.control.version, pkg.control.depends]
-                )?;
-            }
-        };
-
+    pub fn register(&self, pkg: DebPackage) -> Result<()> {
+        self.conn.as_ref().unwrap().execute(
+            "insert into deb_pkgs (id, name, version, dependencies)
+            values (?, ?, ?, ?)",
+            [pkg.signature, pkg.control.package, pkg.control.version, pkg.control.depends]
+        )?;
         Ok(())
     }
 }

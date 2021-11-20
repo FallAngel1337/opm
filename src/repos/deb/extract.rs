@@ -6,11 +6,12 @@ use sha2::{Sha256, Digest};
 use std::fs::{self, File};
 use std::io::{self, prelude::*};
 use std::str;
+use std::path::PathBuf;
 
 use crate::repos::errors::InstallError;
 use super::package::{DebPackage, PkgKind};
 
-pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
+pub fn extract(package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);
     
     let mut bytes: Vec<u8> = Vec::new();
@@ -57,6 +58,6 @@ pub fn extract(package: &str, to: &str) -> Result<DebPackage, InstallError> {
     }
 
     Ok(
-        DebPackage::new(&format!("{}/control", to), PkgKind::Binary, hex::encode(sig))?
+        DebPackage::new(&format!("{}/control", to.clone().into_os_string().into_string().unwrap()), PkgKind::Binary, hex::encode(sig))?
     )
 }
