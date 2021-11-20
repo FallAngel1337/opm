@@ -4,13 +4,16 @@
 
 use super::utils::Distribution;
 use super::errors::InstallError;
+use super::config::Config;
 
 pub fn install(file: &str) -> Result<(), InstallError> {
+    let config = Config::new();
+
     match Distribution::get_distro() {
         Distribution::Debian => {
             use super::deb;
             println!("It's a Debian(-based) distro");
-            deb::install(file)?;
+            deb::install(&config, file)?;
         }
         Distribution::Rhel => {
             println!("It's a RHEL(-based) distro");

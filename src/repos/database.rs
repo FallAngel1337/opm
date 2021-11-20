@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use super::deb::package::DebPackage;
 use rusqlite::{Connection, Result};
 
@@ -10,12 +11,12 @@ pub enum Packages {
 // TODO: add a `from` method
 #[derive(Debug)]
 pub struct SQLite<'a> {
-    pub db: &'a str,
+    pub db: &'a PathBuf,
     conn: Option<Connection>
 }
 
 impl<'a> SQLite<'a> {
-    pub fn new(db: &'a str) -> Self {
+    pub fn new(db: &'a PathBuf) -> Self {
         SQLite {
             db,
             conn: None
