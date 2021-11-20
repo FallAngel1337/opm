@@ -7,6 +7,7 @@ pub enum Packages {
     DebPackage(DebPackage),
 }
 
+// TODO: add a `from` method
 #[derive(Debug)]
 pub struct SQLite<'a> {
     pub db: &'a str,

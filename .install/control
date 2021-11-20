@@ -1,0 +1,5 @@
+Package: Hello
+Version: 1.0
+Architecture: amd64
+Maintainer: Me
+Description: Demo package
