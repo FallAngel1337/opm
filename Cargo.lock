@@ -797,6 +797,7 @@ name = "rpm"
 version = "0.1.0"
 dependencies = [
  "ar",
+ "bytes",
  "clap",
  "hex",
  "itertools",

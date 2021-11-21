@@ -8,6 +8,7 @@ use super::config::Config;
 
 pub fn install(file: &str) -> Result<(), InstallError> {
     let mut config = Config::new();
+    config.setup()?;
     println!("Current config: {:?}", config);
 
     match Distribution::get_distro() {
