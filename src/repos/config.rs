@@ -22,7 +22,7 @@ impl Config {
     }
 
     pub fn setup(&self) -> Result<(), Error> {
-        match fs::create_dir(&self.cache) {
+        match fs::create_dir_all(&self.cache) {
             Ok(_) => (),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => (),
@@ -30,7 +30,7 @@ impl Config {
             }
         }
         
-        match fs::create_dir(&self.pkgs) {
+        match fs::create_dir_all(&self.pkgs) {
             Ok(_) => (),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => (),
@@ -38,7 +38,7 @@ impl Config {
             }
         }
 
-        match fs::create_dir(&self.tmp) {
+        match fs::create_dir_all(&self.tmp) {
             Ok(_) => (),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => (),
