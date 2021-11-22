@@ -1,6 +1,6 @@
 use ar::Archive;
 use tar::Archive as tarar;
-use xz::read::XzDecoder;
+use xz2::read::XzDecoder;
 use sha2::{Sha256, Digest};
 
 use std::fs::{self, File};

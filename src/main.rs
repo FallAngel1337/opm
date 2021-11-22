@@ -41,8 +41,10 @@ fn main() {
     }
 
     if let Some(_) = matches.subcommand_matches("update") {
-        println!("Update is not currently working");
-		process::exit(1);
+        repos::update().unwrap_or_else(|err| {
+			println!("Got and error during update :: {}", err);
+			process::exit(1);
+		})
     }
 
     if let Some(rm) = matches.subcommand_matches("remove") {

@@ -1,19 +1,22 @@
 ///
-/// Generic package install
+/// Generic package update
 /// 
 
 use super::utils::Distribution;
 use super::errors::InstallError;
 use super::config::Config;
 
-pub fn install(file: &str) -> Result<(), InstallError> {
+pub fn update() -> Result<(), InstallError> {
     let mut config = Config::new();
     config.setup()?;
+    println!("Current config: {:?}", config);
 
     match Distribution::get_distro() {
         Distribution::Debian => {
             use super::deb;
-            deb::install(&mut config, file)?;
+            let repos = deb::config::DebianSource::new()?;
+            println!("It's a Debian(-based) distro");
+            deb::update(&mut config, &repos)?;
         }
         Distribution::Rhel => {
             println!("It's a RHEL(-based) distro");

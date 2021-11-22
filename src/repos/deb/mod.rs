@@ -6,3 +6,4 @@ pub mod package;
 pub mod config;
 
 pub use install::install;
+pub use update::update;
