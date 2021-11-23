@@ -30,19 +30,7 @@ pub fn extract(package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> 
 
         io::copy(&mut entry, &mut file)?;
         
-        match filename.find("data.tar.xz") {
-            Some(_) => {
-                let file = File::open(&filename)?;
-
-                let tar = XzDecoder::new(file);
-                let mut archive = tarar::new(tar);
-
-                archive.unpack(to)?;
-            }
-            None => ()
-        }
-
-        match filename.find("control.tar.xz") {
+        match filename.find(".tar.xz") {
             Some(_) => {
                 let file = File::open(&filename)?;
 
@@ -58,6 +46,7 @@ pub fn extract(package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> 
     }
 
     Ok(
-        DebPackage::new(&format!("{}/control", to.clone().into_os_string().into_string().unwrap()), PkgKind::Binary, hex::encode(sig))?
+        DebPackage::new(&format!("{}/control", to.clone().into_os_string()
+                                                .into_string().unwrap()), PkgKind::Binary, hex::encode(sig))?
     )
 }
