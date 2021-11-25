@@ -14,7 +14,7 @@ pub fn update() -> Result<(), InstallError> {
     match Distribution::get_distro() {
         Distribution::Debian => {
             use super::deb;
-            let repos = deb::config::DebianSource::new()?;
+            let repos = deb::sources::DebianSource::new()?;
             println!("It's a Debian(-based) distro");
             deb::update(&mut config, &repos)?;
         }
