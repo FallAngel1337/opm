@@ -16,7 +16,7 @@ impl Config {
         let home = env::home_dir().unwrap()
             .into_os_string().into_string().unwrap();
         Config {
-            cache: PathBuf::from(format!("{}/.rpm/cache", home)),
+            cache: PathBuf::from(format!("{}/.rpm/cache/pkg_cache", home)),
             pkgs: PathBuf::from(format!("{}/.rpm/pkgs", home)),
             rls: PathBuf::from(format!("{}/.rpm/cache/rls", home)),
             tmp: PathBuf::from(format!("{}/.rpm/tmp", home))
