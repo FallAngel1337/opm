@@ -51,36 +51,36 @@ impl ControlFile {
 
         for line in contents.lines() {
             let values = line.split(":").collect::<Vec<&str>>();
-            map.insert(String::from(values[0]), String::from(values[1]));
+            map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
         Ok(
             ControlFile {
-                package: map.get("Package").unwrap().clone(),
-                version: map.get("Version").unwrap().clone(),
-                architecture: map.get("Architecture").unwrap().clone(),
-                maintainer: map.get("Maintainer").unwrap().clone(),
-                description: map.get("Description").unwrap().clone(),
+                package: map.get("Package").unwrap_or(&String::from("NONE")).clone(),
+                version: map.get("Version").unwrap_or(&String::from("NONE")).clone(),
+                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).clone(),
+                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).clone(),
+                description: map.get("Description").unwrap_or(&String::from("NONE")).clone(),
                 depends: map.get("Depends").unwrap_or(&String::from("NONE")).clone(),
             }
         )
     }
 
-    fn from(contents: &str) -> Result<Self, Error> {
+    pub fn from(contents: &str) -> Result<Self, Error> {
         let mut map: HashMap<String, String> = HashMap::new();
 
         for line in contents.lines() {
             let values = line.splitn(2, ":").collect::<Vec<&str>>();
-            map.insert(String::from(values[0]), String::from(values[1]));
+            map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
         Ok(
             ControlFile {
-                package: map.get("Package").unwrap().clone(),
-                version: map.get("Version").unwrap().clone(),
-                architecture: map.get("Architecture").unwrap().clone(),
-                maintainer: map.get("Maintainer").unwrap().clone(),
-                description: map.get("Description").unwrap().clone(),
+                package: map.get("Package").unwrap_or(&String::from("NONE")).clone(),
+                version: map.get("Version").unwrap_or(&String::from("NONE")).clone(),
+                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).clone(),
+                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).clone(),
+                description: map.get("Description").unwrap_or(&String::from("NONE")).clone(),
                 depends: map.get("Depends").unwrap_or(&String::from("NONE")).clone(),
             }
         )
