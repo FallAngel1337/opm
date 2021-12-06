@@ -1,10 +1,12 @@
 # RPM Roadmap
    
 ### Tasks
-* [Packages installation](#packages-installation)
-* [Packages update](#packages-update)
-* [Packages removal](#packages-removal)
-* [Packages listing](#packages-listing)
+- [ ] [Packages installation](#packages-installation)
+- [ ] [Packages update](#packages-update)
+   - [ ] Improve the download speed (using async)
+- [ ] [Packages removal](#packages-removal)
+- [ ] [Packages listing](#packages-listing)
+   - [ ] Make the querying faster
 
 
 #### Packages installation
