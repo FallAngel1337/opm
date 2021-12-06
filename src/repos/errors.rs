@@ -4,6 +4,7 @@ use std::io::Error as ioError;
 use rusqlite::Error as sqliteError;
 use reqwest::Error as reqwestError;
 
+// TODO: Make better erros and create more
 #[derive(Debug)]
 pub enum InstallError {
     InvalidPackage(String),
