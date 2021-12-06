@@ -9,7 +9,7 @@
    - [ ] Make the querying faster
 
 
-#### Packages installation
+### Packages installation
 ```smalltalk
 $ rpm install [options] <package_name>
 ```
@@ -25,7 +25,7 @@ About how we should install a (debian) package.
 4.  Install the dependencies if so
 5.  Run the **pre/post** install scripts if so
 
-#### Packages update
+### Packages update
 ```smalltalk
 $ rpm update
 ```
@@ -38,7 +38,7 @@ $ rpm remove [options] <package_name>
 
 Query the database for the package and then remove it. With `-p / --purge` should remove all the files related to the package by using the **pre/post** remove scripts . If does not, remove manually. Also delete the database entry for that package.
 
-#### Packages listing
+### Packages listing
 ```smalltalk
 $ rpm --list
 ```
