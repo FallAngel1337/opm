@@ -65,6 +65,26 @@ impl ControlFile {
             }
         )
     }
+
+    fn from(contents: &str) -> Result<Self, Error> {
+        let mut map: HashMap<String, String> = HashMap::new();
+
+        for line in contents.lines() {
+            let values = line.splitn(2, ":").collect::<Vec<&str>>();
+            map.insert(String::from(values[0]), String::from(values[1]));
+        };
+
+        Ok(
+            ControlFile {
+                package: map.get("Package").unwrap().clone(),
+                version: map.get("Version").unwrap().clone(),
+                architecture: map.get("Architecture").unwrap().clone(),
+                maintainer: map.get("Maintainer").unwrap().clone(),
+                description: map.get("Description").unwrap().clone(),
+                depends: map.get("Depends").unwrap_or(&String::from("NONE")).clone(),
+            }
+        )
+    }
 }
 
 /// 
