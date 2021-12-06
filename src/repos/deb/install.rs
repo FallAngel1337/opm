@@ -20,9 +20,28 @@ fn cache_lookup(config: &Config, name: &str) {
             .map(|ctrl| ControlFile::from(ctrl).unwrap())
             .filter(|ctrl| ctrl.package.contains(name))
             .collect::<Vec<_>>();
+            // .count();
 
+        let entry = entry.path()
+            .into_os_string()
+            .into_string()
+            .unwrap();
+
+        let url =  entry
+            .split("/")
+            .last()
+            .unwrap()
+            .replace("_", "/")
+            .split("/")
+            .next()
+            .unwrap()
+            .to_owned();
+
+            
+        // if control.len() > 0 { println!("Found {} package entries for {} at {}", control.len(), name, url) } else { () }
         for pkg in control {
-            println!("Package: {}", pkg.package);
+            let url = format!("{}/ubuntu/{}", url, pkg.filename);
+            println!("{} {} - {} ({})", pkg.package, pkg.version, pkg.description, url);
         }
     };
 }
