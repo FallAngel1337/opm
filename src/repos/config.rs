@@ -7,7 +7,8 @@ use std::fs;
 pub struct Config {
     pub cache: PathBuf,
     pub pkgs: PathBuf,
-    pub tmp: PathBuf
+    pub rls: PathBuf,
+    pub tmp: PathBuf,
 }
 
 impl Config {
@@ -17,6 +18,7 @@ impl Config {
         Config {
             cache: PathBuf::from(format!("{}/.rpm/cache", home)),
             pkgs: PathBuf::from(format!("{}/.rpm/pkgs", home)),
+            rls: PathBuf::from(format!("{}/.rpm/cache/rls", home)),
             tmp: PathBuf::from(format!("{}/.rpm/tmp", home))
         }
     }
@@ -38,6 +40,14 @@ impl Config {
             }
         }
 
+        match fs::create_dir_all(&self.rls) {
+            Ok(_) => (),
+            Err(e) => match e.kind() {
+                ErrorKind::AlreadyExists => (),
+                _ => panic!("Some error occurred {}", e)
+            }
+        }
+        
         match fs::create_dir_all(&self.tmp) {
             Ok(_) => (),
             Err(e) => match e.kind() {
@@ -45,6 +55,7 @@ impl Config {
                 _ => panic!("Some error occurred {}", e)
             }
         }
+
 
         Ok(())
     }
