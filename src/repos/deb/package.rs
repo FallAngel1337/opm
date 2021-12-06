@@ -39,7 +39,8 @@ pub struct ControlFile { // We could improve by using lifetimes
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
-    pub depends: String
+    pub depends: String,
+    pub filename: String,
 }
 
 // TODO: Improve this in the future
@@ -55,13 +56,14 @@ impl ControlFile {
         };
 
         Ok(
-            ControlFile {
-                package: map.get("Package").unwrap_or(&String::from("NONE")).clone(),
-                version: map.get("Version").unwrap_or(&String::from("NONE")).clone(),
-                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).clone(),
-                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).clone(),
-                description: map.get("Description").unwrap_or(&String::from("NONE")).clone(),
-                depends: map.get("Depends").unwrap_or(&String::from("NONE")).clone(),
+            Self {
+                package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                depends: map.get("Depends").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
     }
@@ -75,13 +77,14 @@ impl ControlFile {
         };
 
         Ok(
-            ControlFile {
-                package: map.get("Package").unwrap_or(&String::from("NONE")).clone(),
-                version: map.get("Version").unwrap_or(&String::from("NONE")).clone(),
-                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).clone(),
-                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).clone(),
-                description: map.get("Description").unwrap_or(&String::from("NONE")).clone(),
-                depends: map.get("Depends").unwrap_or(&String::from("NONE")).clone(),
+            Self {
+                package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                depends: map.get("Depends").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
     }
