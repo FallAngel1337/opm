@@ -6,12 +6,20 @@ use std::io::{self, ErrorKind, prelude::*};
 use std::fs::{self, File};
 use std::str;
 
-use super::config::DebianSource;
+use super::sources::DebianSource;
 use crate::repos::errors::InstallError;
 use crate::repos::config::Config;
 
 fn clear(config: &Config) -> Result<(), InstallError> {
     match fs::remove_dir_all(&config.cache){
+        Ok(_) => (),
+        Err(e) => match e.kind() {
+            ErrorKind::AlreadyExists => (),
+            ErrorKind::NotFound => (),
+            _ => panic!("fuck {}", e)
+        }
+    }
+    match fs::remove_dir_all(&config.rls){
         Ok(_) => (),
         Err(e) => match e.kind() {
             ErrorKind::AlreadyExists => (),
@@ -37,6 +45,7 @@ fn clear(config: &Config) -> Result<(), InstallError> {
     }
 
     fs::create_dir(&config.cache)?;
+    fs::create_dir(&config.rls)?;
     fs::create_dir(&config.pkgs)?;
     fs::create_dir(&config.tmp)?;
 
@@ -92,7 +101,7 @@ async fn update_releases(config: &Config, repos: &Vec<DebianSource>) -> Result<(
             let url = str::replace(&source.url, "http://", "");
             let url = str::replace(&url, "/", "_");
             
-            let rls = config.cache.join(format!("{}{}_{}_binary-amd64_InRelease", url, source.distribution, perm));
+            let rls = config.rls.join(format!("{}{}_{}_binary-amd64_InRelease", url, source.distribution, perm));
             let mut dest = File::create(rls)?;
 
             let content =  response.text().await?;
