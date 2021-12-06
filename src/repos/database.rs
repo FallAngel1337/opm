@@ -23,10 +23,6 @@ impl<'a> SQLite<'a> {
             None => self.conn = Some(Connection::open(self.db)?)
         }
 
-        Ok(())
-    }
-
-    pub fn create_tables(&self) -> Result<()> {
         self.conn.as_ref().unwrap().execute(
             "create table if not exists deb_pkgs (
                 id string primary key,
