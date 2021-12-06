@@ -9,13 +9,21 @@ use super::extract;
 use super::download;
 use std::fs;
 
-fn cache_lookup(config: &Config, _name: &str) {
+fn cache_lookup(config: &Config, name: &str) {
     for entry in fs::read_dir(&config.cache).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
 
-        let contents = fs::read_to_string(path).unwrap();
-        println!("Contents: {}", contents);
+        let control = fs::read_to_string(path)
+            .unwrap()
+            .split("\n\n")
+            .map(|ctrl| ControlFile::from(ctrl).unwrap())
+            .filter(|ctrl| ctrl.package.contains(name))
+            .collect::<Vec<_>>();
+
+        for pkg in control {
+            println!("Package: {}", pkg.package);
+        }
     };
 }
 
