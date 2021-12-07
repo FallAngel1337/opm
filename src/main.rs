@@ -53,6 +53,7 @@ fn main() {
 				.get_matches();
 
 	match matches.occurrences_of("list") {
+		0 => (),
 		1 => println!("We're woking on that ;)"),
 		_ => println!("Invalid argument")
 	};

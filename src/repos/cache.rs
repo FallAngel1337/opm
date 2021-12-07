@@ -22,7 +22,10 @@ pub fn search(config: &Config, name: &str) {
     match Distribution::get_distro() {
         Distribution::Debian => {
             use super::deb;
-            deb::cache::cache_lookup(config, name);
+            let pkgs = deb::cache::cache_lookup(config, name);
+            pkgs.iter().for_each(|pkg| {
+                println!("{} {} - {} ({})", pkg.0.package, pkg.0.version, pkg.0.description, pkg.1);
+            })
         }
         Distribution::Rhel => {
             println!("It's a RHEL(-based) distro");
