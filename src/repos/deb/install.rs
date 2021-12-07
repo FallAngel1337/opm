@@ -14,11 +14,13 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         println!("Extracting ...");
     } else {
         // cache::cache_lookup(&config, name);
-        cache::dpkg_cache_lookup(name)
-            .iter()
-            .for_each(|pkg| {
-                println!("{} {} - {}", pkg.package, pkg.version, pkg.description);
-            });
+        if let Some(pkg) = cache::dpkg_cache_lookup(name) {
+            pkg.iter().for_each(|pkg| {
+                println!("{:#?}", pkg);
+            })
+        } else {
+            println!("{} need to be installed", name);
+        }
         download::download(config, name)?;
     }
     

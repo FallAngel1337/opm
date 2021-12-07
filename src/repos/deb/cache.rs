@@ -36,7 +36,6 @@ pub fn cache_lookup(config: &Config, name: &str) -> Vec<(ControlFile, String)> {
 		.unwrap()
 		.to_owned();
 
-	// if control.len() > 0 { println!("Found {} package entries for {} at {}", control.len(), name, url) } else { () }
 	control.into_iter().for_each(|pkg| {
 		let url = format!("{}/ubuntu/{}", url, &pkg.filename);
 		pkgs.push((pkg, String::from(&url)));
@@ -52,8 +51,7 @@ pub fn cache_lookup(config: &Config, name: &str) -> Vec<(ControlFile, String)> {
 /// Note: WAY more slow
 /// 
 // TODO: Improve it to be less slow
-pub fn dpkg_cache_lookup(name: &str) -> Vec<ControlFile> {
-	let mut pkgs = Vec::new();
+pub fn dpkg_cache_lookup(name: &str) -> Option<Vec<ControlFile>> {
 	let control = fs::read_to_string("/var/lib/dpkg/status")
 		.unwrap()
 		.split("\n\n")
@@ -61,10 +59,10 @@ pub fn dpkg_cache_lookup(name: &str) -> Vec<ControlFile> {
 		.filter(|ctrl| ctrl.package.contains(name))
 		.collect::<Vec<_>>();
 
-	// if control.len() > 0 { println!("Found {} package entries for {} at {}", control.len(), name, url) } else { () }
-	control.into_iter().for_each(|pkg| {
-		pkgs.push(pkg);
-	});
-
-	pkgs
+	if control.len() > 0 { 
+		println!("Found {} package entries for {}", control.len(), name);
+		Some(control)
+	} else { 
+		None
+	}
 }
