@@ -13,7 +13,12 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         let _pkg = extract::extract(name, &config.tmp)?;
         println!("Extracting ...");
     } else {
-        cache::cache_lookup(&config, name);
+        // cache::cache_lookup(&config, name);
+        cache::dpkg_cache_lookup(name)
+            .iter()
+            .for_each(|pkg| {
+                println!("{} {} - {}", pkg.package, pkg.version, pkg.description);
+            });
         download::download(config, name)?;
     }
     
