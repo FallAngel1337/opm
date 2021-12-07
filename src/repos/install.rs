@@ -7,10 +7,7 @@ use super::utils::Distribution;
 use super::errors::InstallError;
 use super::config::Config;
 
-pub fn install(file: &str) -> Result<(), InstallError> {
-    let mut config = Config::new();
-    config.setup()?;
-
+pub fn install(config: &mut Config, file: &str) -> Result<(), InstallError> {
     let mut sqlite = SQLite::new(&mut config.pkgs);
     match sqlite.init() {
         Ok(_) => (),
@@ -20,7 +17,7 @@ pub fn install(file: &str) -> Result<(), InstallError> {
     match Distribution::get_distro() {
         Distribution::Debian => {
             use super::deb;
-            deb::install(&mut config, file)?;
+            deb::install(config, file)?;
         }
         Distribution::Rhel => {
             println!("It's a RHEL(-based) distro");

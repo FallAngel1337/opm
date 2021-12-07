@@ -1,12 +1,24 @@
 use clap::{Arg, App, SubCommand};
-use rpm::repos;
+use rpm::repos::{self, config::Config};
 use std::process;
 
 fn main() {
+	let mut config = Config::new();
+	config.setup().unwrap_or_else(|err| {
+		eprintln!("Could not complete the configuration due {}", err);
+		process::exit(1);
+	});
+
     let matches = App::new("Rusty Package Manager")
 				.version("v0.1")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A fully package manager made in Rust")
+				.arg(Arg::with_name("list")
+					.short("l")
+					.long("list")
+					.takes_value(false)
+					.help("List all installed packages")
+				)
 				.subcommands( vec![
 					SubCommand::with_name("install")
 						.about("install a package")
@@ -29,12 +41,24 @@ fn main() {
 							.required(false)
 							.takes_value(false)
 							.long("purge")
-							.help("Remove every file related to the package"))
+							.help("Remove every file related to the package")),
+					SubCommand::with_name("search")
+						.about("search for a package")
+						.help("Search for a package in the cache")
+						.arg(Arg::with_name("package")
+							.takes_value(true)
+							.index(1)
+							.required(true))
 				])
 				.get_matches();
 
+	match matches.occurrences_of("list") {
+		1 => println!("We're woking on that ;)"),
+		_ => println!("Invalid argument")
+	};
+
     if let Some(package) = matches.subcommand_matches("install") {
-        repos::install(package.value_of("package").unwrap()).unwrap_or_else(|err| {
+        repos::install(&mut config, package.value_of("package").unwrap()).unwrap_or_else(|err| {
             println!("Got an error during installation :: {}", err);
             process::exit(1);
         });
@@ -54,5 +78,13 @@ fn main() {
 			println!("Purgin 'em all HAHAHA");
 		}
 		process::exit(1);
-    }
+    };
+
+    if let Some(package) = matches.subcommand_matches("search") {
+		let pkg =  package.value_of("package").unwrap();
+		println!("Searching for {} ...", package.value_of("package").unwrap());
+		repos::search(&config, pkg);
+		process::exit(1);
+    };
+
 }
