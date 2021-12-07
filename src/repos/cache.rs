@@ -4,8 +4,7 @@ use crate::repos::config::Config;
 pub fn list_installed() {
     match Distribution::get_distro() {
         Distribution::Debian => {
-            // use super::deb;
-            // deb::cache::cache_lookup(&mut config, file)?;
+            println!("Still working on this");
         }
         Distribution::Rhel => {
             println!("It's a RHEL(-based) distro");
@@ -14,8 +13,6 @@ pub fn list_installed() {
             println!("Actually we do not have support for you distro!");
         }
     }
-    
-    // Ok(())
 }
 
 pub fn search(config: &Config, name: &str) {
@@ -34,6 +31,4 @@ pub fn search(config: &Config, name: &str) {
             println!("Actually we do not have support for you distro!");
         }
     }
-    
-    // Ok(())
 }

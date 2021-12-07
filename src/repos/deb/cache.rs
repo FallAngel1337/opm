@@ -15,7 +15,6 @@ pub fn cache_lookup(config: &Config, name: &str) -> Vec<(ControlFile, String)> {
             .map(|ctrl| ControlFile::from(ctrl).unwrap())
             .filter(|ctrl| ctrl.package.contains(name))
             .collect::<Vec<_>>();
-            // .count();
 
         let entry = entry.path()
             .into_os_string()

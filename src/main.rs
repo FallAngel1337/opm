@@ -85,7 +85,6 @@ fn main() {
 		let pkg =  package.value_of("package").unwrap();
 		println!("Searching for {} ...", package.value_of("package").unwrap());
 		repos::search(&config, pkg);
-		process::exit(1);
     };
 
 }
