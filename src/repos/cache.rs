@@ -10,44 +10,44 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 	let mut pkgs = Vec::new();
 
 	for entry in fs::read_dir(&config.cache).unwrap() {
-	let entry = entry.unwrap();
-	let path = entry.path();
+		let entry = entry.unwrap();
+		let path = entry.path();
+		
+		let control = fs::read_to_string(path).unwrap();
 
-	let control = if exact_match {
-		fs::read_to_string(path)
-		.unwrap()
-		.split("\n\n")
-		.map(|ctrl| ControlFile::from(ctrl).unwrap())
-		.filter(|ctrl| ctrl.package == name)
-		.collect::<Vec<_>>()
-	} else {
-		fs::read_to_string(path)
-		.unwrap()
-		.split("\n\n")
-		.map(|ctrl| ControlFile::from(ctrl).unwrap())
-		.filter(|ctrl| ctrl.package.contains(name))
-		.collect::<Vec<_>>()
-	};
+		let control = control
+			.split("\n\n")
+			.map(|crtl| ControlFile::from(crtl).unwrap());
 
-	let entry = entry.path()
-		.into_os_string()
-		.into_string()
-		.unwrap();
+		let control = if exact_match {
+			control
+			.filter(|ctrl| ctrl.package == name)
+			.collect::<Vec<_>>()
+		} else {
+			control
+			.filter(|ctrl| ctrl.package.contains(name))
+			.collect::<Vec<_>>()
+		};
 
-	let url =  entry
-		.split("/")
-		.last()
-		.unwrap()
-		.replace("_", "/")
-		.split("/")
-		.next()
-		.unwrap()
-		.to_owned();
+		let entry = entry.path()
+			.into_os_string()
+			.into_string()
+			.unwrap();
 
-	control.into_iter().for_each(|pkg| {
-		let url = format!("{}/ubuntu/{}", url, &pkg.filename);
-		pkgs.push((pkg, String::from(&url)));
-	});
+		let url =  entry
+			.split("/")
+			.last()
+			.unwrap()
+			.replace("_", "/")
+			.split("/")
+			.next()
+			.unwrap()
+			.to_owned();
+
+		control.into_iter().for_each(|pkg| {
+			let url = format!("{}/ubuntu/{}", url, &pkg.filename);
+			pkgs.push((pkg, String::from(&url)));
+		});
 	}
 
 	if pkgs.len() > 0 {
