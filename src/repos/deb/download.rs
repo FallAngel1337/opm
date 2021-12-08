@@ -27,45 +27,52 @@ fn get_version(dep: &str) -> Option<(Ordering, &str)> {
     }
 }
 
-fn check_dependencies(dependencies: &Vec<String>) -> bool {
-    dependencies.iter()
-    .for_each(|elem| {
-        if let Some(dep) = cache::dpkg_cache_lookup(elem, true) {
-            if let Some(dep_version) = get_version(&elem) {
-                let ok = deb_version::compare_versions(dep_version.1, &dep.version);
-                if dep_version.0 != ok {
-                    println!("Required version: {:?}", dep_version);
-                }
-            }
-        } else {
-            if let Some(dep_version) = get_version(&elem) {
-                println!("NEED TO BE INSTALLED {} : {}", elem, dep_version.1);
-            } else {
-                println!("NEED TO INSTALL {}", elem);
+fn check_dependencies(dependencie: &str) -> bool {
+    if dependencie.contains("|") {
+        let dep = dependencie.split("|")
+            .map(|e| e.trim())
+            .collect::<Vec<_>>();
+        
+        for e in dep {
+            if !check_dependencies(e) {
+                println!("HERE >> {}", e);
+                return false;
             }
         }
+    }
 
-        if elem.contains("|") {
-            let dep = elem.split("|")
-                .map(|e| e.to_owned())
-                .collect();
-            check_dependencies(&dep);
+    if let Some(dep) = cache::dpkg_cache_lookup(dependencie, true) {
+        if let Some(dep_version) = get_version(dependencie) {
+            if deb_version::compare_versions(&dep.version, dep_version.1) != dep_version.0 {
+                println!("Need version {} of {}", dep_version.1, dep.package);
+            }
         }
-    });
-
-    true
+        true
+    } else {
+        if let Some(dep_version) = get_version(dependencie) {
+             println!("Need to install {} version {}", dependencie, dep_version.1);
+        }
+        false
+    }
 }
 
 #[tokio::main]
 pub async fn download(config: &Config, name: &str) -> Result<(), InstallError> {
+    let mut need_to_install = Vec::new();
     println!("Downloading {} from {:?}", name, config.cache);
-
+    
     match rpm_cache::cache_lookup(config, name, true) {
         Some(v) => {
             v.iter().for_each(|pkg| {
                 println!("Found {} {}", pkg.0.package, pkg.0.version);
-                check_dependencies(&pkg.0.depends);
+                pkg.0.depends.clone().into_iter().for_each(|dependencie| {
+                    if !check_dependencies(&dependencie) {
+                        need_to_install.push(dependencie);
+                    }
+                })
             });
+
+            println!("Dependens on: {:?}", need_to_install);
         },
 
         None => println!("Package {} not found", name)
