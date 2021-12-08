@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use super::deb::package::DebPackage;
+// use super::deb::package::DebPackage;
 use rusqlite::{Connection, Result};
 
 #[derive(Debug)]
