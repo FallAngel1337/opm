@@ -27,14 +27,14 @@ fn get_version(dep: &str) -> Option<(Ordering, &str)> {
     }
 }
 
-fn check_dependencies(dependencie: &str) -> bool {
+fn check_dependencie(dependencie: &str) -> bool {
     if dependencie.contains("|") {
         let dep = dependencie.split("|")
             .map(|e| e.trim())
             .collect::<Vec<_>>();
         
         for e in dep {
-            if !check_dependencies(e) {
+            if !check_dependencie(e) {
                 println!("HERE >> {}", e);
                 return false;
             }
@@ -66,7 +66,7 @@ pub async fn download(config: &Config, name: &str) -> Result<(), InstallError> {
             v.iter().for_each(|pkg| {
                 println!("Found {} {}", pkg.0.package, pkg.0.version);
                 pkg.0.depends.clone().into_iter().for_each(|dependencie| {
-                    if !check_dependencies(&dependencie) {
+                    if !check_dependencie(&dependencie) {
                         need_to_install.push(dependencie);
                     }
                 })
