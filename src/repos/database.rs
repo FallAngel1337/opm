@@ -41,12 +41,12 @@ impl<'a> SQLite<'a> {
         Ok(())
     }
 
-    pub fn register(&self, pkg: DebPackage) -> Result<()> {
-        self.conn.as_ref().unwrap().execute(
-            "insert into deb_pkgs (id, name, version, dependencies)
-            values (?, ?, ?, ?)",
-            [pkg.signature, pkg.control.package, pkg.control.version, pkg.control.depends]
-        )?;
-        Ok(())
-    }
+    // pub fn register(&self, pkg: DebPackage) -> Result<()> {
+    //     self.conn.as_ref().unwrap().execute(
+    //         "insert into deb_pkgs (id, name, version, dependencies)
+    //         values (?, ?, ?, ?)",
+    //         [pkg.signature, pkg.control.package, pkg.control.version, pkg.control.depends]
+    //     )?;
+    //     Ok(())
+    // }
 }

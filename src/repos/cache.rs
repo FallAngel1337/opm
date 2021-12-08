@@ -6,19 +6,28 @@ use std::fs;
 /// Lookup into the local cache(~/.rpm/cache)
 /// 
 // TODO: Improve it to be less slow
-pub fn cache_lookup(config: &Config, name: &str) -> Option<Vec<(ControlFile, String)>> {
+pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<(ControlFile, String)>> {
 	let mut pkgs = Vec::new();
 
 	for entry in fs::read_dir(&config.cache).unwrap() {
 	let entry = entry.unwrap();
 	let path = entry.path();
 
-	let control = fs::read_to_string(path)
+	let control = if exact_match {
+		fs::read_to_string(path)
+		.unwrap()
+		.split("\n\n")
+		.map(|ctrl| ControlFile::from(ctrl).unwrap())
+		.filter(|ctrl| ctrl.package == name)
+		.collect::<Vec<_>>()
+	} else {
+		fs::read_to_string(path)
 		.unwrap()
 		.split("\n\n")
 		.map(|ctrl| ControlFile::from(ctrl).unwrap())
 		.filter(|ctrl| ctrl.package.contains(name))
-		.collect::<Vec<_>>();
+		.collect::<Vec<_>>()
+	};
 
 	let entry = entry.path()
 		.into_os_string()
@@ -65,7 +74,7 @@ pub fn list_installed() {
 pub fn search(config: &Config, name: &str) {
     match Distribution::get_distro() {
         Distribution::Debian => {
-            if let Some(pkgs) = cache_lookup(config, name) {
+            if let Some(pkgs) = cache_lookup(config, name, false) {
                 pkgs.iter().for_each(|pkg| {
                     println!("{} {} - {} ({})", pkg.0.package, pkg.0.version, pkg.0.description, pkg.1);
                 })

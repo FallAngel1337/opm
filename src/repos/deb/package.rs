@@ -39,13 +39,13 @@ pub struct ControlFile { // We could improve by using lifetimes
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
-    pub depends: String,
+    pub depends: Vec<String>,
     pub filename: String,
 }
 
 // TODO: Improve this in the future
 impl ControlFile {
-    fn new(file: &str) -> Result<Self, Error> {
+    pub fn new(file: &str) -> Result<Self, Error> {
         let contents = fs::read_to_string(file)?;
 
         let mut map: HashMap<String, String> = HashMap::new();
@@ -62,7 +62,7 @@ impl ControlFile {
                 architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: map.get("Depends").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                depends: Self::parse_dependencies(map.get("Depends").unwrap_or(&String::from("NONE")).trim()),
                 filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
@@ -83,10 +83,20 @@ impl ControlFile {
                 architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: map.get("Depends").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                depends: Self::parse_dependencies(map.get("Depends").unwrap_or(&String::from("NONE")).trim()),
                 filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
+    }
+
+    // TODO: Make this better to read/understand
+    fn parse_dependencies(dependencies: &str) -> Vec<String> {
+        let dependencies = dependencies
+            .split(",")
+            .map(|d| d.trim().to_owned())
+            .collect::<Vec<_>>();
+            
+        dependencies
     }
 }
 
