@@ -7,17 +7,17 @@ use std::fs;
 /// Note: WAY more slow
 /// 
 // TODO: Improve it to be less slow
-pub fn dpkg_cache_lookup(name: &str) -> Option<Vec<ControlFile>> {
+pub fn dpkg_cache_lookup(name: &str) -> Option<ControlFile> {
 	let control = fs::read_to_string("/var/lib/dpkg/status")
 		.unwrap()
 		.split("\n\n")
 		.map(|ctrl| ControlFile::from(ctrl).unwrap())
-		.filter(|ctrl| ctrl.package.contains(name))
+		.filter(|ctrl| ctrl.package == name)
 		.collect::<Vec<_>>();
 
 	if control.len() > 0 { 
 		// println!("Found {} package entries for {}", control.len(), name);
-		Some(control)
+		Some(control[0].clone())
 	} else {
 		None
 	}
