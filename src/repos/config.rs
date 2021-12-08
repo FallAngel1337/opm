@@ -11,6 +11,7 @@ pub struct Config {
     pub tmp: PathBuf,
 }
 
+#[allow(deprecated)]
 impl Config {
     pub fn new() -> Self {
         let home = env::home_dir().unwrap()

@@ -131,6 +131,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "deb-version"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b390250ca2b6862735ef39a7b37b0266a8d5cd9d1e579260c95b1dc27761d6ad"
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -783,6 +789,7 @@ version = "0.1.0"
 dependencies = [
  "ar",
  "clap",
+ "deb-version",
  "hex",
  "reqwest",
  "rusqlite",
