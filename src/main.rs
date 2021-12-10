@@ -1,5 +1,5 @@
 use clap::{Arg, App, SubCommand};
-use rpm::repos::{self, config::Config};
+use opm::repos::{self, config::Config};
 use std::process;
 
 fn main() {
@@ -9,7 +9,7 @@ fn main() {
 		process::exit(1);
 	});
 
-    let matches = App::new("Rusty Package Manager")
+    let matches = App::new("Oxidized Package Manager")
 				.version("v0.1")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A fully package manager made in Rust")
@@ -26,13 +26,13 @@ fn main() {
 						.takes_value(true)
 						.index(1)
 						.required(true))
-						.help("Install a package by the name\nUsage: rpm install <package>"),
+						.help("Install a package by the name\nUsage: opm install <package>"),
 					SubCommand::with_name("update")
-						.about("update rpm's packages cache")
-						.help("Update's rpm cache\nUsage: rpm update"),
+						.about("update opm's packages cache")
+						.help("Update's opm cache\nUsage: opm update"),
 					SubCommand::with_name("remove")
 						.about("remove a package")
-						.help("Remove a package by the name\nUsage: rpm remove <package> ")
+						.help("Remove a package by the name\nUsage: opm remove <package> ")
 						.arg(Arg::with_name("package")
 						.takes_value(true)
 						.index(1)

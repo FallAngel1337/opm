@@ -25,6 +25,9 @@ pub fn update() -> Result<(), InstallError> {
                 println!("Actually we do not have support for you distro!");
             }
         }
+    } else {
+        eprintln!("Consider define `PKG_FMT` environment variable!");
+        std::process::exit(1);
     }
 
     Ok(())

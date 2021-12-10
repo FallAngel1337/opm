@@ -3,7 +3,7 @@ use crate::repos::config::Config;
 use std::fs;
 
 ///
-/// Lookup into the local cache(~/.rpm/cache)
+/// Lookup into the local cache(~/.opm/cache)
 /// 
 // TODO: Improve it to be less slow
 pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<(ControlFile, String)>> {
@@ -58,21 +58,26 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 }
 
 pub fn list_installed() {
-    match PackageFormat::get_format() {
-        PackageFormat::Deb => {
-            println!("Still working on this");
-        }
-        PackageFormat::Rpm => {
-            println!("It's a RHEL(-based) distro");
-        }
-        PackageFormat::Other => {
-            println!("Actually we do not have support for you distro!");
-        }
+	if let Some(pkg_fmt) = PackageFormat::get_format() {
+		match pkg_fmt {
+			PackageFormat::Deb => {
+				println!("Still working on this");
+			}
+			PackageFormat::Rpm => {
+				println!("It's a RHEL(-based) distro");
+				}
+				PackageFormat::Other => {
+					println!("Actually we do not have support for you distro!");
+				}
+			}
+	} else {
+        eprintln!("Consider define `PKG_FMT` environment variable!");
+        std::process::exit(1);
     }
 }
 
 pub fn search(config: &Config, name: &str) {
-    if let Some(pkg_fmt) = PackageFormat::get_distro() {
+    if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
 				if let Some(pkgs) = cache_lookup(config, name, false) {
@@ -88,5 +93,8 @@ pub fn search(config: &Config, name: &str) {
 				println!("Actually we do not have support for you distro!");
 			}
 		}
+    } else {
+        eprintln!("Consider define `PKG_FMT` environment variable!");
+        std::process::exit(1);
     }
 }
