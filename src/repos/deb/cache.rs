@@ -1,3 +1,4 @@
+use crate::repos::config::Config;
 use super::package::ControlFile;
 use std::fs;
 
@@ -7,12 +8,12 @@ use std::fs;
 /// Note: WAY more slow
 /// 
 // TODO: Improve it to be less slow
-pub fn dpkg_cache_lookup(name: &str, exact_match: bool) -> Option<ControlFile> {
+pub fn dpkg_cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<ControlFile> {
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control
 		.split("\n\n")
-		.map(|ctrl| ControlFile::from(ctrl).unwrap());
+		.map(|ctrl| ControlFile::from(config, ctrl).unwrap());
 	
 	let control = if exact_match {
 		control

@@ -6,7 +6,7 @@ use std::fs;
 /// Lookup into the local cache(~/.opm/cache)
 /// 
 // TODO: Improve it to be less slow
-pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<(ControlFile, String)>> {
+pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<ControlFile>> {
 	let mut pkgs = Vec::new();
 
 	for entry in fs::read_dir(&config.cache).unwrap() {
@@ -17,7 +17,7 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 
 		let control = control
 			.split("\n\n")
-			.map(|crtl| ControlFile::from(crtl).unwrap());
+			.map(|crtl| ControlFile::from(config, crtl).unwrap());
 
 		let control = if exact_match {
 			control
@@ -44,9 +44,10 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 			.unwrap()
 			.to_owned();
 
-		control.into_iter().for_each(|pkg| {
+		control.into_iter().for_each(|mut pkg| {
 			let url = format!("{}/ubuntu/{}", url, &pkg.filename);
-			pkgs.push((pkg, String::from(&url)));
+			pkg.set_filename(&url);
+			pkgs.push(pkg);
 		});
 	}
 
@@ -96,5 +97,5 @@ pub fn search(config: &Config, name: &str) {
     } else {
         eprintln!("Consider define `PKG_FMT` environment variable!");
         std::process::exit(1);
-    }
+	}
 }

@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Error;
 
+use crate::repos::config::Config;
+use super::dependencies;
+
 ///
 /// Kind of the package
 ///
@@ -11,6 +14,7 @@ pub enum PkgKind {
     Binary,
     Source,
 }
+
 
 /**
  * 
@@ -27,25 +31,24 @@ pub enum PkgKind {
     Description (mandatory)
     Homepage
     Built-Using
- */
-
+*/
 ///
 /// Debian's control file (mandatory fields)
 ///
-#[derive(Debug, Clone)]
-pub struct ControlFile { // We could improve by using lifetimes
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ControlFile {
     pub package: String,
     pub version: String,
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
-    pub depends: Vec<String>,
+    pub depends: Option<Vec<ControlFile>>,
     pub filename: String,
 }
 
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(file: &str) -> Result<Self, Error> {
+    pub fn new(config: &Config, file: &str) -> Result<Self, Error> {
         let contents = fs::read_to_string(file)?;
 
         let mut map: HashMap<String, String> = HashMap::new();
@@ -55,6 +58,8 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
+        let depends = Self::parse(map.get("Depends").unwrap_or(&String::from("NONE")).trim());
+        println!("Dependencies: {:?}", depends);
         Ok(
             Self {
                 package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
@@ -62,13 +67,13 @@ impl ControlFile {
                 architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: Self::parse_dependencies(map.get("Depends").unwrap_or(&String::from("NONE")).trim()),
+                depends: Some(dependencies::parse_dependencies(config, depends)),
                 filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
     }
 
-    pub fn from(contents: &str) -> Result<Self, Error> {
+    pub fn from(config: &Config, contents: &str) -> Result<Self, Error> {
         let mut map: HashMap<String, String> = HashMap::new();
 
         for line in contents.lines() {
@@ -76,6 +81,8 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
+        let depends = Self::parse(map.get("Depends").unwrap_or(&String::from("NONE")).trim());
+        println!("Dependencies: {:?}", depends);
         Ok(
             Self {
                 package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
@@ -83,14 +90,13 @@ impl ControlFile {
                 architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: Self::parse_dependencies(map.get("Depends").unwrap_or(&String::from("NONE")).trim()),
+                depends: Some(dependencies::parse_dependencies(config, depends)),
                 filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
     }
 
-    // TODO: Make this better to read/understand
-    fn parse_dependencies(dependencies: &str) -> Vec<String> {
+    fn parse(dependencies: &str) -> Vec<String> {
         let dependencies = dependencies
             .split(",")
             .map(|d| d.trim().to_owned())
@@ -98,6 +104,11 @@ impl ControlFile {
             
         dependencies
     }
+
+    pub fn set_filename(&mut self, filename: &str) {
+        self.filename = filename.to_owned();
+    }
+    
 }
 
 /// 
@@ -111,10 +122,10 @@ pub struct DebPackage {
 }
 
 impl DebPackage {
-    pub fn new(file: &str, kind: PkgKind, signature: String) -> Result<Self, Error> {
+    pub fn new(config: &Config, file: &str, kind: PkgKind, signature: String) -> Result<Self, Error> {
         Ok(
             DebPackage {
-                control: ControlFile::new(file)?,
+                control: ControlFile::new(config, file)?,
                 signature,
                 kind
             }

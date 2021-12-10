@@ -9,9 +9,10 @@ use std::str;
 use std::path::PathBuf;
 
 use crate::repos::errors::InstallError;
+use crate::repos::config::Config;
 use super::package::{DebPackage, PkgKind};
 
-pub fn extract(package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> {
+pub fn extract(config: &Config, package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);
     
     let mut bytes: Vec<u8> = Vec::new();
@@ -51,7 +52,7 @@ pub fn extract(package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> 
     }
 
     Ok(
-        DebPackage::new(&format!("{}/control", to.clone().into_os_string()
+        DebPackage::new(config, &format!("{}/control", to.clone().into_os_string()
                                                 .into_string().unwrap()), PkgKind::Binary, hex::encode(sig))?
     )
 }
