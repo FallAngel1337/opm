@@ -1,24 +1,25 @@
-use std::path::Path;
+use std::env;
 
-/// Default Debian's package manager
-const DEB_PKG: &[&str] = &["/usr/bin/apt", "/usr/bin/dpkg"];
+const PKG_FMT: &'static str = "PKG_FMT"; // The package format; It could be .deb, .rpm, etc
 
 #[derive(Debug)]
-pub enum Distribution {
-    Debian,
-    Rhel,
+pub enum PackageFormat {
+    Deb,
+    Rpm,
     Other,
 }
 
-impl Distribution {
-    pub fn get_distro() -> Self {
-        if Path::new(DEB_PKG[0]).exists() || Path::new(DEB_PKG[1]).exists() {
-            return Self::Debian;
+impl PackageFormat {
+    pub fn get_format() -> Option<Self> {
+        if let Ok(pkg_fmt) = env::var(PKG_FMT) {
+            match pkg_fmt.trim().to_lowercase() {
+                "deb" => Self::Deb,
+                "rpm" => Self::Rpm,
+                _ => Self::Other
+            }
+        } else {
+            None
         }
-
-        // do it the smame for others
-
-        Self::Other
     }
 }
 

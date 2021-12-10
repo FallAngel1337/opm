@@ -1,4 +1,4 @@
-use super::{utils::Distribution, deb::package::ControlFile};
+use super::{utils::PackageFormat, deb::package::ControlFile};
 use crate::repos::config::Config;
 use std::fs;
 
@@ -58,33 +58,35 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 }
 
 pub fn list_installed() {
-    match Distribution::get_distro() {
-        Distribution::Debian => {
+    match PackageFormat::get_format() {
+        PackageFormat::Deb => {
             println!("Still working on this");
         }
-        Distribution::Rhel => {
+        PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");
         }
-        Distribution::Other => {
+        PackageFormat::Other => {
             println!("Actually we do not have support for you distro!");
         }
     }
 }
 
 pub fn search(config: &Config, name: &str) {
-    match Distribution::get_distro() {
-        Distribution::Debian => {
-            if let Some(pkgs) = cache_lookup(config, name, false) {
-                pkgs.iter().for_each(|pkg| {
-                    println!("{} {} - {} ({})", pkg.0.package, pkg.0.version, pkg.0.description, pkg.1);
-                })
-            }
-        }
-        Distribution::Rhel => {
-            println!("It's a RHEL(-based) distro");
-        }
-        Distribution::Other => {
-            println!("Actually we do not have support for you distro!");
-        }
+    if let Some(pkg_fmt) = PackageFormat::get_distro() {
+		match pkg_fmt {
+			PackageFormat::Deb => {
+				if let Some(pkgs) = cache_lookup(config, name, false) {
+					pkgs.iter().for_each(|pkg| {
+						println!("{} {} - {} ({})", pkg.0.package, pkg.0.version, pkg.0.description, pkg.1);
+					})
+				}
+			}
+			PackageFormat::Rpm => {
+				println!("It's a RHEL(-based) distro");
+			}
+			PackageFormat::Other => {
+				println!("Actually we do not have support for you distro!");
+			}
+		}
     }
 }
