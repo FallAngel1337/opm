@@ -83,7 +83,7 @@ pub fn search(config: &Config, name: &str) {
 			PackageFormat::Deb => {
 				if let Some(pkgs) = cache_lookup(config, name, false) {
 					pkgs.iter().for_each(|pkg| {
-						println!("{} {} - {} ({})", pkg.0.package, pkg.0.version, pkg.0.description, pkg.1);
+						println!("{} {} - {} ({})", pkg.package, pkg.version, pkg.description, pkg.filename);
 					})
 				}
 			}

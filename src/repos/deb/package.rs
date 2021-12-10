@@ -58,8 +58,9 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
-        let depends = Self::parse(map.get("Depends").unwrap_or(&String::from("NONE")).trim());
+        let depends = Self::parse(map.get("Depends"));
         println!("Dependencies: {:?}", depends);
+
         Ok(
             Self {
                 package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
@@ -67,7 +68,7 @@ impl ControlFile {
                 architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: Some(dependencies::parse_dependencies(config, depends)),
+                depends: dependencies::parse_dependencies(config, depends),
                 filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
@@ -81,8 +82,9 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
-        let depends = Self::parse(map.get("Depends").unwrap_or(&String::from("NONE")).trim());
+        let depends = Self::parse(map.get("Depends"));
         println!("Dependencies: {:?}", depends);
+        
         Ok(
             Self {
                 package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
@@ -90,19 +92,22 @@ impl ControlFile {
                 architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: Some(dependencies::parse_dependencies(config, depends)),
+                depends: dependencies::parse_dependencies(config, depends),
                 filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
             }
         )
     }
 
-    fn parse(dependencies: &str) -> Vec<String> {
-        let dependencies = dependencies
-            .split(",")
-            .map(|d| d.trim().to_owned())
-            .collect::<Vec<_>>();
-            
-        dependencies
+    fn parse(dependencies: Option<&String>) -> Option<Vec<String>> {
+        if let Some(val) = dependencies {
+            let val = val
+                .split(",")
+                .map(|d| d.trim().to_owned())
+                .collect::<Vec<_>>();
+            Some(val)
+        } else {
+            None
+        }
     }
 
     pub fn set_filename(&mut self, filename: &str) {
