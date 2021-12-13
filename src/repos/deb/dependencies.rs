@@ -66,24 +66,26 @@ pub fn get_dependencies(control: &ControlFile, list: &mut Vec<ControlFile>) {
     }
 }
 
-pub fn parse_dependencies(config: &Config, dependencies: Option<Vec<String>>) -> Option<Vec<ControlFile>> {
-    println!("AAAAAAAA");
-    if let Some(dependencies) = dependencies {
-        let mut deps: Vec<ControlFile> = Vec::new();
-        dependencies.into_iter()
-            .for_each(|pkg_name| {
-                if let Some(pkg) =  opm_cache::cache_lookup(config, &pkg_name, true) {
-                    let pkg = pkg[0].clone(); // TODO: do not use clone
-                    println!("=> {:?}", pkg);
-                    get_dependencies(&pkg, &mut deps);
-                }
-            });
-            println!("====> {:?}", deps);
-            Some(deps)
-    } else {
-        None
-    }
-    
+pub fn parse_dependencies(_config: &Config, dependencies: Option<Vec<String>>) -> Option<Vec<ControlFile>> {
+    println!("=> {:?}", dependencies);
+    // if let Some(dependencies) = dependencies {
+    //     let mut deps: Vec<ControlFile> = Vec::new();
+    //     dependencies.into_iter()
+    //         .for_each(|pkg_name| {
+    //             if let Some(pkg) =  opm_cache::cache_lookup(config, &pkg_name, true) {
+    //                 let pkg = pkg[0].clone(); // TODO: do not use clone
+    //                 println!("=> {:?}", pkg);
+    //                 get_dependencies(&pkg, &mut deps);
+    //             } else {
+    //                 println!("Am I becoming crazy?");
+    //             }
+    //         });
+    //         println!("====> {:?}", deps);
+    //         Some(deps)
+    // } else {
+    //     None
+    // }
+    None
 }
 
 pub fn solve_dependencies(config: &Config, dependencies: &ControlFile) -> Vec<ControlFile> {

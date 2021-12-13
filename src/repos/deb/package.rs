@@ -58,8 +58,7 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
-        let depends = Self::parse(map.get("Depends"));
-        println!("Dependencies: {:?}", depends);
+        let depends = Self::split_deps(map.get("Depends"));
 
         Ok(
             Self {
@@ -82,9 +81,8 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
 
-        let depends = Self::parse(map.get("Depends"));
-        println!("Dependencies: {:?}", depends);
-        
+        let depends = Self::split_deps(map.get("Depends"));
+
         Ok(
             Self {
                 package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
@@ -98,7 +96,29 @@ impl ControlFile {
         )
     }
 
-    fn parse(dependencies: Option<&String>) -> Option<Vec<String>> {
+    // Same as `from` but doesn't parse the dependencies
+    pub fn parse_no_deps(contents: &str) -> Result<Self, Error>{
+        let mut map: HashMap<String, String> = HashMap::new();
+
+        for line in contents.lines() {
+            let values = line.splitn(2, ":").collect::<Vec<&str>>();
+            map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
+        };
+        
+        Ok(
+            Self {
+                package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
+                depends: None,
+                filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            }
+        )
+    }
+
+    fn split_deps(dependencies: Option<&String>) -> Option<Vec<String>> {
         if let Some(val) = dependencies {
             let val = val
                 .split(",")

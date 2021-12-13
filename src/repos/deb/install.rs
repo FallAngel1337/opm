@@ -22,7 +22,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             println!("{} - {}", pkg.package, pkg.version);
             // println!("-> {:?}", deb_version::compare_versions(&pkg.version, &pkg.version));
         } else {
-            println!("{} need to be installed", name);
+            println!("{} can be installed", name);
             download::download(config, name)?;
             println!("Installing {}", name);
         }

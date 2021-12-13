@@ -13,18 +13,18 @@ pub fn dpkg_cache_lookup(config: &Config, name: &str, exact_match: bool) -> Opti
 
 	let control = control
 		.split("\n\n");
-	
-		let control = if exact_match {
-			control
-			.map(|ctrl| ControlFile::parse_no_deps(config, ctrl).unwrap())
-			.filter(|ctrl| ctrl.package == name)
+
+	let control = if exact_match {
+		control
+			.filter(|ctrl| ControlFile::parse_no_deps(ctrl).unwrap().package == name)
+			.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
 			.collect::<Vec<_>>()
-		} else {
-			control
-			.map(|ctrl| ControlFile::parse_no_deps(config, ctrl).unwrap())
+	} else {
+		control
+			.map(|ctrl| ControlFile::parse_no_deps(ctrl).unwrap())
 			.filter(|ctrl| ctrl.package.contains(name))
 			.collect::<Vec<_>>()
-		};
+	};
 
 	if control.len() > 0 { 
 		// println!("Found {} package entries for {}", control.len(), name);

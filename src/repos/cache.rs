@@ -15,18 +15,19 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 		
 		let control = fs::read_to_string(path).unwrap();
 
-		let control = control.split("\n\n");
+		let control = control
+			.split("\n\n");
 			
 		let control = if exact_match {
 			control
-			.map(|ctrl| ControlFile::parse_no_deps(config, ctrl).unwrap())
-			.filter(|ctrl| ctrl.package == name)
-			.collect::<Vec<_>>()
+				.filter(|ctrl| ControlFile::parse_no_deps(ctrl).unwrap().package == name)
+				.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
+				.collect::<Vec<_>>()
 		} else {
 			control
-			.map(|ctrl| ControlFile::parse_no_deps(config, ctrl).unwrap())
-			.filter(|ctrl| ctrl.package.contains(name))
-			.collect::<Vec<_>>()
+				.map(|ctrl| ControlFile::parse_no_deps(ctrl).unwrap())
+				.filter(|ctrl| ctrl.package.contains(name))
+				.collect::<Vec<_>>()
 		};
 
 		let entry = entry.path()
