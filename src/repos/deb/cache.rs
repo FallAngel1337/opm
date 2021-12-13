@@ -12,16 +12,17 @@ pub fn dpkg_cache_lookup(config: &Config, name: &str, exact_match: bool) -> Opti
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control
-		.split("\n\n")
-		.map(|ctrl| ControlFile::from(config, ctrl).unwrap());
+		.split("\n\n");
 	
 	let control = if exact_match {
 		control
-		.filter(|ctrl| ctrl.package == name)
+		.filter(|ctrl| (*ctrl) == name)
+		.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
 		.collect::<Vec<_>>()
 	} else {
 		control
-		.filter(|ctrl| ctrl.package.contains(name))
+		.filter(|ctrl| (*ctrl).contains(name))
+		.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
 		.collect::<Vec<_>>()
 	};
 

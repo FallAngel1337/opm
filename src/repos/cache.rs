@@ -15,17 +15,17 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 		
 		let control = fs::read_to_string(path).unwrap();
 
-		let control = control
-			.split("\n\n")
-			.map(|crtl| ControlFile::from(config, crtl).unwrap());
-
+		let control = control.split("\n\n");
+			
 		let control = if exact_match {
 			control
-			.filter(|ctrl| ctrl.package == name)
+			.filter(|ctrl| (*ctrl) == name)
+			.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
 			.collect::<Vec<_>>()
 		} else {
 			control
-			.filter(|ctrl| ctrl.package.contains(name))
+			.filter(|ctrl| (*ctrl).contains(name))
+			.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
 			.collect::<Vec<_>>()
 		};
 
