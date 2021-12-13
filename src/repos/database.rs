@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
-use rusqlite::{Connection, Result, params};
+use rusqlite::{Connection, Result};
 use super::{utils::PackageFormat, config::Config};
 use super::cache;
 
+#[derive(Debug)]
 pub struct GenericPackage {
     pub id: String,
     pub name: String,
@@ -22,39 +23,31 @@ pub struct SQLite {
 
 impl SQLite {
     pub fn new(db: &mut PathBuf, config: &mut Config) -> Result<Self> {
-        if !db.ends_with(".db") {
-            db.push("installed.db");
-            if Path::new(db).exists() {
-                let mut sql = Self {
-                    db: db.to_path_buf(),
-                    conn: Connection::open(db)?
-                };
-                Ok(sql)
-            } else {
-                let mut sql = Self {
-                    db: db.to_path_buf(),
-                    conn: Connection::open(db)?
-                };
-                sql.init(config)?;
-                Ok(sql)
-            }
+        db.push("installed.db");
+        if Path::new(db).exists() {
+            let sql = Self {
+                db: db.to_path_buf(),
+                conn: Connection::open(&db)?
+            };
+            Ok(sql)
         } else {
             let mut sql = Self {
                 db: db.to_path_buf(),
                 conn: Connection::open(db)?
             };
+            sql.init(config)?;
             Ok(sql)
         }
     }
 
     fn init(&mut self, config: &mut Config) -> Result<()> {
         self.conn.execute(
-            "create table if not exists deb_pkgs (
+            "CREATE TABLE IF NOT EXISTS deb_pkgs (
                 id string not null,
                 name text not null primary key,
                 version text not null
             );
-            create table if not exists debsrc_pkgs (
+            CREATE TABLE IF NOT EXISTS debsrc_pkgs (
                 id integer primary key,
                 name text not null
             )",
@@ -62,7 +55,7 @@ impl SQLite {
             []
         )?;
 
-        cache::dump_into_db(config);
+        cache::dump_into_db(config)?;
 
         Ok(())
     }
@@ -76,9 +69,33 @@ impl SQLite {
         };
 
         self.conn.execute(
-            &format!("insert into {}(id, name, version) values (?1, ?2, ?3)", table),
-            params![package.id, package.name, package.version],
+            &format!("INSERT INTO {}(id, name, version) VALUES (?1, ?2, ?3)", table),
+            [package.id, package.name, package.version],
         )?;
+
+        Ok(())
+    }
+
+    // TODO: Return a trait object and remove hardcoded table
+    pub fn lookup(&self, name: &str) -> Result<()> {
+        let mut result = self.conn.prepare(
+            "SELECT * FROM deb_pkgs WHERE name = ?1",
+        )?;
+
+        let package = result.query_map([name], |row| {
+            Ok (
+                GenericPackage {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    version: row.get(2)?,
+                    format: PackageFormat::Deb
+                }
+            )
+        })?;
+
+        for pkg in package {
+            println!("PKG>> {:?}", pkg);
+        };
 
         Ok(())
     }

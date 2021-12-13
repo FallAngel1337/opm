@@ -9,7 +9,7 @@ use std::fs;
 /// Note: WAY more slow
 /// 
 // TODO: Improve it to be less slow
-pub fn dpkg_cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<ControlFile>> {
+fn dpkg_cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<ControlFile>> {
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control

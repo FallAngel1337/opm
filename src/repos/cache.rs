@@ -84,10 +84,10 @@ pub fn search(config: &Config, name: &str) {
     if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
-				if let Some(pkgs) = cache_lookup(config, name, false) {
-					pkgs.iter().for_each(|pkg| {
-						println!("{} {} - {} ({})", pkg.package, pkg.version, pkg.description, pkg.filename);
-					})
+				if let Some(sqlite) = config.sqlite.as_ref() {
+					sqlite.lookup(name).expect("FUUUCK");
+				} else {
+					eprintln!("IDK");
 				}
 			}
 			PackageFormat::Rpm => {
@@ -115,8 +115,10 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
 						kind: PkgKind::Binary,
         				signature: "NOPE".to_owned()
 					};
-
-					config.sqlite.as_ref().unwrap().add_package(deb_pkg).expect("Some error occurred");
+					// config.sqlite.as_ref().unwrap().add_package(deb_pkg).expect("Some error occurred");
+					if let Some(sqlite) = config.sqlite.as_ref() {
+						sqlite.add_package(deb_pkg).expect("NOOOO");
+					}
 				});
 
 				Ok(())

@@ -39,37 +39,37 @@ fn parse_name(dep: &str) -> &str {
 }
 
 // TODO: When done, verify at opm's database
-fn check_dependencie(config: &Config, dependencie: &str) -> bool {
-    if dependencie.contains("|") {
-        let dep = dependencie.split("|")
-        .map(|e| e.trim())
-        .collect::<Vec<_>>();
+// fn check_dependencie(config: &Config, dependencie: &str) -> bool {
+//     if dependencie.contains("|") {
+//         let dep = dependencie.split("|")
+//         .map(|e| e.trim())
+//         .collect::<Vec<_>>();
         
-        for e in dep {
-            if !check_dependencie(config, e) {
-                println!("HERE >> {}", e);
-                return false;
-            }
-        }
-    }
+//         for e in dep {
+//             if !check_dependencie(config, e) {
+//                 println!("HERE >> {}", e);
+//                 return false;
+//             }
+//         }
+//     }
     
-    if let Some(dep) = cache::dpkg_cache_lookup(config, parse_name(dependencie), true) {
-        let dep = dep.into_iter().next().unwrap();
-        println!("package: {}\nversion: {}", dep.package, dep.version);
-        if let Some(curr_version) = get_version(dependencie) {
-            if deb_version::compare_versions(&dep.version, curr_version.1) != curr_version.0 {
-                println!("Need version {} of {}", curr_version.1, dep.package);
-                return false;
-            }
-        }
-        true
-    } else {
-        if let Some(curr_version) = get_version(dependencie) {
-             println!("Need to install {} version {}", dependencie, curr_version.1);
-        }
-        false
-    }
-}
+//     if let Some(dep) = cache::dpkg_cache_lookup(config, parse_name(dependencie), true) {
+//         let dep = dep.into_iter().next().unwrap();
+//         println!("package: {}\nversion: {}", dep.package, dep.version);
+//         if let Some(curr_version) = get_version(dependencie) {
+//             if deb_version::compare_versions(&dep.version, curr_version.1) != curr_version.0 {
+//                 println!("Need version {} of {}", curr_version.1, dep.package);
+//                 return false;
+//             }
+//         }
+//         true
+//     } else {
+//         if let Some(curr_version) = get_version(dependencie) {
+//              println!("Need to install {} version {}", dependencie, curr_version.1);
+//         }
+//         false
+//     }
+// }
 
 pub fn parse_dependencies(config: &Config, dependencies: Option<Vec<String>>) -> Option<Vec<ControlFile>> {
     let mut deps = Vec::new();
