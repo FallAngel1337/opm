@@ -3,8 +3,7 @@ use opm::repos::{self, config::Config};
 use std::process;
 
 fn main() {
-	let mut config = Config::new();
-	config.setup().unwrap_or_else(|err| {
+	let mut config = Config::new().unwrap_or_else(|err| {
 		eprintln!("Could not complete the configuration due {}", err);
 		process::exit(1);
 	});

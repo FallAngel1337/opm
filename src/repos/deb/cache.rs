@@ -1,5 +1,6 @@
-use crate::repos::config::Config;
+use crate::repos::{config::Config, database::SQLite};
 use super::package::ControlFile;
+use rusqlite::{Result};
 use std::fs;
 
 ///
@@ -30,4 +31,15 @@ pub fn dpkg_cache_lookup(config: &Config, name: &str, exact_match: bool) -> Opti
 	} else {
 		None
 	}
+}
+
+pub fn dpkg_cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
+	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
+
+	let control = control
+		.split("\n\n")
+		.map(|ctrl| ControlFile::from(config, ctrl))
+		.collect::<Vec<_>>();
+	
+	Ok(control)
 }

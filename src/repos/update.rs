@@ -7,8 +7,7 @@ use super::errors::InstallError;
 use super::config::Config;
 
 pub fn update() -> Result<(), InstallError> {
-    let mut config = Config::new();
-    config.setup()?;
+    let mut config = Config::new()?;
     println!("Current config: {:?}", config);
 
     if let Some(pkg_fmt) = PackageFormat::get_format() {

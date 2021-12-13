@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Error;
 
-use crate::repos::config::Config;
+use crate::repos::{config::Config, utils::PackageFormat};
+use crate::repos::database::{Package, GenericPackage};
 use super::dependencies;
 
 ///
@@ -104,28 +105,6 @@ impl ControlFile {
         }
     }
 
-    // Same as `from` but doesn't parse the dependencies
-    pub fn parse_no_deps(contents: &str) -> Option<Self>{
-        let mut map: HashMap<String, String> = HashMap::new();
-
-        for line in contents.lines() {
-            let values = line.splitn(2, ":").collect::<Vec<&str>>();
-            map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
-        };
-        
-        Some(
-            Self {
-                package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: None,
-                filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            }
-        )
-    }
-
     fn split_deps(dependencies: Option<&String>) -> Option<Vec<String>> {
         if let Some(val) = dependencies {
             let val = val
@@ -141,7 +120,6 @@ impl ControlFile {
     pub fn set_filename(&mut self, filename: &str) {
         self.filename = filename.to_owned();
     }
-    
 }
 
 /// 
@@ -163,5 +141,16 @@ impl DebPackage {
                 kind
             }
         )
+    }
+}
+
+impl Package for DebPackage {
+    fn to_generic(&self) -> crate::repos::database::GenericPackage {
+        GenericPackage {
+            id: self.signature.clone(),
+            name: self.control.package.clone(),
+            version: self.control.version.clone(),
+            format: PackageFormat::Deb
+        }
     }
 }

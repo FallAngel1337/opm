@@ -1,34 +1,58 @@
-use std::path::PathBuf;
-// use super::deb::package::DebPackage;
-use rusqlite::{Connection, Result};
+use std::path::{Path, PathBuf};
+use rusqlite::{Connection, Result, params};
+use super::{utils::PackageFormat, config::Config};
+use super::cache;
 
-#[derive(Debug)]
-pub struct SQLite<'a> {
-    pub db: &'a PathBuf,
-    conn: Option<Connection>
+pub struct GenericPackage {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub format: PackageFormat
 }
 
-impl<'a> SQLite<'a> {
-    pub fn new(db: &'a mut PathBuf) -> Self {
-        db.push("installed.db");
-        SQLite {
-            db,
-            conn: None
+pub trait Package {
+    fn to_generic(&self) -> GenericPackage;
+}
+
+#[derive(Debug)]
+pub struct SQLite {
+    pub db: PathBuf,
+    conn: Connection
+}
+
+impl SQLite {
+    pub fn new(db: &mut PathBuf, config: &mut Config) -> Result<Self> {
+        if !db.ends_with(".db") {
+            db.push("installed.db");
+            if Path::new(db).exists() {
+                let mut sql = Self {
+                    db: db.to_path_buf(),
+                    conn: Connection::open(db)?
+                };
+                Ok(sql)
+            } else {
+                let mut sql = Self {
+                    db: db.to_path_buf(),
+                    conn: Connection::open(db)?
+                };
+                sql.init(config)?;
+                Ok(sql)
+            }
+        } else {
+            let mut sql = Self {
+                db: db.to_path_buf(),
+                conn: Connection::open(db)?
+            };
+            Ok(sql)
         }
     }
 
-    pub fn init(&mut self) -> Result<()> {
-        match self.conn {
-            Some(_) => (),
-            None => self.conn = Some(Connection::open(self.db)?)
-        }
-
-        self.conn.as_ref().unwrap().execute(
+    fn init(&mut self, config: &mut Config) -> Result<()> {
+        self.conn.execute(
             "create table if not exists deb_pkgs (
-                id string primary key,
-                name text not null,
-                version text not null,
-                dependencies text not null
+                id string not null,
+                name text not null primary key,
+                version text not null
             );
             create table if not exists debsrc_pkgs (
                 id integer primary key,
@@ -38,15 +62,24 @@ impl<'a> SQLite<'a> {
             []
         )?;
 
+        cache::dump_into_db(config);
+
         Ok(())
     }
 
-    // pub fn register(&self, pkg: DebPackage) -> Result<()> {
-    //     self.conn.as_ref().unwrap().execute(
-    //         "insert into deb_pkgs (id, name, version, dependencies)
-    //         values (?, ?, ?, ?)",
-    //         [pkg.signature, pkg.control.package, pkg.control.version, pkg.control.depends]
-    //     )?;
-    //     Ok(())
-    // }
+    pub fn add_package<P: Package>(&self, package: P) -> Result<()> {
+        let package = package.to_generic();
+
+        let table = match package.format {
+            PackageFormat::Deb => "deb_pkgs",
+            _ => panic!("Invalid format in the db")
+        };
+
+        self.conn.execute(
+            &format!("insert into {}(id, name, version) values (?1, ?2, ?3)", table),
+            params![package.id, package.name, package.version],
+        )?;
+
+        Ok(())
+    }
 }

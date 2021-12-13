@@ -1,14 +1,17 @@
-use super::{utils::PackageFormat, deb::package::ControlFile};
-use crate::repos::config::Config;
+use crate::repos::deb::package::DebPackage;
+
+use super::utils::PackageFormat;
+use super::config::Config;
+use rusqlite::Result;
 use std::fs;
 
 ///
 /// Lookup into the local cache(~/.opm/cache)
 /// 
 // TODO: Improve it to be less slow
+use super::deb::{package::ControlFile};
 pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<ControlFile>> {
 	let mut pkgs = Vec::new();
-
 	for entry in fs::read_dir(&config.cache).unwrap() {
 		let entry = entry.unwrap();
 		let path = entry.path();
@@ -92,6 +95,39 @@ pub fn search(config: &Config, name: &str) {
 			}
 			PackageFormat::Other => {
 				println!("Actually we do not have support for you distro!");
+			}
+		}
+    } else {
+        eprintln!("Consider define `PKG_FMT` environment variable!");
+        std::process::exit(1);
+	}
+}
+
+pub fn dump_into_db(config: &mut Config) -> Result<()> {
+	if let Some(pkg_fmt) = PackageFormat::get_format() {
+		match pkg_fmt {
+			PackageFormat::Deb => {
+				use super::deb::{cache, package::PkgKind};
+				let pkgs = cache::dpkg_cache_dump(&config).unwrap();
+				pkgs.into_iter().for_each(|pkg| {
+					let deb_pkg = DebPackage {
+						control: pkg,
+						kind: PkgKind::Binary,
+        				signature: "NOPE".to_owned()
+					};
+
+					config.sqlite.as_ref().unwrap().add_package(deb_pkg).expect("Some error occurred");
+				});
+
+				Ok(())
+			}
+			PackageFormat::Rpm => {
+				println!("It's a RHEL(-based) distro");
+				Ok(())
+			}
+			PackageFormat::Other => {
+				println!("Actually we do not have support for you distro!");
+				Ok(())
 			}
 		}
     } else {

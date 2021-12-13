@@ -3,28 +3,43 @@ use std::io::{Error, ErrorKind};
 use std::env;
 use std::fs;
 
-#[derive(Debug, Clone)]
+use super::database::SQLite;
+
+#[derive(Debug)]
 pub struct Config {
     pub cache: PathBuf,
     pub pkgs: PathBuf,
     pub rls: PathBuf,
     pub tmp: PathBuf,
+
+    pub sqlite: Option<SQLite>,
 }
 
 #[allow(deprecated)]
 impl Config {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Error> {
         let home = env::home_dir().unwrap()
             .into_os_string().into_string().unwrap();
-        Config {
+        let mut result = Self {
             cache: PathBuf::from(format!("{}/.opm/cache/pkg_cache", home)),
             pkgs: PathBuf::from(format!("{}/.opm/pkgs", home)),
             rls: PathBuf::from(format!("{}/.opm/cache/rls", home)),
-            tmp: PathBuf::from(format!("{}/.opm/tmp", home))
-        }
+            tmp: PathBuf::from(format!("{}/.opm/tmp", home)),
+
+            sqlite: None
+        };
+
+        Self::setup(&mut result)?;
+        
+        let mut result = Self {
+            sqlite: Some(SQLite::new(&mut result.pkgs.clone(), &mut result).unwrap()),
+            ..result
+        };
+
+        Ok(result)
     }
 
-    pub fn setup(&self) -> Result<(), Error> {
+    fn setup(&mut self) -> Result<(), Error> {
         match fs::create_dir_all(&self.cache) {
             Ok(_) => (),
             Err(e) => match e.kind() {

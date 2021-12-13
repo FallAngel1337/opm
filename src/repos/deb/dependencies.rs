@@ -32,7 +32,6 @@ fn get_version(dep: &str) -> Option<(Ordering, &str)> {
 fn parse_name(dep: &str) -> &str {
     if dep.contains("(") && dep.contains(")") {
         let end = dep.find("(").unwrap();
-        
         dep[..end].trim()
     } else {
         dep
@@ -82,24 +81,13 @@ fn get_dependencies(control: &ControlFile, list: &mut Vec<ControlFile>) {
     }
 }
 
-// fn get_all_dependencies(config: &Config, dependencies: Vec<String>) -> Vec<String> {
-//     let mut deps = Vec::new();
-//     println!("=> {:?}", dependencies);
-//     dependencies.into_iter()
-//         .for_each(|pkg_name| {
-//             println!("{}", pkg_name);
-//             deps.push();
-//         });
-//     deps
-// }
-
 pub fn parse_dependencies(config: &Config, dependencies: Option<Vec<String>>) -> Option<Vec<ControlFile>> {
     let mut deps = Vec::new();
     // println!("=> {:?}", dependencies);
     if let Some(dependencies) = dependencies {
         dependencies.into_iter()
             .for_each(|pkg_name| {
-                println!("{}", pkg_name);
+                // println!("{}", pkg_name);
             });
             // println!(">> {:?}", deps);
             Some(deps)
