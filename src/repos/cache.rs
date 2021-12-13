@@ -19,13 +19,13 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 			
 		let control = if exact_match {
 			control
-			.filter(|ctrl| (*ctrl) == name)
-			.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
+			.map(|ctrl| ControlFile::parse_no_deps(config, ctrl).unwrap())
+			.filter(|ctrl| ctrl.package == name)
 			.collect::<Vec<_>>()
 		} else {
 			control
-			.filter(|ctrl| (*ctrl).contains(name))
-			.map(|ctrl| ControlFile::from(config, ctrl).unwrap())
+			.map(|ctrl| ControlFile::parse_no_deps(config, ctrl).unwrap())
+			.filter(|ctrl| ctrl.package.contains(name))
 			.collect::<Vec<_>>()
 		};
 
