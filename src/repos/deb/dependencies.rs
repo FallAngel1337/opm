@@ -8,7 +8,7 @@ use super::cache;
 // use solvent::DepGraph;
 
 // TODO: I really need to make this better
-pub fn get_version(dep: &str) -> Option<(Ordering, &str)> {
+fn get_version(dep: &str) -> Option<(Ordering, &str)> {
     if dep.contains("(") && dep.contains(")") {
         let start = dep.find("=").unwrap()+1;
         let end = dep.find(")").unwrap();
@@ -28,7 +28,20 @@ pub fn get_version(dep: &str) -> Option<(Ordering, &str)> {
     }
 }
 
-pub fn check_dependencie(config: &Config, dependencie: &str) -> bool {
+// Remove the version naming from the package
+fn parse_name(dep: &str) -> &str {
+    if dep.contains("(") && dep.contains(")") {
+        let end = dep.find("(").unwrap();
+        
+        dep[..end].trim()
+    } else {
+        dep
+    }
+}
+
+// TODO: When done, verify at opm's database
+fn check_dependencie(config: &Config, dependencie: &str) -> bool {
+    
     if dependencie.contains("|") {
         let dep = dependencie.split("|")
         .map(|e| e.trim())
@@ -41,23 +54,26 @@ pub fn check_dependencie(config: &Config, dependencie: &str) -> bool {
             }
         }
     }
-
-    if let Some(dep) = cache::dpkg_cache_lookup(config, dependencie, true) {
-        if let Some(dep_version) = get_version(dependencie) {
-            if deb_version::compare_versions(&dep.version, dep_version.1) != dep_version.0 {
-                println!("Need version {} of {}", dep_version.1, dep.package);
+    
+    if let Some(dep) = cache::dpkg_cache_lookup(config, parse_name(dependencie), true) {
+        let dep = dep.into_iter().next().unwrap();
+        println!("package: {}\nversion: {}", dep.package, dep.version);
+        if let Some(curr_version) = get_version(dependencie) {
+            if deb_version::compare_versions(&dep.version, curr_version.1) != curr_version.0 {
+                println!("Need version {} of {}", curr_version.1, dep.package);
+                return false;
             }
         }
         true
     } else {
-        if let Some(dep_version) = get_version(dependencie) {
-             println!("Need to install {} version {}", dependencie, dep_version.1);
+        if let Some(curr_version) = get_version(dependencie) {
+             println!("Need to install {} version {}", dependencie, curr_version.1);
         }
         false
     }
 }
 
-pub fn get_dependencies(control: &ControlFile, list: &mut Vec<ControlFile>) {
+fn get_dependencies(control: &ControlFile, list: &mut Vec<ControlFile>) {
     if let Some(dependencies) = &control.depends {
         for dep in dependencies.iter() {
             list.push(dep.clone()); // TODO: do not use clone
@@ -66,26 +82,30 @@ pub fn get_dependencies(control: &ControlFile, list: &mut Vec<ControlFile>) {
     }
 }
 
-pub fn parse_dependencies(_config: &Config, dependencies: Option<Vec<String>>) -> Option<Vec<ControlFile>> {
-    println!("=> {:?}", dependencies);
-    // if let Some(dependencies) = dependencies {
-    //     let mut deps: Vec<ControlFile> = Vec::new();
-    //     dependencies.into_iter()
-    //         .for_each(|pkg_name| {
-    //             if let Some(pkg) =  opm_cache::cache_lookup(config, &pkg_name, true) {
-    //                 let pkg = pkg[0].clone(); // TODO: do not use clone
-    //                 println!("=> {:?}", pkg);
-    //                 get_dependencies(&pkg, &mut deps);
-    //             } else {
-    //                 println!("Am I becoming crazy?");
-    //             }
-    //         });
-    //         println!("====> {:?}", deps);
-    //         Some(deps)
-    // } else {
-    //     None
-    // }
-    None
+// fn get_all_dependencies(config: &Config, dependencies: Vec<String>) -> Vec<String> {
+//     let mut deps = Vec::new();
+//     println!("=> {:?}", dependencies);
+//     dependencies.into_iter()
+//         .for_each(|pkg_name| {
+//             println!("{}", pkg_name);
+//             deps.push();
+//         });
+//     deps
+// }
+
+pub fn parse_dependencies(config: &Config, dependencies: Option<Vec<String>>) -> Option<Vec<ControlFile>> {
+    let mut deps = Vec::new();
+    // println!("=> {:?}", dependencies);
+    if let Some(dependencies) = dependencies {
+        dependencies.into_iter()
+            .for_each(|pkg_name| {
+                println!("{}", pkg_name);
+            });
+            // println!(">> {:?}", deps);
+            Some(deps)
+    } else {
+        None
+    }
 }
 
 pub fn solve_dependencies(config: &Config, dependencies: &ControlFile) -> Vec<ControlFile> {

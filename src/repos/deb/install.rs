@@ -17,10 +17,9 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         println!("Extracting ...");
     } else {
         if let Some(pkg) = cache::dpkg_cache_lookup(&config, name, true) {
-            // let cached_pkgs = rpm_cache::cache_lookup(&config, name);
+            let pkg = pkg.into_iter().next().unwrap();
             println!("{} is already installed\nFound:", name);
             println!("{} - {}", pkg.package, pkg.version);
-            // println!("-> {:?}", deb_version::compare_versions(&pkg.version, &pkg.version));
         } else {
             println!("{} can be installed", name);
             download::download(config, name)?;

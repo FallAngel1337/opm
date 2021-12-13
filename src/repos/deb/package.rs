@@ -73,7 +73,7 @@ impl ControlFile {
         )
     }
 
-    pub fn from(config: &Config, contents: &str) -> Result<Self, Error> {
+    pub fn from(config: &Config, contents: &str) -> Self {
         let mut map: HashMap<String, String> = HashMap::new();
 
         for line in contents.lines() {
@@ -82,22 +82,30 @@ impl ControlFile {
         };
 
         let depends = Self::split_deps(map.get("Depends"));
+        let result = Self {
+            package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            depends: None,
+        };
 
-        Ok(
-            Self {
-                package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: dependencies::parse_dependencies(config, depends),
-                filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
+        match depends {
+            Some(v) => 
+                Self {
+                    depends: dependencies::parse_dependencies(config, Some(v)),
+                    ..result
+                },
+            None => {
+                result
             }
-        )
+        }
     }
 
     // Same as `from` but doesn't parse the dependencies
-    pub fn parse_no_deps(contents: &str) -> Result<Self, Error>{
+    pub fn parse_no_deps(contents: &str) -> Option<Self>{
         let mut map: HashMap<String, String> = HashMap::new();
 
         for line in contents.lines() {
@@ -105,7 +113,7 @@ impl ControlFile {
             map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
         };
         
-        Ok(
+        Some(
             Self {
                 package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
                 version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),

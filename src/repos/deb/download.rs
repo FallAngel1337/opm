@@ -8,7 +8,8 @@ use super::dependencies;
 pub async fn download(config: &Config, name: &str) -> Result<(), InstallError> {
     println!("Downloading {} from {:?}", name, config.cache);
 
-    // dependencies::solve_dependencies();
+    // if let Some(dep) = dependencies::
+    //     // dependencies::solve_dependencies(config, );
 
     Ok(())
 }
