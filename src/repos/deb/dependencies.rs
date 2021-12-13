@@ -1,6 +1,6 @@
 use crate::repos::cache as opm_cache;
 use crate::repos::config::Config;
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::BTreeSet};
 use super::package::ControlFile;
 use super::cache;
 
@@ -40,7 +40,6 @@ fn parse_name(dep: &str) -> &str {
 
 // TODO: When done, verify at opm's database
 fn check_dependencie(config: &Config, dependencie: &str) -> bool {
-    
     if dependencie.contains("|") {
         let dep = dependencie.split("|")
         .map(|e| e.trim())
@@ -69,15 +68,6 @@ fn check_dependencie(config: &Config, dependencie: &str) -> bool {
              println!("Need to install {} version {}", dependencie, curr_version.1);
         }
         false
-    }
-}
-
-fn get_dependencies(control: &ControlFile, list: &mut Vec<ControlFile>) {
-    if let Some(dependencies) = &control.depends {
-        for dep in dependencies.iter() {
-            list.push(dep.clone()); // TODO: do not use clone
-            get_dependencies(dep, list);
-        }
     }
 }
 
