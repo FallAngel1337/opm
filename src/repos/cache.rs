@@ -61,11 +61,17 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 	}
 }
 
-pub fn list_installed() {
+pub fn list_installed(config: &Config) {
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
-				println!("Still working on this");
+				if let Some(sqlite) = config.sqlite.as_ref() {
+					if let Ok(pkg) = sqlite.pkg_list() {
+						pkg.into_iter().for_each(|pkg| {
+							println!("{:?}", pkg);
+						})
+					}
+				}
 			}
 			PackageFormat::Rpm => {
 				println!("It's a RHEL(-based) distro");
@@ -85,9 +91,12 @@ pub fn search(config: &Config, name: &str) {
 		match pkg_fmt {
 			PackageFormat::Deb => {
 				if let Some(sqlite) = config.sqlite.as_ref() {
-					sqlite.lookup(name).expect("FUUUCK");
-				} else {
-					eprintln!("IDK");
+					println!("Found:");
+					if let Ok(pkg) = sqlite.lookup(name, true) {
+						if let Some(pkg) = pkg {
+							println!("{:?}", pkg);
+						}
+					}
 				}
 			}
 			PackageFormat::Rpm => {
@@ -108,19 +117,18 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
 		match pkg_fmt {
 			PackageFormat::Deb => {
 				use super::deb::{cache, package::PkgKind};
-				let pkgs = cache::dpkg_cache_dump(&config).unwrap();
-				pkgs.into_iter().for_each(|pkg| {
+				let pkgs = cache::dpkg_cache_dump(&config);
+				println!("Detect a dpkg database (assuming it's debian)");
+				for pkg in pkgs.into_iter()  {
 					let deb_pkg = DebPackage {
 						control: pkg,
 						kind: PkgKind::Binary,
         				signature: "NOPE".to_owned()
 					};
-					// config.sqlite.as_ref().unwrap().add_package(deb_pkg).expect("Some error occurred");
-					if let Some(sqlite) = config.sqlite.as_ref() {
-						sqlite.add_package(deb_pkg).expect("NOOOO");
-					}
-				});
-
+					let sqlite = config.sqlite.as_ref().unwrap();
+					sqlite.add_package(deb_pkg)?;
+				};
+				
 				Ok(())
 			}
 			PackageFormat::Rpm => {

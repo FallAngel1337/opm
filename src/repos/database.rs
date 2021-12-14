@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use rusqlite::{Connection, Result};
-use super::{utils::PackageFormat, config::Config};
-use super::cache;
+use super::utils::PackageFormat;
 
 #[derive(Debug)]
 pub struct GenericPackage {
@@ -22,7 +21,7 @@ pub struct SQLite {
 }
 
 impl SQLite {
-    pub fn new(db: &mut PathBuf, config: &mut Config) -> Result<Self> {
+    pub fn new(db: &mut PathBuf) -> Result<Self> {
         db.push("installed.db");
         if Path::new(db).exists() {
             let sql = Self {
@@ -35,12 +34,12 @@ impl SQLite {
                 db: db.to_path_buf(),
                 conn: Connection::open(db)?
             };
-            sql.init(config)?;
+            sql.init()?;
             Ok(sql)
         }
     }
 
-    fn init(&mut self, config: &mut Config) -> Result<()> {
+    fn init(&mut self) -> Result<()> {
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS deb_pkgs (
                 id string not null,
@@ -55,21 +54,18 @@ impl SQLite {
             []
         )?;
 
-        cache::dump_into_db(config)?;
-
         Ok(())
     }
 
     pub fn add_package<P: Package>(&self, package: P) -> Result<()> {
         let package = package.to_generic();
-
         let table = match package.format {
             PackageFormat::Deb => "deb_pkgs",
             _ => panic!("Invalid format in the db")
         };
 
         self.conn.execute(
-            &format!("INSERT INTO {}(id, name, version) VALUES (?1, ?2, ?3)", table),
+            &format!("INSERT INTO {} VALUES (?1, ?2, ?3)", table),
             [package.id, package.name, package.version],
         )?;
 
@@ -77,12 +73,19 @@ impl SQLite {
     }
 
     // TODO: Return a trait object and remove hardcoded table
-    pub fn lookup(&self, name: &str) -> Result<()> {
+    pub fn lookup(&self, name: &str, exact_match: bool) -> Result<Option<GenericPackage>> {
+
+        let query = if exact_match {
+            "SELECT * FROM deb_pkgs WHERE name = ?1"
+        } else {
+            "SELECT * FROM deb_pkgs WHERE name LIKE %?1%"
+        };
+
         let mut result = self.conn.prepare(
-            "SELECT * FROM deb_pkgs WHERE name = ?1",
+            query
         )?;
 
-        let package = result.query_map([name], |row| {
+        let mut package = result.query_map([name], |row| {
             Ok (
                 GenericPackage {
                     id: row.get(0)?,
@@ -93,10 +96,32 @@ impl SQLite {
             )
         })?;
 
-        for pkg in package {
-            println!("PKG>> {:?}", pkg);
-        };
+        if let Some(pkg) = package.next() {
+            let pkg = pkg?;
+            Ok(Some(pkg))
+        } else {
+            Ok(None)
+        }
+    }
 
-        Ok(())
+    pub fn pkg_list(&self) -> Result<Vec<GenericPackage>> {
+        let mut result = self.conn.prepare(
+            "SELECT * FROM deb_pkgs",
+        )?;
+
+        let package = result.query_map([], |row| {
+            Ok (
+                GenericPackage {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    version: row.get(2)?,
+                    format: PackageFormat::Deb
+                }
+            )
+        })?;
+
+        Ok(
+            package.map(|pkg| pkg.unwrap()).collect::<Vec<_>>()
+        )
     }
 }

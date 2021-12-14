@@ -30,12 +30,7 @@ impl Config {
         };
 
         Self::setup(&mut result)?;
-        
-        let result = Self {
-            sqlite: Some(SQLite::new(&mut result.pkgs.clone(), &mut result).unwrap()),
-            ..result
-        };
-
+        result.sqlite = Some(SQLite::new(&mut result.pkgs.clone()).unwrap());
         Ok(result)
     }
 

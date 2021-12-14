@@ -27,14 +27,6 @@ fn clear(config: &Config) -> Result<(), InstallError> {
             _ => panic!("fuck {}", e)
         }
     }
-    match fs::remove_dir_all(&config.pkgs){
-        Ok(_) => (),
-        Err(e) => match e.kind() {
-            ErrorKind::AlreadyExists => (),
-            ErrorKind::NotFound => (),
-            _ => panic!("fuck {}", e)
-        }
-    }
     match fs::remove_dir_all(&config.tmp){
         Ok(_) => (),
         Err(e) => match e.kind() {
@@ -46,7 +38,6 @@ fn clear(config: &Config) -> Result<(), InstallError> {
 
     fs::create_dir(&config.cache)?;
     fs::create_dir(&config.rls)?;
-    fs::create_dir(&config.pkgs)?;
     fs::create_dir(&config.tmp)?;
 
     Ok(())

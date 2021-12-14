@@ -8,36 +8,36 @@ use reqwest::Error as reqwestError;
 #[derive(Debug)]
 pub enum InstallError {
     InvalidPackage(String),
-    IoError(ioError, String),
-    NetworkingError(reqwestError, String),
-    DataBaseError(sqliteError, String)
+    IoError(String),
+    NetworkingError(String),
+    DataBaseError(String)
 }
 
 impl Display for InstallError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InstallError::InvalidPackage(msg) => write!(f, "Invalid Package => {}", msg),
-            InstallError::IoError(err, msg) => write!(f, "I/O Error => {} :: {}", msg, err),
-            InstallError::DataBaseError(err, msg) => write!(f, "DataBase Error => {} :: {}", msg, err),
-            InstallError::NetworkingError(err, msg) => write!(f, "Networking Error => {} :: {}", msg, err)
+            InstallError::IoError(msg) => write!(f, "I/O Error => {}", msg),
+            InstallError::DataBaseError(msg) => write!(f, "DataBase Error => {}", msg),
+            InstallError::NetworkingError(msg) => write!(f, "Networking Error => {}", msg)
         }
     }
 }
 
 impl From<ioError> for InstallError {
     fn from(err: ioError) -> Self {
-        InstallError::IoError(err, "NO_MSG".to_string())
+        InstallError::IoError(err.to_string())
     }
 }
 
 impl From<sqliteError> for InstallError {
     fn from(err: sqliteError) -> Self {
-        InstallError::DataBaseError(err, "NO_MSG".to_string())
+        InstallError::DataBaseError(err.to_string())
     }
 }
 
 impl From<reqwestError> for InstallError {
     fn from(err: reqwestError) -> Self {
-        InstallError::NetworkingError(err, "NO_MSG".to_string())
+        InstallError::NetworkingError(err.to_string())
     }
 }
