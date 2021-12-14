@@ -20,31 +20,31 @@ impl Config {
     pub fn new() -> Result<Self, Error> {
         let home = env::home_dir().unwrap()
             .into_os_string().into_string().unwrap();
-            
-        let mut config = Self {
-            cache: PathBuf::from(format!("{}/.opm/cache/pkg_cache", home)),
-            db: PathBuf::from(format!("{}/.opm/db/", home)),
-            rls: PathBuf::from(format!("{}/.opm/cache/rls", home)),
-            tmp: PathBuf::from(format!("{}/.opm/tmp", home)),
-            sqlite: None
-        };
-        
-        Self::setup(&mut config)?;
-        config.sqlite = Some(SQLite::new(&config.db).unwrap());
-
-        Ok(config)
+         
+        Ok(
+            Self {
+                cache: PathBuf::from(format!("{}/.opm/cache/pkg_cache", home)),
+                db: PathBuf::from(format!("{}/.opm/db/pkgs.db", home)),
+                rls: PathBuf::from(format!("{}/.opm/cache/rls", home)),
+                tmp: PathBuf::from(format!("{}/.opm/tmp", home)),
+                sqlite: None
+            }
+        )
     }
     
-    fn setup(&mut self) -> Result<(), Error> {
-        match fs::create_dir_all(&self.db) {
-            Ok(_) => (),
-            Err(e) => match e.kind() {
-                ErrorKind::AlreadyExists => (),
-                _ => panic!("Some error occurred {}", e)
-            }
+    pub fn setup_db(&mut self) -> rusqlite::Result<()> {
+        if self.sqlite.as_ref().is_none() {
+            self.sqlite = Some(
+                SQLite::new(&self.db)?
+            );
         }
+        Ok(())
+    }
 
-        self.db.push("pkgs.db");
+    pub fn setup(&mut self) -> Result<(), Error> {
+        let path = std::path::Path::new(&self.db);
+        let prefix = path.parent().unwrap();
+        fs::create_dir_all(prefix)?;
 
         match fs::create_dir_all(&self.cache) {
             Ok(_) => (),

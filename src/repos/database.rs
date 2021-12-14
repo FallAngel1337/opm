@@ -83,9 +83,9 @@ impl SQLite {
     pub fn lookup(&self, name: &str, exact_match: bool) -> Result<Option<Vec<GenericPackage>>> {
 
         let query = if exact_match {
-            "SELECT * FROM deb_pkgs WHERE name = ?1"
+            "SELECT * FROM deb_installed WHERE name = ?1"
         } else {
-            "SELECT * FROM deb_pkgs WHERE name LIKE %?1%"
+            "SELECT * FROM deb_installed WHERE name LIKE '%?1%'"
         };
 
         let mut result = self.conn.prepare(
@@ -104,7 +104,13 @@ impl SQLite {
             )
         })?;
 
-        Ok(Some(packages.into_iter().filter_map(|pkg| Some(pkg.unwrap())).collect::<Vec<_>>()))
+        Ok(
+            Some (
+                packages.into_iter()
+                    .filter_map(|pkg| pkg.ok())
+                    .collect()
+            )
+        )
     }
 
     pub fn pkg_list(&self) -> Result<Vec<GenericPackage>> {

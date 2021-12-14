@@ -13,7 +13,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         let _pkg = extract::extract(config, name, &config.tmp)?;
         println!("Extracting ...");
     } else {
-        if let Some(pkg) = opm_cache::lookup(&config, name) {
+        if let Some(pkg) = opm_cache::lookup(config, name) {
             if let Some(pkg) = pkg.into_iter().next() {
                 println!("{} is already installed\nFound:", name);
                 println!("{} - {}", pkg.name, pkg.version);

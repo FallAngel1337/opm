@@ -4,9 +4,8 @@ use super::{utils::PackageFormat, database::{GenericPackage, Package}};
 use super::config::Config;
 use rusqlite::Result;
 
-pub fn list_installed(config: &Config) {
-	// config.setup_db();
-
+pub fn list_installed(config: &mut Config) {
+	config.setup_db().expect("Failed to open the database");
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
@@ -32,9 +31,11 @@ pub fn list_installed(config: &Config) {
     }
 }
 
-pub fn lookup(config: &Config, name: &str) -> Option<Vec<GenericPackage>> {
+pub fn lookup(config: &mut Config, name: &str) -> Option<Vec<GenericPackage>> {
+	config.setup_db().expect("Failed to open the database");
+
 	if let Some(sqlite) = config.sqlite.as_ref() {
-		if let Ok(pkgs) = sqlite.lookup(name, false) {
+		if let Ok(pkgs) = sqlite.lookup(name, true) {
 			if let Some(pkgs) = pkgs {
 				if pkgs.len() > 0 {
 					Some(pkgs)
@@ -58,10 +59,14 @@ pub fn search(config: &Config, name: &str) {
 			PackageFormat::Deb => {
 				if let Some(sqlite) = config.sqlite.as_ref() {
 					println!("Found:");
-					if let Ok(pkg) = sqlite.lookup(name, true) {
+					// FIXME: Exact match query
+					if let Ok(pkg) = sqlite.lookup(name, false) {
 						if let Some(pkg) = pkg {
 							println!("{:?}", pkg);
-						}
+						} else {}
+						println!("A");
+					} else {
+						println!("B");
 					}
 				}
 			}
@@ -78,8 +83,11 @@ pub fn search(config: &Config, name: &str) {
 	}
 }
 
-// TODO: Find a better name for this funcion, maybe `populate_db`
-pub fn dump_into_db(config: &mut Config) -> Result<()> {
+///
+/// Find all installed packages and then insert 'em into the database
+/// 
+//TODO: Make better to read
+pub fn populate_db(config: &Config) -> Result<()> {
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
@@ -94,8 +102,10 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
         				signature: "NOPE".to_owned(), // TODO: Get the real signature
 						status: PackageStatus::Installed
 					};
-					let sqlite = config.sqlite.as_ref().unwrap();
-					sqlite.add_package(deb_pkg, false)?;
+
+					if let Some(sqlite) = config.sqlite.as_ref() {
+						sqlite.add_package(deb_pkg, false)?;
+					}
 				};
 
 				Ok(())
