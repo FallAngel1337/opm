@@ -7,7 +7,14 @@ pub struct GenericPackage {
     pub id: String,
     pub name: String,
     pub version: String,
-    pub format: PackageFormat
+    pub format: PackageFormat,
+    pub status: PackageStatus
+}
+
+#[derive(Debug, Clone)]
+pub enum PackageStatus {
+    Installed,
+    NotInstalled
 }
 
 pub trait Package {
@@ -31,11 +38,13 @@ impl SQLite {
     }
 
     fn init(&mut self) -> Result<()> {
+        // pType      TEXT CHECK( pType IN ('M','R','H') )   NOT NULL DEFAULT 'M',
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS deb_pkgs (
-                id string not null,
+                id text not null,
                 name text not null primary key,
-                version text not null
+                version text not null,
+                installed text check (installed in ('Y', 'N')) NOT NULL
             );
             CREATE TABLE IF NOT EXISTS debsrc_pkgs (
                 id integer primary key,
@@ -50,14 +59,21 @@ impl SQLite {
 
     pub fn add_package<P: Package>(&self, package: P) -> Result<()> {
         let package = package.to_generic();
+
         let table = match package.format {
             PackageFormat::Deb => "deb_pkgs",
             _ => panic!("Invalid format in the db")
         };
 
+        let status = match package.status {
+            PackageStatus::Installed => "Y",
+            PackageStatus::NotInstalled => "N",
+            _ => panic!("Invalud status")
+        };
+
         self.conn.execute(
-            &format!("INSERT INTO {} VALUES (?1, ?2, ?3)", table),
-            [package.id, package.name, package.version],
+            &format!("INSERT INTO {} VALUES (?1, ?2, ?3, ?4)", table),
+            [package.id, package.name, package.version, status.to_owned()],
         )?;
 
         Ok(())
@@ -82,7 +98,8 @@ impl SQLite {
                     id: row.get(0)?,
                     name: row.get(1)?,
                     version: row.get(2)?,
-                    format: PackageFormat::Deb
+                    format: PackageFormat::Deb,
+                    status: PackageStatus::Installed
                 }
             )
         })?;
@@ -106,7 +123,8 @@ impl SQLite {
                     id: row.get(0)?,
                     name: row.get(1)?,
                     version: row.get(2)?,
-                    format: PackageFormat::Deb
+                    format: PackageFormat::Deb,
+                    status: PackageStatus::Installed
                 }
             )
         })?;

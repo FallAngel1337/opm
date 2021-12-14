@@ -26,15 +26,13 @@ impl Config {
             db: PathBuf::from(format!("{}/.opm/db/", home)),
             rls: PathBuf::from(format!("{}/.opm/cache/rls", home)),
             tmp: PathBuf::from(format!("{}/.opm/tmp", home)),
-
             sqlite: None
         };
-
+        
         Self::setup(&mut config)?;
         config.sqlite = Some(SQLite::new(&config.db).unwrap());
 
         Ok(config)
-
     }
     
     fn setup(&mut self) -> Result<(), Error> {

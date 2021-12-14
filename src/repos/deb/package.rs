@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Error;
 
-use crate::repos::{config::Config, utils::PackageFormat};
+use crate::repos::{config::Config, utils::PackageFormat, database::PackageStatus};
 use crate::repos::database::{Package, GenericPackage};
 use super::dependencies;
 
@@ -130,15 +130,17 @@ pub struct DebPackage {
     pub control: ControlFile,
     pub signature: String,
     pub kind: PkgKind,
+    pub status: PackageStatus
 }
 
 impl DebPackage {
-    pub fn new(config: &Config, file: &str, kind: PkgKind, signature: String) -> Result<Self, Error> {
+    pub fn new(config: &Config, file: &str, kind: PkgKind, signature: String, status: PackageStatus) -> Result<Self, Error> {
         Ok(
             DebPackage {
                 control: ControlFile::new(config, file)?,
                 signature,
-                kind
+                kind,
+                status
             }
         )
     }
@@ -150,7 +152,8 @@ impl Package for DebPackage {
             id: self.signature.clone(),
             name: self.control.package.clone(),
             version: self.control.version.clone(),
-            format: PackageFormat::Deb
+            format: PackageFormat::Deb,
+            status: self.status.clone()
         }
     }
 }

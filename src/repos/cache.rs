@@ -1,4 +1,4 @@
-use crate::repos::deb::package::DebPackage;
+use crate::repos::{deb::package::DebPackage, database::PackageStatus};
 
 use super::utils::PackageFormat;
 use super::config::Config;
@@ -126,7 +126,8 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
 					let deb_pkg = DebPackage {
 						control: pkg,
 						kind: PkgKind::Binary,
-        				signature: "NOPE".to_owned()
+        				signature: "NOPE".to_owned(),
+						status: PackageStatus::Installed
 					};
 					let sqlite = config.sqlite.as_ref().unwrap();
 					sqlite.add_package(deb_pkg)?;
