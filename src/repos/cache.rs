@@ -1,65 +1,8 @@
 use crate::repos::{deb::package::DebPackage, database::PackageStatus};
 
-use super::utils::PackageFormat;
+use super::{utils::PackageFormat, database::GenericPackage};
 use super::config::Config;
 use rusqlite::Result;
-use std::fs;
-
-///
-/// Lookup into the local cache(~/.opm/cache)
-/// 
-// TODO: Improve it to be less slow
-use super::deb::{package::ControlFile};
-pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Vec<ControlFile>> {
-	let mut pkgs = Vec::new();
-	for entry in fs::read_dir(&config.cache).unwrap() {
-		let entry = entry.unwrap();
-		let path = entry.path();
-		
-		let control = fs::read_to_string(path).unwrap();
-
-		let control = control
-			.split("\n\n")
-			.map(|ctrl| ControlFile::from(config, ctrl));
-			
-		let control = if exact_match {
-			control
-				.filter(|ctrl| ctrl.package == name)
-				.collect::<Vec<_>>()
-		} else {
-			control
-				.filter(|ctrl| ctrl.package.contains(name))
-				.collect::<Vec<_>>()
-		};
-
-		let entry = entry.path()
-			.into_os_string()
-			.into_string()
-			.unwrap();
-
-		let url =  entry
-			.split("/")
-			.last()
-			.unwrap()
-			.replace("_", "/")
-			.split("/")
-			.next()
-			.unwrap()
-			.to_owned();
-
-		control.into_iter().for_each(|mut pkg| {
-			let url = format!("{}/ubuntu/{}", url, &pkg.filename);
-			pkg.set_filename(&url);
-			pkgs.push(pkg);
-		});
-	}
-
-	if pkgs.len() > 0 {
-		Some(pkgs)
-	} else {
-		None
-	}
-}
 
 pub fn list_installed(config: &Config) {
 	// config.setup_db();
@@ -89,13 +32,33 @@ pub fn list_installed(config: &Config) {
     }
 }
 
+pub fn lookup(config: &Config, name: &str) -> Option<Vec<GenericPackage>> {
+	if let Some(sqlite) = config.sqlite.as_ref() {
+		if let Ok(pkgs) = sqlite.lookup(name, true) {
+			if let Some(pkgs) = pkgs {
+				if pkgs.len() > 0 {
+					Some(pkgs)
+				} else {
+					None
+				}
+			} else {
+				None
+			}
+		} else {
+			panic!("Database query failed");
+		}
+	} else {
+		panic!("Something gone wrong")
+	}
+}
+
 pub fn search(config: &Config, name: &str) {
     if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
 				if let Some(sqlite) = config.sqlite.as_ref() {
 					println!("Found:");
-					if let Ok(pkg) = sqlite.lookup(name, true) {
+					if let Ok(pkg) = sqlite.lookup(name, false) {
 						if let Some(pkg) = pkg {
 							println!("{:?}", pkg);
 						}
@@ -120,7 +83,8 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
 		match pkg_fmt {
 			PackageFormat::Deb => {
 				use super::deb::{cache, package::PkgKind};
-				let pkgs = cache::dpkg_cache_dump(&config);
+
+				let pkgs = cache::dpkg_cache_dump(&config); // dump all the installed
 				println!("Detected a dpkg database (assuming it's debian)");
 				for pkg in pkgs.into_iter()  {
 					let deb_pkg = DebPackage {
@@ -132,7 +96,9 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
 					let sqlite = config.sqlite.as_ref().unwrap();
 					sqlite.add_package(deb_pkg)?;
 				};
-				
+
+				// let pkgs = cache::cache_dump(&config); // dump all the cached packages
+			
 				Ok(())
 			}
 			PackageFormat::Rpm => {

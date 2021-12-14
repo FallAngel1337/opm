@@ -80,7 +80,7 @@ impl SQLite {
     }
 
     // TODO: Return a trait object and remove hardcoded table
-    pub fn lookup(&self, name: &str, exact_match: bool) -> Result<Option<GenericPackage>> {
+    pub fn lookup(&self, name: &str, exact_match: bool) -> Result<Option<Vec<GenericPackage>>> {
 
         let query = if exact_match {
             "SELECT * FROM deb_pkgs WHERE name = ?1"
@@ -92,7 +92,7 @@ impl SQLite {
             query
         )?;
 
-        let mut package = result.query_map([name], |row| {
+        let packages = result.query_map([name], |row| {
             Ok (
                 GenericPackage {
                     id: row.get(0)?,
@@ -104,12 +104,7 @@ impl SQLite {
             )
         })?;
 
-        if let Some(pkg) = package.next() {
-            let pkg = pkg?;
-            Ok(Some(pkg))
-        } else {
-            Ok(None)
-        }
+        Ok(Some(packages.into_iter().filter_map(|pkg| Some(pkg.unwrap())).collect::<Vec<_>>()))
     }
 
     pub fn pkg_list(&self) -> Result<Vec<GenericPackage>> {
