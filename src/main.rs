@@ -3,6 +3,11 @@ use opm::repos::{self, config::Config};
 use std::process;
 
 fn main() {
+	let mut config = Config::new().unwrap_or_else(|err| {
+		eprintln!("Could not complete the configuration due {}", err);
+		process::exit(1);
+	});
+
     let matches = App::new("Oxidized Package Manager")
 				.version("v0.1")
 				.author("FallAngel <fallangel@protonmail.com>")
@@ -56,11 +61,6 @@ fn main() {
 	};
 
     if let Some(package) = matches.subcommand_matches("install") {
-		let mut config = Config::new().unwrap_or_else(|err| {
-			eprintln!("Could not complete the configuration due {}", err);
-			process::exit(1);
-		});
-
         repos::install(&mut config, package.value_of("package").unwrap()).unwrap_or_else(|err| {
             println!("Got an error during installation :: {}", err);
             process::exit(1);
@@ -84,24 +84,14 @@ fn main() {
     };
 
     if let Some(package) = matches.subcommand_matches("search") {
-		let config = Config::new().unwrap_or_else(|err| {
-			eprintln!("Could not complete the configuration due {}", err);
-			process::exit(1);
-		});
-
 		let pkg =  package.value_of("package").unwrap();
 		println!("Searching for {} ...", package.value_of("package").unwrap());
 		repos::search(&config, pkg);
     };
 
     if let Some(_) = matches.subcommand_matches("setup") {
-		let mut config = Config::new().unwrap_or_else(|err| {
-			eprintln!("Could not complete the configuration due {}", err);
-			process::exit(1);
-		});
-
 		println!("Configuring opm, please be patient. While wait go take a cup of coffee ☕");
-		
+
 		repos::setup(&mut config).unwrap_or_else(|err| {
 			eprintln!("Could not setup the package manager due {}", err);
 			process::exit(1);

@@ -13,6 +13,10 @@ pub enum InstallError {
     DataBaseError(String)
 }
 
+pub enum SetupError {
+    Error(String)
+}
+
 impl Display for InstallError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -39,5 +43,19 @@ impl From<sqliteError> for InstallError {
 impl From<reqwestError> for InstallError {
     fn from(err: reqwestError) -> Self {
         InstallError::NetworkingError(err.to_string())
+    }
+}
+
+impl Display for SetupError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SetupError::Error(msg) => write!(f, "{}", msg)
+        }
+    }
+}
+
+impl<E: std::error::Error + 'static> From<E> for SetupError {
+    fn from(error: E) -> Self {
+        SetupError::Error(error.to_string())
     }
 }

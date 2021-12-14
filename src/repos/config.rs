@@ -8,7 +8,7 @@ use super::database::SQLite;
 #[derive(Debug)]
 pub struct Config {
     pub cache: PathBuf,
-    pub pkgs: PathBuf,
+    pub db: PathBuf,
     pub rls: PathBuf,
     pub tmp: PathBuf,
 
@@ -20,30 +20,35 @@ impl Config {
     pub fn new() -> Result<Self, Error> {
         let home = env::home_dir().unwrap()
             .into_os_string().into_string().unwrap();
-        let mut result = Self {
+            
+        let mut config = Self {
             cache: PathBuf::from(format!("{}/.opm/cache/pkg_cache", home)),
-            pkgs: PathBuf::from(format!("{}/.opm/pkgs", home)),
+            db: PathBuf::from(format!("{}/.opm/db/", home)),
             rls: PathBuf::from(format!("{}/.opm/cache/rls", home)),
             tmp: PathBuf::from(format!("{}/.opm/tmp", home)),
 
             sqlite: None
         };
 
-        Self::setup(&mut result)?;
-        result.sqlite = Some(SQLite::new(&mut result.pkgs.clone()).unwrap());
-        Ok(result)
-    }
+        Self::setup(&mut config)?;
+        config.sqlite = Some(SQLite::new(&config.db).unwrap());
 
+        Ok(config)
+
+    }
+    
     fn setup(&mut self) -> Result<(), Error> {
-        match fs::create_dir_all(&self.cache) {
+        match fs::create_dir_all(&self.db) {
             Ok(_) => (),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => (),
                 _ => panic!("Some error occurred {}", e)
             }
         }
-        
-        match fs::create_dir_all(&self.pkgs) {
+
+        self.db.push("pkgs.db");
+
+        match fs::create_dir_all(&self.cache) {
             Ok(_) => (),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => (),

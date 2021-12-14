@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use rusqlite::{Connection, Result};
 use super::utils::PackageFormat;
 
@@ -21,22 +21,13 @@ pub struct SQLite {
 }
 
 impl SQLite {
-    pub fn new(db: &mut PathBuf) -> Result<Self> {
-        db.push("installed.db");
-        if Path::new(db).exists() {
-            let sql = Self {
-                db: db.to_path_buf(),
-                conn: Connection::open(&db)?
-            };
-            Ok(sql)
-        } else {
-            let mut sql = Self {
-                db: db.to_path_buf(),
-                conn: Connection::open(db)?
-            };
-            sql.init()?;
-            Ok(sql)
-        }
+    pub fn new(db: &PathBuf) -> Result<Self> {
+        let mut sql = Self {
+            db: db.to_path_buf(),
+            conn: Connection::open(&db)?
+        };
+        sql.init()?;
+        Ok(sql)
     }
 
     fn init(&mut self) -> Result<()> {

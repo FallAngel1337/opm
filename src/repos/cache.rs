@@ -62,9 +62,12 @@ pub fn cache_lookup(config: &Config, name: &str, exact_match: bool) -> Option<Ve
 }
 
 pub fn list_installed(config: &Config) {
+	// config.setup_db();
+
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
+				
 				if let Some(sqlite) = config.sqlite.as_ref() {
 					if let Ok(pkg) = sqlite.pkg_list() {
 						pkg.into_iter().for_each(|pkg| {
@@ -118,7 +121,7 @@ pub fn dump_into_db(config: &mut Config) -> Result<()> {
 			PackageFormat::Deb => {
 				use super::deb::{cache, package::PkgKind};
 				let pkgs = cache::dpkg_cache_dump(&config);
-				println!("Detect a dpkg database (assuming it's debian)");
+				println!("Detected a dpkg database (assuming it's debian)");
 				for pkg in pkgs.into_iter()  {
 					let deb_pkg = DebPackage {
 						control: pkg,
