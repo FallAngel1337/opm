@@ -38,42 +38,42 @@ impl SQLite {
     }
 
     fn init(&mut self) -> Result<()> {
-        // pType      TEXT CHECK( pType IN ('M','R','H') )   NOT NULL DEFAULT 'M',
         self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS deb_pkgs (
+            "CREATE TABLE IF NOT EXISTS deb_cache (
                 id text not null,
                 name text not null primary key,
-                version text not null,
-                installed text check (installed in ('Y', 'N')) NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS debsrc_pkgs (
-                id integer primary key,
-                name text not null
-            )",
-            // add more fields in the future
-            []
+                version text not null
+            )", []
         )?;
+
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS deb_installed (
+                id text not null,
+                name text not null primary key,
+                version text not null
+            )", []
+        )?;
+        
+            // add more fields in the future
 
         Ok(())
     }
 
-    pub fn add_package<P: Package>(&self, package: P) -> Result<()> {
+    pub fn add_package<P: Package>(&self, package: P, cache: bool) -> Result<()> {
         let package = package.to_generic();
 
         let table = match package.format {
-            PackageFormat::Deb => "deb_pkgs",
+            PackageFormat::Deb => if cache {
+                "deb_cache"
+            } else {
+                "deb_installed"
+            },
             _ => panic!("Invalid format in the db")
         };
 
-        let status = match package.status {
-            PackageStatus::Installed => "Y",
-            PackageStatus::NotInstalled => "N",
-            _ => panic!("Invalud status")
-        };
-
         self.conn.execute(
-            &format!("INSERT INTO {} VALUES (?1, ?2, ?3, ?4)", table),
-            [package.id, package.name, package.version, status.to_owned()],
+            &format!("INSERT INTO {} VALUES (?1, ?2, ?3)", table),
+            [package.id, package.name, package.version],
         )?;
 
         Ok(())
