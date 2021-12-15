@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, io::ErrorKind};
 
 use super::{config::Config, errors::SetupError};
 use super::cache;
@@ -21,6 +21,7 @@ pub fn setup(config: &mut Config) -> Result<(), SetupError> {
                 println!("Removing old {:?}", config.db);
                 std::fs::remove_file(&config.db)?;
                 config.setup_db()?;
+                println!("Populating the database");
                 cache::populate_db(config)?;
             }
             _ => ()
@@ -42,4 +43,15 @@ pub fn setup(config: &mut Config) -> Result<(), SetupError> {
     }
 
     Ok(())
+}
+
+pub fn roll_back(config: &Config) {
+    println!("Rolling back ...");
+    match std::fs::remove_dir_all(&config.root){
+        Ok(_) => (),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => (),
+            _ => panic!("fuck {}", e)
+        }
+    }
 }

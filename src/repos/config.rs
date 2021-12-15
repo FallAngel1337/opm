@@ -7,6 +7,7 @@ use super::database::SQLite;
 
 #[derive(Debug)]
 pub struct Config {
+    pub root: PathBuf,
     pub cache: PathBuf,
     pub db: PathBuf,
     pub rls: PathBuf,
@@ -23,6 +24,7 @@ impl Config {
          
         Ok(
             Self {
+                root: PathBuf::from(format!("{}/.opm/", home)),
                 cache: PathBuf::from(format!("{}/.opm/cache/pkg_cache", home)),
                 db: PathBuf::from(format!("{}/.opm/db/pkgs.db", home)),
                 rls: PathBuf::from(format!("{}/.opm/cache/rls", home)),
@@ -32,6 +34,12 @@ impl Config {
         )
     }
     
+    pub fn close_db(&self) {
+        if let Some(conn) = self.sqlite.as_ref() {
+            conn.close()
+        }
+    }
+
     pub fn setup_db(&mut self) -> rusqlite::Result<()> {
         if self.sqlite.as_ref().is_none() {
             self.sqlite = Some(

@@ -2,7 +2,7 @@
 
 const PKG_FMT: &'static str = "PKG_FMT"; // The package format; It could be .deb, .rpm, etc
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PackageFormat {
     Deb,
     Rpm,

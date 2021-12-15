@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Error;
 
-use crate::repos::{config::Config, utils::PackageFormat, database::PackageStatus};
-use crate::repos::database::{Package, GenericPackage};
+use crate::repos::{config::Config, errors::ConfigError};
 use super::dependencies;
 
 ///
@@ -36,72 +35,150 @@ pub enum PkgKind {
 ///
 /// Debian's control file (mandatory fields)
 ///
+// TODO: Add package priority
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControlFile {
     pub package: String,
+    // pub priority: PkgPriority
     pub version: String,
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
     pub depends: Option<Vec<ControlFile>>,
     pub filename: String,
+    pub size: String,
+    pub md5sum: String,
+    pub sha1: String,
+    pub sha256: String,
+    pub sha512: String
 }
 
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(config: &Config, file: &str) -> Result<Self, Error> {
+    pub fn new(config: &Config, file: &str) -> Result<Self, ConfigError> {
         let contents = fs::read_to_string(file)?;
+        // println!("GOT : {}", contents);
+        let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
-        let mut map: HashMap<String, String> = HashMap::new();
-
+        // FIXME: Find a better way of doing it
         for line in contents.lines() {
-            let values = line.split(":").collect::<Vec<&str>>();
-            map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
+            let line = line.trim();
+            let values = line.splitn(2, ":").map(|line| line.to_owned()).collect::<Vec<_>>();
+            map.insert(
+                if let Some(v) = values.get(0) {
+                    Some(v.to_owned())
+                } else {
+                    None
+                },
+
+                if let Some(v) = values.get(1) {
+                    Some(v.to_owned())
+                } else {
+                    None
+                }
+            );
         };
 
-        let depends = Self::split_deps(map.get("Depends"));
+        let depends = Self::split_deps(Some(&Self::try_get(&map, "Depends")?)); /* Self::split_deps(map.get("Depends"));*/
 
-        Ok(
-            Self {
-                package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-                depends: dependencies::parse_dependencies(config, depends),
-                filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            }
-        )
-    }
-
-    pub fn from(config: &Config, contents: &str) -> Self {
-        let mut map: HashMap<String, String> = HashMap::new();
-
-        for line in contents.lines() {
-            let values = line.splitn(2, ":").collect::<Vec<&str>>();
-            map.insert(String::from(*values.get(0).unwrap_or(&"NONE")), String::from(*values.get(1).unwrap_or(&"NONE")));
-        };
-
-        let depends = Self::split_deps(map.get("Depends"));
         let result = Self {
-            package: map.get("Package").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            version: map.get("Version").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            architecture: map.get("Architecture").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            maintainer: map.get("Maintainer").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            description: map.get("Description").unwrap_or(&String::from("NONE")).trim().to_owned(),
-            filename: map.get("Filename").unwrap_or(&String::from("NONE")).trim().to_owned(),
+            package: Self::try_get(&map, "Package")?,
+            version: Self::try_get(&map, "Version")?,
+            architecture: Self::try_get(&map, "Architecture")?,
+            maintainer: Self::try_get(&map, "Maintainer")?,
+            description: Self::try_get(&map, "Description")?,
             depends: None,
+            // Should be like the others
+            // But, when reading /var/lib/dpkg/status it does not have those fields
+            filename: Self::try_get(&map, "Filename").unwrap_or_default(),
+            size: Self::try_get(&map, "Size").unwrap_or_default(),
+            md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
+            sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
+            sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
+            sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
         };
 
         match depends {
             Some(v) => 
-                Self {
-                    depends: dependencies::parse_dependencies(config, Some(v)),
-                    ..result
-                },
+                Ok (
+                    Self {
+                        depends: dependencies::parse_dependencies(config, Some(v)),
+                        ..result
+                    },
+                ),
             None => {
-                result
+                Ok (
+                    result
+                )
             }
+        }
+    }
+
+    pub fn from(config: &Config, contents: &str) -> Result<Self, ConfigError> {
+        // println!("GOT : {}", contents);
+        let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
+
+        // FIXME: Find a better way of doing it
+        for line in contents.lines() {
+            let line = line.trim();
+            let values = line.splitn(2, ":").map(|line| line.to_owned()).collect::<Vec<_>>();
+            map.insert(
+                if let Some(v) = values.get(0) {
+                    Some(v.to_owned())
+                } else {
+                    None
+                },
+
+                if let Some(v) = values.get(1) {
+                    Some(v.to_owned())
+                } else {
+                    None
+                }
+            );
+        };
+
+        let depends = Self::split_deps(Some(&Self::try_get(&map, "Depends")?)); /* Self::split_deps(map.get("Depends"));*/
+
+        let result = Self {
+            package: Self::try_get(&map, "Package")?,
+            version: Self::try_get(&map, "Version")?,
+            architecture: Self::try_get(&map, "Architecture")?,
+            maintainer: Self::try_get(&map, "Maintainer")?,
+            description: Self::try_get(&map, "Description")?,
+            depends: None,
+            // Should be like the others
+            // But, when reading /var/lib/dpkg/status it does not have those fields
+            filename: Self::try_get(&map, "Filename").unwrap_or_default(),
+            size: Self::try_get(&map, "Size").unwrap_or_default(),
+            md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
+            sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
+            sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
+            sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
+        };
+
+        match depends {
+            Some(v) => 
+                Ok (
+                    Self {
+                        depends: dependencies::parse_dependencies(config, Some(v)),
+                        ..result
+                    },
+                ),
+            None => {
+                Ok (
+                    result
+                )
+            }
+        }
+    }
+
+    // TODO: Maybe I need to make this easier to read
+    fn try_get(hashmap: &HashMap<Option<String>, Option<String>>, field: &str) -> Result<String, ConfigError> {
+        let value = hashmap.get(&Some(field.to_owned()));
+        if value.is_none() {
+            Err(ConfigError::Error("Invalid debain's control file! Missing \"Package\" field".to_owned()))
+        } else {
+            Ok (value.unwrap().as_ref().unwrap().clone().trim().to_owned())
         }
     }
 
@@ -128,32 +205,17 @@ impl ControlFile {
 #[derive(Debug, Clone)]
 pub struct DebPackage {
     pub control: ControlFile,
-    pub signature: String,
     pub kind: PkgKind,
-    pub status: PackageStatus
 }
 
 impl DebPackage {
-    pub fn new(config: &Config, file: &str, kind: PkgKind, signature: String, status: PackageStatus) -> Result<Self, Error> {
+    pub fn new(config: &Config, file: &str, kind: PkgKind, signature: String) -> Result<Self, ConfigError> {
         Ok(
             DebPackage {
                 control: ControlFile::new(config, file)?,
-                signature,
+
                 kind,
-                status
             }
         )
-    }
-}
-
-impl Package for DebPackage {
-    fn to_generic(&self) -> crate::repos::database::GenericPackage {
-        GenericPackage {
-            id: self.signature.clone(),
-            name: self.control.package.clone(),
-            version: self.control.version.clone(),
-            format: PackageFormat::Deb,
-            status: self.status.clone()
-        }
     }
 }

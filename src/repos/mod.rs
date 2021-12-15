@@ -11,8 +11,10 @@ mod setup;
 pub mod config;
 pub mod utils;
 pub mod errors;
+mod search;
 
 pub use install::install;
 pub use update::update;
-pub use cache::{list_installed, search};
-pub use setup::setup;
+pub use search::search;
+pub use cache::list_installed;
+pub use setup::{setup, roll_back};

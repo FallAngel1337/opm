@@ -2,25 +2,28 @@
 /// Debian package install
 /// 
 
-use crate::repos::errors::InstallError;
+use crate::repos::{errors::InstallError, utils::PackageFormat};
 use crate::repos::config::Config;
-use crate::repos::cache as opm_cache;
+use super::cache;
 use super::{extract, download};
 
 // TODO: Check for newer versions of the package if installed
 pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     if name.ends_with(".deb") {
         let _pkg = extract::extract(config, name, &config.tmp)?;
+        //TODO: Verify if this package is alredy installed
         println!("Extracting ...");
     } else {
-        if let Some(pkg) = opm_cache::lookup(config, name) {
-            if let Some(pkg) = pkg.into_iter().next() {
-                println!("{} is already installed\nFound:", name);
-                println!("{} - {}", pkg.name, pkg.version);
-            }
-        } else {
-            println!("{} can be installed", name);
+        let pkg = cache::lookup(config, name, true, false)?;
+        if !pkg.is_empty() {
+            let pkg = pkg.into_iter().next().unwrap();
+            println!("{} is already installed\nFound:", name);
+            println!("{} - {}", pkg.control.package, pkg.control.version);
+            return Err(InstallError::AlreadyInstalled);
         }
+
+        // Downloand and call install on the downloaded packages
+        println!("Downloading {} for debian ... {:?}", name, pkg);
     }
     
 

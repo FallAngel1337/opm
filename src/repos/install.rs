@@ -6,12 +6,12 @@ use super::utils::PackageFormat;
 use super::errors::InstallError;
 use super::config::Config;
 
-pub fn install(config: &mut Config, file: &str) -> Result<(), InstallError> {
+pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     if let Some(pkg_fmt) = PackageFormat::get_format() {
         match pkg_fmt {
             PackageFormat::Deb => {
                 use super::deb;
-                deb::install(config, file)?;
+                deb::install(config, name)?; 
             }
             PackageFormat::Rpm => {
                 println!("It's a RHEL(-based) distro");

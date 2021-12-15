@@ -10,3 +10,4 @@ pub mod sources;
 
 pub use install::install;
 pub use update::update;
+pub use cache::pkg_list;

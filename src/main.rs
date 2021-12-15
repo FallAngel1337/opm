@@ -56,7 +56,7 @@ fn main() {
 
 	match matches.occurrences_of("list") {
 		0 => (),
-		1 => println!("We're woking on that ;)"),
+		1 => repos::list_installed(&mut config),
 		_ => println!("Invalid argument")
 	};
 
@@ -86,7 +86,7 @@ fn main() {
     if let Some(package) = matches.subcommand_matches("search") {
 		let pkg =  package.value_of("package").unwrap();
 		println!("Searching for {} ...", package.value_of("package").unwrap());
-		repos::search(&config, pkg);
+		repos::search(&mut config, pkg);
     };
 
     if let Some(_) = matches.subcommand_matches("setup") {
@@ -94,6 +94,7 @@ fn main() {
 
 		repos::setup(&mut config).unwrap_or_else(|err| {
 			eprintln!("Could not setup the package manager due {}", err);
+			repos::roll_back(&config);
 			process::exit(1);
 		});
 

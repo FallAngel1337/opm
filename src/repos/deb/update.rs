@@ -6,7 +6,7 @@ use std::fs::{self, File};
 use std::str;
 
 use super::sources::DebianSource;
-use crate::repos::{errors::InstallError, deb::package::{ControlFile, DebPackage, PkgKind}, database::PackageStatus};
+use crate::repos::{errors::InstallError, deb::package::{ControlFile, DebPackage, PkgKind}};
 use crate::repos::config::Config;
 
 use crate::repos::cache as opm_cache;

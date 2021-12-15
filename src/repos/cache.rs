@@ -1,6 +1,6 @@
-use crate::repos::{deb::package::DebPackage, database::PackageStatus};
+use crate::repos::deb::package::DebPackage;
 
-use super::{utils::PackageFormat, database::{GenericPackage, Package}};
+use super::{utils::PackageFormat, database::SQLite};
 use super::config::Config;
 use rusqlite::Result;
 
@@ -9,15 +9,14 @@ pub fn list_installed(config: &mut Config) {
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
-				
-				if let Some(sqlite) = config.sqlite.as_ref() {
-					if let Ok(pkg) = sqlite.pkg_list() {
-						pkg.into_iter().for_each(|pkg| {
-							println!("{:?}", pkg);
-						})
-					}
-				}
-			}
+				use super::deb;
+				deb::pkg_list(&config)
+					.unwrap()
+					.into_iter()
+					.for_each(|pkg| {
+						println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)
+					});
+			},
 			PackageFormat::Rpm => {
 				println!("It's a RHEL(-based) distro");
 				}
@@ -31,63 +30,13 @@ pub fn list_installed(config: &mut Config) {
     }
 }
 
-pub fn lookup(config: &mut Config, name: &str) -> Option<Vec<GenericPackage>> {
-	config.setup_db().expect("Failed to open the database");
-
-	if let Some(sqlite) = config.sqlite.as_ref() {
-		if let Ok(pkgs) = sqlite.lookup(name, true) {
-			if let Some(pkgs) = pkgs {
-				if pkgs.len() > 0 {
-					Some(pkgs)
-				} else {
-					None
-				}
-			} else {
-				None
-			}
-		} else {
-			panic!("Database query failed");
-		}
-	} else {
-		panic!("Something gone wrong")
-	}
-}
-
-pub fn search(config: &Config, name: &str) {
-    if let Some(pkg_fmt) = PackageFormat::get_format() {
-		match pkg_fmt {
-			PackageFormat::Deb => {
-				if let Some(sqlite) = config.sqlite.as_ref() {
-					println!("Found:");
-					// FIXME: Exact match query
-					if let Ok(pkg) = sqlite.lookup(name, false) {
-						if let Some(pkg) = pkg {
-							println!("{:?}", pkg);
-						} else {}
-						println!("A");
-					} else {
-						println!("B");
-					}
-				}
-			}
-			PackageFormat::Rpm => {
-				println!("It's a RHEL(-based) distro");
-			}
-			PackageFormat::Other => {
-				println!("Actually we do not have support for you distro!");
-			}
-		}
-    } else {
-        eprintln!("Consider define `PKG_FMT` environment variable!");
-        std::process::exit(1);
-	}
-}
-
 ///
 /// Find all installed packages and then insert 'em into the database
 /// 
 //TODO: Make better to read
-pub fn populate_db(config: &Config) -> Result<()> {
+pub fn populate_db(config: &mut Config) -> Result<()> {
+	config.setup_db().expect("Failed to open the database");
+
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
@@ -95,16 +44,17 @@ pub fn populate_db(config: &Config) -> Result<()> {
 
 				let pkgs = cache::dpkg_cache_dump(&config); // dump all the installed
 				println!("Detected a dpkg database (assuming it's debian)");
-				for pkg in pkgs.into_iter()  {
+				for pkg in pkgs.into_iter().filter_map(|pkg| pkg.ok())  {
+					// println!("Dumping: {:#?}", pkg);
 					let deb_pkg = DebPackage {
 						control: pkg,
 						kind: PkgKind::Binary,
-        				signature: "NOPE".to_owned(), // TODO: Get the real signature
-						status: PackageStatus::Installed
 					};
 
-					if let Some(sqlite) = config.sqlite.as_ref() {
-						sqlite.add_package(deb_pkg, false)?;
+					if let Some(_) = config.sqlite.as_ref() {
+						cache::add_package(config, deb_pkg, false)?;
+					} else {
+						println!("Meh");
 					}
 				};
 
@@ -137,11 +87,10 @@ pub fn update_cache(config: &Config) -> Result<()> {
 					let deb_pkg = DebPackage {
 						control: pkg,
 						kind: PkgKind::Binary,
-        				signature: "NOPE".to_owned(), // TODO: Get the real signature
-						status: PackageStatus::Installed
 					};
 					let sqlite = config.sqlite.as_ref().unwrap();
-					sqlite.add_package(deb_pkg, true)?;
+					// sqlite.add_package(deb_pkg, true)?;
+					// add here
 				};
 
 				Ok(())
@@ -161,12 +110,7 @@ pub fn update_cache(config: &Config) -> Result<()> {
 	}
 }
 
-pub fn load_into<P: Package>(config: &mut Config, data: Vec<P>) -> Result<()> {
-	if let Some(sqlite) = config.sqlite.as_ref() {
-		for pkg in data.into_iter() {
-			sqlite.add_package(pkg, true)?;
-		}
-	}
+pub fn lookup(config: &Config, name: &str, exact_match: bool,
+	cache: bool) {
 
-	Ok(())
 }

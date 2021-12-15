@@ -10,10 +10,15 @@ pub enum InstallError {
     InvalidPackage(String),
     IoError(String),
     NetworkingError(String),
-    DataBaseError(String)
+    DataBaseError(String),
+    AlreadyInstalled
 }
 
 pub enum SetupError {
+    Error(String)
+}
+
+pub enum ConfigError {
     Error(String)
 }
 
@@ -22,8 +27,9 @@ impl Display for InstallError {
         match self {
             InstallError::InvalidPackage(msg) => write!(f, "Invalid Package => {}", msg),
             InstallError::IoError(msg) => write!(f, "I/O Error => {}", msg),
+            InstallError::NetworkingError(msg) => write!(f, "Networking Error => {}", msg),
             InstallError::DataBaseError(msg) => write!(f, "DataBase Error => {}", msg),
-            InstallError::NetworkingError(msg) => write!(f, "Networking Error => {}", msg)
+            InstallError::AlreadyInstalled => write!(f, "Package is already installed")
         }
     }
 }
@@ -46,6 +52,12 @@ impl From<reqwestError> for InstallError {
     }
 }
 
+impl From<ConfigError> for InstallError {
+    fn from(err: ConfigError) -> Self {
+        InstallError::InvalidPackage(err.to_string())
+    }
+}
+
 impl Display for SetupError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -57,5 +69,25 @@ impl Display for SetupError {
 impl<E: std::error::Error + 'static> From<E> for SetupError {
     fn from(error: E) -> Self {
         SetupError::Error(error.to_string())
+    }
+}
+
+impl<E: std::error::Error + 'static> From<E> for ConfigError {
+    fn from(error: E) -> Self {
+        ConfigError::Error(error.to_string())
+    }
+}
+
+impl Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::Error(msg) => write!(f, "{}", msg)
+        }
+    }
+}
+
+impl From<InstallError> for ConfigError {
+    fn from(err: InstallError) -> Self {
+        ConfigError::Error(err.to_string())
     }
 }
