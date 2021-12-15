@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, cell::RefCell, borrow::Borrow};
 use rusqlite::{Connection, Result};
 use super::utils::PackageFormat;
 
@@ -24,21 +24,34 @@ pub trait Package {
 #[derive(Debug)]
 pub struct SQLite {
     pub db: PathBuf,
-    conn: Connection
+    conn: RefCell<Option<Connection>>
 }
 
 impl SQLite {
     pub fn new(db: &PathBuf) -> Result<Self> {
         let mut sql = Self {
             db: db.to_path_buf(),
-            conn: Connection::open(&db)?
+            conn: RefCell::new(Some(Connection::open(&db)?))
         };
         sql.init()?;
         Ok(sql)
     }
 
+    fn execute<P: rusqlite::Params>(&self, query: &str, params: P) -> Result<()> {
+        if let Some(sqlite) = self.conn.borrow().as_ref() {
+            sqlite.execute(query, params)?;
+        }
+        // let sqlite = self.conn.borrow();
+        // sqlite.execute();
+        Ok(())
+    }
+
+    pub fn close(&self) {
+        *(self.conn.borrow_mut()) = None;
+    }
+
     fn init(&mut self) -> Result<()> {
-        self.conn.execute(
+        self.execute(
             "CREATE TABLE IF NOT EXISTS deb_cache (
                 id text not null,
                 name text not null primary key,
@@ -46,7 +59,7 @@ impl SQLite {
             )", []
         )?;
 
-        self.conn.execute(
+        self.execute(
             "CREATE TABLE IF NOT EXISTS deb_installed (
                 id text not null,
                 name text not null primary key,
@@ -54,7 +67,7 @@ impl SQLite {
             )", []
         )?;
         
-            // add more fields in the future
+        // add more fields in the future
 
         Ok(())
     }
@@ -71,7 +84,7 @@ impl SQLite {
             _ => panic!("Invalid format in the db")
         };
 
-        self.conn.execute(
+        self.execute(
             &format!("INSERT INTO {} VALUES (?1, ?2, ?3)", table),
             [package.id, package.name, package.version],
         )?;
@@ -88,50 +101,59 @@ impl SQLite {
             "SELECT * FROM deb_installed WHERE name LIKE '%?1%'"
         };
 
-        let mut result = self.conn.prepare(
-            query
-        )?;
-
-        let packages = result.query_map([name], |row| {
+        if let Some(sqlite) = self.conn.borrow().as_ref() {
+            let mut result = sqlite.prepare(query)?;
+            let packages = result.query_map([name], |row| {
+                Ok (
+                    GenericPackage {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        version: row.get(2)?,
+                        format: PackageFormat::Deb,
+                        status: PackageStatus::Installed
+                    }
+                )
+            })?;
+    
+            Ok(
+                Some (
+                    packages.into_iter()
+                        .filter_map(|pkg| pkg.ok())
+                        .collect()
+                )
+            )
+        } else {
             Ok (
-                GenericPackage {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    version: row.get(2)?,
-                    format: PackageFormat::Deb,
-                    status: PackageStatus::Installed
-                }
+                None
             )
-        })?;
+        }
 
-        Ok(
-            Some (
-                packages.into_iter()
-                    .filter_map(|pkg| pkg.ok())
-                    .collect()
-            )
-        )
     }
 
     pub fn pkg_list(&self) -> Result<Vec<GenericPackage>> {
-        let mut result = self.conn.prepare(
-            "SELECT * FROM deb_pkgs",
-        )?;
-
-        let package = result.query_map([], |row| {
-            Ok (
-                GenericPackage {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    version: row.get(2)?,
-                    format: PackageFormat::Deb,
-                    status: PackageStatus::Installed
-                }
+        
+        if let Some(sqlite) = self.conn.borrow().as_ref() {
+            let mut result = sqlite.prepare("SELECT * FROM deb_installed")?;
+            let package = result.query_map([], |row| {
+                Ok (
+                    GenericPackage {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                        version: row.get(2)?,
+                        format: PackageFormat::Deb,
+                        status: PackageStatus::Installed
+                    }
+                )
+            })?;
+    
+            Ok(
+                package.map(|pkg| pkg.unwrap()).collect::<Vec<_>>()
             )
-        })?;
+        } else {
+            Ok (
+                vec![]
+            )
+        }
 
-        Ok(
-            package.map(|pkg| pkg.unwrap()).collect::<Vec<_>>()
-        )
     }
 }
