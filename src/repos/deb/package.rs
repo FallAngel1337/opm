@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::fs;
-use std::io::Error;
 
 use crate::repos::{config::Config, errors::ConfigError};
 use super::dependencies;
@@ -209,7 +208,7 @@ pub struct DebPackage {
 }
 
 impl DebPackage {
-    pub fn new(config: &Config, file: &str, kind: PkgKind, signature: String) -> Result<Self, ConfigError> {
+    pub fn new(config: &Config, file: &str, kind: PkgKind) -> Result<Self, ConfigError> {
         Ok(
             DebPackage {
                 control: ControlFile::new(config, file)?,

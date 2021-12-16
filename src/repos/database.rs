@@ -1,6 +1,5 @@
 use std::{path::PathBuf, cell::RefCell};
 use rusqlite::{Connection, Result};
-use super::utils::PackageFormat;
 
 #[derive(Debug)]
 pub struct SQLite {

@@ -1,16 +1,13 @@
 use xz2::read::XzDecoder;
 
 use reqwest;
-use std::{io::{self, ErrorKind, prelude::*}, thread::LocalKey};
+use std::{io::{self, ErrorKind, prelude::*}};
 use std::fs::{self, File};
 use std::str;
 
 use super::sources::DebianSource;
-use crate::repos::{errors::InstallError, deb::package::{ControlFile, DebPackage, PkgKind}};
+use crate::repos::errors::InstallError;
 use crate::repos::config::Config;
-
-use crate::repos::cache as opm_cache;
-use super::cache as deb_cache;
 
 fn clear(config: &Config) -> Result<(), InstallError> {
     match fs::remove_dir_all(&config.cache){
@@ -49,7 +46,7 @@ fn clear(config: &Config) -> Result<(), InstallError> {
 pub async fn update(config: &mut Config, repos: &Vec<DebianSource>) -> Result<(), InstallError> {
     clear(config)?;
 
-    // update_releases(config, repos).await?;
+    update_releases(config, repos).await?;
     update_cache(config, repos).await?;
 
     Ok(())

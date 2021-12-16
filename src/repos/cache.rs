@@ -1,6 +1,6 @@
 use crate::repos::deb::package::DebPackage;
 
-use super::{utils::PackageFormat, database::SQLite};
+use super::utils::PackageFormat;
 use super::config::Config;
 use rusqlite::Result;
 

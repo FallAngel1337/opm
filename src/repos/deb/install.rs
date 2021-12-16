@@ -2,7 +2,7 @@
 /// Debian package install
 /// 
 
-use crate::repos::{errors::InstallError, utils::PackageFormat};
+use crate::repos::{errors::InstallError};
 use crate::repos::config::Config;
 use super::cache;
 use super::{extract, download};

@@ -3,8 +3,8 @@ use super::config::Config;
 use super::utils::PackageFormat;
 
 pub fn search(config: &mut Config, name: &str) {
-    if let Some(pkg_fmt) = PackageFormat::get_format() {
-        let pkgs = opm_cache::lookup(config, name, false, true);
+    if let Some(_) = PackageFormat::get_format() {
+        let _pkgs = opm_cache::lookup(config, name, false, true);
 	} else {
         eprintln!("Consider define `PKG_FMT` environment variable!");
         std::process::exit(1);

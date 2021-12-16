@@ -23,7 +23,7 @@ pub fn extract(config: &Config, package: &str, to: &PathBuf) -> Result<DebPackag
         .expect(&format!("Could not read the file `{}`", package));
 
     hasher.update(bytes);
-    let sig = hasher.finalize();
+    // let sig = hasher.finalize();
 
     while let Some(entry_result) = archive.next_entry() {
         let mut entry = entry_result?;
@@ -53,6 +53,6 @@ pub fn extract(config: &Config, package: &str, to: &PathBuf) -> Result<DebPackag
 
     Ok(
         DebPackage::new(config, &format!("{}/control", to.clone().into_os_string()
-                                                .into_string().unwrap()), PkgKind::Binary, hex::encode(sig))?
+                                                .into_string().unwrap()), PkgKind::Binary)?
     )
 }
