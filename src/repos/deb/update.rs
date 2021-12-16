@@ -1,7 +1,8 @@
 use xz2::read::XzDecoder;
 
 use reqwest;
-use std::{io::{self, ErrorKind, prelude::*}};
+use tokio::{self, select};
+use std::io::{self, ErrorKind, prelude::*};
 use std::fs::{self, File};
 use std::str;
 
