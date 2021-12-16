@@ -4,6 +4,9 @@ use super::{
 };
 use std::fs;
 
+///
+/// Dump from the downloded files
+/// 
 pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 	let mut pkgs = Vec::new();
 	for entry in fs::read_dir(&config.cache).unwrap() {
@@ -57,7 +60,7 @@ pub fn dpkg_cache_dump(config: &Config) -> Vec<Result<ControlFile, ConfigError>>
 }
 
 // TODO: Return a trait object and remove hardcoded table
-pub fn lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -> rusqlite::Result<Vec<DebPackage>> {
+pub fn db_lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -> rusqlite::Result<Vec<DebPackage>> {
 	config.setup_db().expect("Failed to setup database");
 
 	let database = if cache {
@@ -77,7 +80,7 @@ pub fn lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -
 	};
 
 	if let Some(sqlite) = config.sqlite.as_ref() {
-		let conn = &(*sqlite.get_conn());
+		let conn = sqlite.get_conn();
 		let mut result = conn.as_ref().unwrap().prepare(&query)?;
 		let packages = result.query_map([], |row| {
 			Ok (
@@ -116,7 +119,7 @@ pub fn lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -
 
 pub fn pkg_list(config: &Config) -> rusqlite::Result<Vec<DebPackage>> {
 	if let Some(sqlite) = config.sqlite.as_ref() {
-		let conn = &(*sqlite.get_conn());
+		let conn = sqlite.get_conn();
 		let mut result = conn.as_ref().unwrap().prepare("SELECT * FROM deb_installed")?;
 		let package = result.query_map([], |row| {
 			Ok (
