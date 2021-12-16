@@ -88,8 +88,10 @@ pub fn update_cache(config: &Config) -> Result<()> {
 						control: pkg,
 						kind: PkgKind::Binary,
 					};
-					let sqlite = config.sqlite.as_ref().unwrap();
-					// sqlite.add_package(deb_pkg, true)?;
+
+					if let Some(sqlite) = config.sqlite.as_ref() {
+						cache::add_package(config, deb_pkg, true)?;
+					}
 					// add here
 				};
 

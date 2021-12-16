@@ -14,7 +14,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         //TODO: Verify if this package is alredy installed
         println!("Extracting ...");
     } else {
-        let pkg = cache::lookup(config, name, true, false)?;
+        let pkg = cache::db_lookup(config, name, true, false)?;
         if !pkg.is_empty() {
             let pkg = pkg.into_iter().next().unwrap();
             println!("{} is already installed\nFound:", name);
