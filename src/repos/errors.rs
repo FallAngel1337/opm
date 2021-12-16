@@ -13,11 +13,10 @@ pub enum InstallError {
     DataBaseError(String),
     AlreadyInstalled
 }
-
-pub enum SetupError {
+#[derive(Debug)]pub enum SetupError {
     Error(String)
 }
-
+#[derive(Debug)]
 pub enum ConfigError {
     Error(String)
 }

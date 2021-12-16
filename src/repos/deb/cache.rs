@@ -7,7 +7,7 @@ use std::fs;
 ///
 /// Dump from the downloded files
 /// 
-pub fn cache_dump(config: &mut Config) -> Vec<ControlFile> {
+pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 	let mut pkgs = Vec::new();
 	for entry in fs::read_dir(&config.cache).unwrap() {
 		let entry = entry.unwrap();
@@ -17,7 +17,7 @@ pub fn cache_dump(config: &mut Config) -> Vec<ControlFile> {
 
 		let control = control
 			.split("\n\n")
-			.map(|ctrl| ControlFile::from(config, ctrl, true));
+			.map(|ctrl| ControlFile::from(ctrl));
 			
 		let entry = entry.path()
 			.into_os_string()
@@ -47,19 +47,19 @@ pub fn cache_dump(config: &mut Config) -> Vec<ControlFile> {
 ///
 /// Dump all installed packages from /var/lib/dpkg/status
 /// 
-pub fn dump_installed(config: &mut Config) -> Vec<Result<ControlFile, ConfigError>> {
+pub fn dump_installed() -> Vec<Result<ControlFile, ConfigError>> {
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control
 		.split("\n\n")
-		.map(|ctrl| ControlFile::from(config, ctrl, true))
+		.map(|ctrl| ControlFile::from(ctrl))
 		// .filter_map(|ctrl| ControlFile::from(config, ctrl).ok())
 		.collect::<Vec<_>>();
 	
 	control
 }
 
-pub fn cache_lookup(config: &mut Config, name: &str) -> Option<DebPackage> {
+pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 	let mut pkgs = Vec::new();
 	for entry in fs::read_dir(&config.cache).unwrap() {
 		let entry = entry.unwrap();
@@ -70,8 +70,9 @@ pub fn cache_lookup(config: &mut Config, name: &str) -> Option<DebPackage> {
 		let control = control
 			.split("\n\n")
 			.filter(|line| {
+				// line == (&format!("Package: {}", name))
 				line.contains(&format!("Package: {}", name))
-			}).map(|ctrl| ControlFile::from(config, ctrl, false));
+			}).map(|ctrl| ControlFile::from(ctrl));
 			
 		let entry = entry.path()
 			.into_os_string()

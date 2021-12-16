@@ -1,7 +1,7 @@
 use xz2::read::XzDecoder;
 
 use reqwest;
-use tokio::{self, select};
+
 use std::io::{self, ErrorKind, prelude::*};
 use std::fs::{self, File};
 use std::str;
@@ -80,73 +80,6 @@ async fn update_cache(config: &Config, repos: &Vec<DebianSource>) -> Result<(), 
 
     Ok(())
 }
-
-// async fn update_cache(config: &mut Config, repos: &Vec<DebianSource>) -> Result<(), InstallError> {
-//     for (i, source) in repos.iter().enumerate() {
-//         println!("Get {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
-//         for perm in source.components.iter() {
-//             let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.xz", source.url, source.distribution, perm); // Binary packages ONLY for now
-            
-//             let response = reqwest::get(pkgcache).await?;
-            
-//             let content = response.bytes().await?;
-//             let content: &[u8] = content.as_ref();
-            
-//             let mut data = XzDecoder::new(content);
-//             let mut bytes = Vec::new();
-//             data.read_to_end(&mut bytes).unwrap_or_default();
-//             let bytes: &[u8] = bytes.as_ref();
-            
-//             let url = str::replace(&source.url, "http://", "");
-//             let url = str::replace(&url, "/", "_");
-
-//             let repo = format!("{}{}_{}_binary-amd64_Packages", url, source.distribution, perm);
-//             // println!("Package name: {}", repo);
-            
-//             let url = repo
-// 			.split("/")
-// 			.last()
-// 			.unwrap()
-// 			.replace("_", "/")
-// 			.split("/")
-// 			.next()
-// 			.unwrap()
-// 			.to_owned();
-            
-//             let control = str::from_utf8(bytes).expect("Invalid content");
-            
-//             let control = control
-//                 .split("\n\n")
-//                 .map(|ctrl| ControlFile::from(config, ctrl))
-//                 .map(|mut ctrl| {
-//                     let url = format!("http://{}/ubuntu/{}", url, ctrl.filename);
-//                     ctrl.set_filename(&url);
-//                     ctrl
-//                 })
-//                 .map(|ctrl| {
-//                  DebPackage {
-//                     control: ctrl,
-//                     kind: PkgKind::Binary,
-//                     signature: "NOPE".to_owned(),
-//                     status: PackageStatus::Installed
-//                 }
-//             }).collect::<Vec<_>>();
-
-//             opm_cache::load_into(config, control)?;
-
-//             // println!("")
-
-
-//             // println!("URL: {}", url);
-//             // println!("Donwloaded: {:?}", control[0]);
-
-            
-//             // io::copy(&mut bytes, &mut pkg)?;
-//         };
-//     }
-
-//     Ok(())
-// }
 
 async fn update_releases(config: &Config, repos: &Vec<DebianSource>) -> Result<(), InstallError> {
     for (i, source) in repos.iter().enumerate() {
