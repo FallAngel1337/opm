@@ -2,7 +2,7 @@
 /// Debian package install
 /// 
 
-use crate::repos::{errors::InstallError};
+use crate::repos::errors::InstallError;
 use crate::repos::config::Config;
 use super::cache;
 use super::{extract, download};
@@ -22,6 +22,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             return Err(InstallError::AlreadyInstalled);
         }
 
+        // cache::dpkg_cache_dump(config)
         // Downloand and call install on the downloaded packages
         println!("Downloading {} for debian ... {:?}", name, pkg);
     }

@@ -47,7 +47,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 ///
 /// Dump all installed packages from /var/lib/dpkg/status
 /// 
-pub fn dpkg_cache_dump(config: &Config) -> Vec<Result<ControlFile, ConfigError>> {
+pub fn dump_installed(config: &Config) -> Vec<Result<ControlFile, ConfigError>> {
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control

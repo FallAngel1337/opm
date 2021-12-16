@@ -42,7 +42,7 @@ pub fn populate_db(config: &mut Config) -> Result<()> {
 			PackageFormat::Deb => {
 				use super::deb::{cache, package::PkgKind};
 
-				let pkgs = cache::dpkg_cache_dump(&config); // dump all the installed
+				let pkgs = cache::dump_installed(&config); // dump all the installed
 				println!("Detected a dpkg database (assuming it's debian)");
 				for pkg in pkgs.into_iter().filter_map(|pkg| pkg.ok())  {
 					// println!("Dumping: {:#?}", pkg);
@@ -112,7 +112,27 @@ pub fn update_cache(config: &Config) -> Result<()> {
 	}
 }
 
-pub fn lookup(config: &Config, name: &str, exact_match: bool,
-	cache: bool) {
-
+pub fn search(config: &Config, name: &str) {
+	if let Some(pkg_fmt) = PackageFormat::get_format() {
+		match pkg_fmt {
+			PackageFormat::Deb => {
+				use super::deb;
+				deb::cache::cache_dump(config)
+					.into_iter()
+					.filter(|pkg| pkg.package.contains(name))
+					.for_each(|pkg| {
+						println!("{} {} - {}", pkg.package, pkg.version, pkg.description)
+					})
+			},
+			PackageFormat::Rpm => {
+				println!("It's a RHEL(-based) distro");
+			},
+			PackageFormat::Other => {
+				println!("Actually we do not have support for you distro!");
+			},
+		}
+	} else {
+		eprintln!("Consider define `PKG_FMT` environment variable!");
+		std::process::exit(1);
+	}
 }
