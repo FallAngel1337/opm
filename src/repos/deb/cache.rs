@@ -59,7 +59,22 @@ pub fn dump_installed(config: &Config) -> Vec<Result<ControlFile, ConfigError>> 
 	control
 }
 
-// TODO: Return a trait object and remove hardcoded table
+pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
+	let control = cache_dump(config)
+		.into_iter()
+		.filter(|pkg| pkg.package == name)
+		.next();
+
+	if let Some(control) = control {
+		Some(DebPackage {
+			control,
+			kind: PkgKind::Binary
+		})
+	} else {
+		None
+	}
+}
+
 pub fn db_lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -> rusqlite::Result<Vec<DebPackage>> {
 	config.setup_db().expect("Failed to setup database");
 

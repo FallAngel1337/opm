@@ -36,10 +36,6 @@ pub fn setup(config: &mut Config) -> Result<(), SetupError> {
 
     if is_empty {
         println!("Consider do `opm update` before continue ...");
-        return Ok(());
-    } else {
-        println!("Updating the cache ...");
-        cache::update_cache(&config)?;
     }
 
     Ok(())
