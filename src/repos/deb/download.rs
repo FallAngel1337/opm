@@ -7,21 +7,17 @@ use super::cache;
 
 use reqwest;
 
-// use super::dependencies;
-
 #[tokio::main]
-pub async fn download(config: &Config, name: &str) -> Result<PathBuf, InstallError> {
+pub async fn download(config: &mut Config, name: &str) -> Result<PathBuf, InstallError> {
     println!("Downloading {} from {:?} ...", name, config.cache);
 
     if let Some(pkg) = cache::cache_lookup(config, name) {
-        println!("FOUND => {:?}", pkg);
+        println!("FOUND => {:?}", pkg.control.package);
+        println!("DEPENDS ON => {:#?}", pkg.control.depends);
         let response = reqwest::get(format!("http://{}", pkg.control.filename)).await?;
         
         let content = response.bytes().await?;
         let mut content: &[u8] = content.as_ref();
-        
-        // let mut bytes = Vec::new();
-        // let mut bytes: &[u8] = bytes.as_ref();
 
         let name = pkg.control.filename.split("/").last().unwrap();
         println!("Downloading {} ...", name);

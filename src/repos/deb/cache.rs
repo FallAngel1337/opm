@@ -7,7 +7,7 @@ use std::fs;
 ///
 /// Dump from the downloded files
 /// 
-pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
+pub fn cache_dump(config: &mut Config) -> Vec<ControlFile> {
 	let mut pkgs = Vec::new();
 	for entry in fs::read_dir(&config.cache).unwrap() {
 		let entry = entry.unwrap();
@@ -17,7 +17,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 
 		let control = control
 			.split("\n\n")
-			.map(|ctrl| ControlFile::from(config, ctrl));
+			.map(|ctrl| ControlFile::from(config, ctrl, true));
 			
 		let entry = entry.path()
 			.into_os_string()
@@ -47,32 +47,55 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 ///
 /// Dump all installed packages from /var/lib/dpkg/status
 /// 
-pub fn dump_installed(config: &Config) -> Vec<Result<ControlFile, ConfigError>> {
+pub fn dump_installed(config: &mut Config) -> Vec<Result<ControlFile, ConfigError>> {
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control
 		.split("\n\n")
-		.map(|ctrl| ControlFile::from(config, ctrl))
+		.map(|ctrl| ControlFile::from(config, ctrl, true))
 		// .filter_map(|ctrl| ControlFile::from(config, ctrl).ok())
 		.collect::<Vec<_>>();
 	
 	control
 }
 
-pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
-	let control = cache_dump(config)
-		.into_iter()
-		.filter(|pkg| pkg.package == name)
-		.next();
+pub fn cache_lookup(config: &mut Config, name: &str) -> Option<DebPackage> {
+	let mut pkgs = Vec::new();
+	for entry in fs::read_dir(&config.cache).unwrap() {
+		let entry = entry.unwrap();
+		let path = entry.path();
+		
+		let control = fs::read_to_string(path).unwrap();
 
-	if let Some(control) = control {
-		Some(DebPackage {
-			control,
-			kind: PkgKind::Binary
-		})
-	} else {
-		None
+		let control = control
+			.split("\n\n")
+			.filter(|line| {
+				line.contains(&format!("Package: {}", name))
+			}).map(|ctrl| ControlFile::from(config, ctrl, false));
+			
+		let entry = entry.path()
+			.into_os_string()
+			.into_string()
+			.unwrap();
+
+		let url =  entry
+			.split("/")
+			.last()
+			.unwrap()
+			.replace("_", "/")
+			.split("/")
+			.next()
+			.unwrap()
+			.to_owned();
+
+		control.into_iter().filter_map(|pkg| pkg.ok()).for_each(|mut pkg| {
+			let url = format!("{}/ubuntu/{}", url, &pkg.filename);
+			pkg.set_filename(&url);
+			pkgs.push(pkg);
+		});
 	}
+
+	pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next()
 }
 
 pub fn db_lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -> rusqlite::Result<Vec<DebPackage>> {

@@ -10,7 +10,7 @@ use super::{extract, download};
 // TODO: Check for newer versions of the package if installed
 pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     if name.ends_with(".deb") {
-        let _pkg = extract::extract(config, name, &config.tmp)?;
+        let _pkg = extract::extract(config, name, &config.tmp.clone())?;
         //TODO: Verify if this package is alredy installed
         println!("Extracting ...");
     } else {
@@ -24,7 +24,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
 
         // Downloand and call install on the downloaded packages
         println!("Downloading {} for debian ...", name);
-        download::download(&config, name)?;
+        download::download(config, name)?;
     }
     
 

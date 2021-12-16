@@ -14,23 +14,6 @@ pub enum PkgKind {
     Source,
 }
 
-
-/**
- * 
-    Package (mandatory)
-    Source
-    Version (mandatory)
-    Section (recommended)
-    Priority (recommended)
-    Architecture (mandatory)
-    Essential
-    Depends et al
-    Installed-Size
-    Maintainer (mandatory)
-    Description (mandatory)
-    Homepage
-    Built-Using
-*/
 ///
 /// Debian's control file (mandatory fields)
 ///
@@ -54,7 +37,7 @@ pub struct ControlFile {
 
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(config: &Config, file: &str) -> Result<Self, ConfigError> {
+    pub fn new(config: &mut Config, file: &str) -> Result<Self, ConfigError> {
         let contents = fs::read_to_string(file)?;
         // println!("GOT : {}", contents);
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
@@ -113,7 +96,7 @@ impl ControlFile {
         }
     }
 
-    pub fn from(config: &Config, contents: &str) -> Result<Self, ConfigError> {
+    pub fn from(config: &mut Config, contents: &str, dump: bool) -> Result<Self, ConfigError> {
         // println!("GOT : {}", contents);
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
@@ -136,7 +119,63 @@ impl ControlFile {
             );
         };
 
-        let depends = Self::split_deps(Some(&Self::try_get(&map, "Depends")?)); /* Self::split_deps(map.get("Depends"));*/
+        let depends = if !dump {
+             Self::split_deps(Some(&Self::try_get(&map, "Depends")?))
+        } else {
+            None
+        };
+
+        // println!("Depends: {:?}", depends);
+
+        let result = Self {
+            package: Self::try_get(&map, "Package")?,
+            version: Self::try_get(&map, "Version")?,
+            architecture: Self::try_get(&map, "Architecture")?,
+            maintainer: Self::try_get(&map, "Maintainer")?,
+            description: Self::try_get(&map, "Description")?,
+            depends: dependencies::parse_dependencies(config, depends),
+            // Should be like the others
+            // But, when reading /var/lib/dpkg/status it does not have those fields
+            filename: Self::try_get(&map, "Filename").unwrap_or_default(),
+            size: Self::try_get(&map, "Size").unwrap_or_default(),
+            md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
+            sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
+            sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
+            sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
+        };
+
+        // println!("Package: {}", result.package);
+        
+
+        Ok(result)
+    }
+
+    pub fn from_with_deps(config: &mut Config, contents: &str) -> Result<Self, ConfigError> {
+        // println!("GOT : {}", contents);
+        let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
+
+        // FIXME: Find a better way of doing it
+        for line in contents.lines() {
+            let line = line.trim();
+            let values = line.splitn(2, ":").map(|line| line.to_owned()).collect::<Vec<_>>();
+            map.insert(
+                if let Some(v) = values.get(0) {
+                    Some(v.to_owned())
+                } else {
+                    None
+                },
+
+                if let Some(v) = values.get(1) {
+                    Some(v.to_owned())
+                } else {
+                    None
+                }
+            );
+        };
+
+        let depends = Self::split_deps(Some(&Self::try_get(&map, "Depends")?));
+
+        // println!("Depends: {:?}", depends);
 
         let result = Self {
             package: Self::try_get(&map, "Package")?,
@@ -155,20 +194,12 @@ impl ControlFile {
             sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
         };
 
-        match depends {
-            Some(v) => 
-                Ok (
-                    Self {
-                        depends: dependencies::parse_dependencies(config, Some(v)),
-                        ..result
-                    },
-                ),
-            None => {
-                Ok (
-                    result
-                )
-            }
-        }
+
+
+        // println!("Package: {}", result.package);
+        
+
+        Ok(result)
     }
 
     // TODO: Maybe I need to make this easier to read
@@ -208,7 +239,7 @@ pub struct DebPackage {
 }
 
 impl DebPackage {
-    pub fn new(config: &Config, file: &str, kind: PkgKind) -> Result<Self, ConfigError> {
+    pub fn new(config: &mut Config, file: &str, kind: PkgKind) -> Result<Self, ConfigError> {
         Ok(
             DebPackage {
                 control: ControlFile::new(config, file)?,

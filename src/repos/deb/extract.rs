@@ -12,7 +12,7 @@ use crate::repos::errors::InstallError;
 use crate::repos::config::Config;
 use super::package::{DebPackage, PkgKind};
 
-pub fn extract(config: &Config, package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> {
+pub fn extract(config: &mut Config, package: &str, to: &PathBuf) -> Result<DebPackage, InstallError> {
     let mut archive = Archive::new(File::open(package)?);
     
     let mut bytes: Vec<u8> = Vec::new();
