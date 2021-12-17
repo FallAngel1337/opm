@@ -36,8 +36,8 @@ $ target/release/opm setup
   - [ ] ...
 
 ## Supported Packages:
-  - [X] `.deb`
-  - [ ] `.rpm`
+  - [X] deb
+  - [ ] rpm
   - [ ] ...
 
 ## Usage
