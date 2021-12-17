@@ -41,14 +41,10 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
                     .expect("Failed to read from stdin");
 
                 let input = input.trim().parse::<usize>().expect("Invalid number") - 1;
-
                 let pkg = list.get(input).expect(&format!("Could not get the {}nth option", input));
-
-                println!("GOT ==> {}", pkg);
 
                 if check_dependencie(config, pkg).is_none() {
                     if let Some(pkg) = cache::cache_lookup(config, pkg) {
-                        //println!("Debugging: {:#?}", pkg);
                         get_dependencies(config, &pkg);
                         depends.push(pkg);
                     } else {
@@ -58,7 +54,6 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
             } else {
                 if check_dependencie(config, pkg).is_none() {
                     if let Some(pkg) = cache::cache_lookup(config, pkg) {
-                        println!("Debugging: {:#?}", pkg);
                         get_dependencies(config, &pkg);
                         depends.push(pkg);
                     } else {

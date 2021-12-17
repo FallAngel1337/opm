@@ -27,17 +27,23 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
 
         if let Some(pkg) = cache::cache_lookup(config, name) {
             println!("FOUND => {:?}", pkg.control.package);
-            dependencies::get_dependencies(config, &pkg);
-            // if let Some(dep) = pkg.control.depends {
-            //     println!("DEPENDS ON => {:#?}", dep);
-            //     dep.into_iter().for_each(|name| {
-            //     if dependencies::check_dependencie(config, &name).is_none() {
-            //         println!("Need to install {:?}", name);
-            //         // download(config, &name).await;
-            //     }
-            //     });
-            //     // download::download(config, name)?;
-            // }
+            if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
+                dep.into_iter().for_each(|pkg| {
+                    let path = download::download(config, &pkg).unwrap();
+                    let path = path
+                        .into_os_string()
+                        .into_string().unwrap();
+
+                    println!("Downloaded {} at {:?}", pkg.control.package, path);
+                    extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
+                })
+            }
+            let path = download::download(config, &pkg).unwrap();
+            let path = path
+            .into_os_string()
+            .into_string().unwrap();
+            
+            extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
         }
 
     }
