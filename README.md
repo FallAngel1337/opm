@@ -60,7 +60,7 @@ E.g:
 $ opm install <package>.deb
 ```
 
-### Package Features support
+### Supported Package Features
   #### Debian Packages:
   - [X] Binary package installation
   - [ ] Source package installation
