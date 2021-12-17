@@ -2,6 +2,7 @@
    
 ### Tasks
 - [ ] [Improve the UI/UX](#UI_UX)
+- [ ] Run the pre/post install/remove
 - [ ] [Packages installation](#packages-installation)
 - [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
