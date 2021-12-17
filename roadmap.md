@@ -1,16 +1,17 @@
 # RPM Roadmap
    
 ### Tasks
+- [ ] [Improve the UI/UX](#UI_UX)
 - [ ] [Packages installation](#packages-installation)
-- [ ] [Packages update](#packages-update)
+- [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
 - [ ] [Packages removal](#packages-removal)
-- [ ] [Packages listing](#packages-listing)
-   - [ ] Make the querying faster
+- [x] [Packages listing](#packages-listing)
+   - [x] Make the querying faster
 
 
 ### Packages installation
-```smalltalk
+```
 $ rpm install [options] <package_name>
 ```
 Note: It requires sudo to install for the system or `--user` option for just the user.
@@ -26,20 +27,20 @@ About how we should install a (debian) package.
 5.  Run the **pre/post** install scripts if so
 
 ### Packages update
-```smalltalk
+```
 $ rpm update
 ```
-Will update the packages cache entry at `~/.rpm/cache` by querying the default distro sources (`/etc/apt/sources.list`)
+Will update the packages cache entry at `~/.opm/cache` by querying the default distro sources (`/etc/apt/sources.list`)
 
 #### Packages removal
-```smalltalk
+```
 $ rpm remove [options] <package_name>
 ```
 
 Query the database for the package and then remove it. With `-p / --purge` should remove all the files related to the package by using the **pre/post** remove scripts . If does not, remove manually. Also delete the database entry for that package.
 
 ### Packages listing
-```smalltalk
+```
 $ rpm --list
 ```
 
