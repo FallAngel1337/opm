@@ -29,13 +29,15 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             println!("FOUND => {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 dep.into_iter().for_each(|pkg| {
-                    let path = download::download(config, &pkg).unwrap();
-                    let path = path
+                    if let Ok(path) = download::download(config, &pkg) {
+                        let path = path
                         .into_os_string()
                         .into_string().unwrap();
-
-                    println!("Downloaded {} at {:?}", pkg.control.package, path);
-                    extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
+                        
+                        println!("Downloaded {} at {:?}", pkg.control.package, path);
+                        extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
+                    } else {
+                    }
                 })
             }
             let path = download::download(config, &pkg).unwrap();

@@ -52,7 +52,13 @@ pub fn populate_db(config: &mut Config) -> Result<()> {
 					};
 
 					if let Some(_) = config.sqlite.as_ref() {
-						cache::add_package(config, deb_pkg, false)?;
+						match cache::add_package(config, deb_pkg.clone(), false) {
+							Ok(_) => (),
+							Err(err) => {
+								eprintln!("Could not insert {:#?} into the database due {}", deb_pkg, err);
+								return Err(err);
+							}
+						}
 					} else {
 						println!("Meh");
 					}
