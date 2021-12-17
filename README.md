@@ -6,7 +6,7 @@ It provides either a higher level interface and a low-level one for those who wa
 This package manager aims to be universal/generic and simple. 
 
 It's always good to remember that `IT IS NOT A WRAPPER`
-for knwon package managers(apt, aptitude, dnf, yum, etc) neither a front-end for others (dpkg, rpm, etc).
+for known package managers(apt, aptitude, dnf, yum, etc) neither a front-end for others (dpkg, rpm, etc).
 
 **Note**: Most of the features and functionalities aren't done and/or stable yet. We're working to release a full working and satable version that can run on any operation system, including Microsoft Windows. For now just for debian-based linux distributions.
 
