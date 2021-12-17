@@ -1,7 +1,9 @@
 # RPM Roadmap
    
 ### Tasks
-- [ ] [Improve the UI/UX](#UI_UX)
+- [ ] [Improve the UI/UX](#ui_ux)
+- [ ] [Run the pre/post install/remove](#scripts)
+- [ ] Verify package's integrity (using the hashes)
 - [ ] [Packages installation](#packages-installation)
 - [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
