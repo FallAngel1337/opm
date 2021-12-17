@@ -27,8 +27,9 @@ You'll need to have [rust and cargo](https://www.rust-lang.org/tools/install) in
 $ git clone git@github.com:0xc0ffeec0de/opm.git
 $ cd opm/
 $ cargo build --release
-$ target/release/opm setup
+$ PKG_FMT=<fmt> target/release/opm setup
 ```
+**NOTE**: You need to define a environment variable called `PKG_FMT` to define on which package format `opm` will be working with. For now just `deb` is supported.
 
 ## Features:
   - [ ] Customizable
