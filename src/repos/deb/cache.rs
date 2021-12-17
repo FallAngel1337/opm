@@ -67,13 +67,6 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 		
 		let control = fs::read_to_string(path).unwrap();
 
-		let control = control
-			.split("\n\n")
-			.filter(|line| {
-				// line == (&format!("Package: {}", name))
-				line.contains(&format!("Package: {}", name))
-			}).map(|ctrl| ControlFile::from(ctrl));
-			
 		let entry = entry.path()
 			.into_os_string()
 			.into_string()
@@ -89,11 +82,19 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 			.unwrap()
 			.to_owned();
 
-		control.into_iter().filter_map(|pkg| pkg.ok()).for_each(|mut pkg| {
-			let url = format!("{}/ubuntu/{}", url, &pkg.filename);
-			pkg.set_filename(&url);
-			pkgs.push(pkg);
-		});
+		for ctrl in control.split("\n\n") {
+			for line in ctrl.split("\n") {
+				if line.contains("Package: ") {
+					let pkg = line.split(": ").skip(1).next().unwrap();
+					if pkg == name {
+						let mut control_file = ControlFile::from(ctrl).unwrap();
+						let url = format!("{}/ubuntu/{}", url, &control_file.filename);
+						control_file.set_filename(&url);
+						pkgs.push(control_file);
+					}
+				}
+			}
+		}
 	}
 
 	pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next()
