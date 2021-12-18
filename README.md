@@ -11,7 +11,7 @@ for known package managers(apt, aptitude, dnf, yum, etc) neither a front-end for
 **Note**: Most of the features and functionalities aren't done and/or stable yet. We're working to release a full working and satable version that can run on any operation system, including Microsoft Windows. For now just for debian-based linux distributions.
 
 ## Installation
-### From releases:
+### From releases (not-recommended):
 
 You can find a binary release for you architecture in the [releases](https://github.com/0xc0ffeec0de/opm/releases) tab.
 
@@ -21,9 +21,8 @@ You'll need to have [rust and cargo](https://www.rust-lang.org/tools/install) in
 ```
 $ git clone git@github.com:0xc0ffeec0de/opm.git
 $ cd opm/
-$ cargo build --release
-$ PKG_FMT=<fmt> target/release/opm setup
 ```
+If you have [docker](https://www.docker.com/) installed you can run `docker build -t opm .` to run it inside a container.
 **NOTE**: You need to define a environment variable called `PKG_FMT` to define on which package format `opm` will be working with. For now just `deb` is supported.
 
 ## Features:
