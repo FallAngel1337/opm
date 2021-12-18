@@ -10,11 +10,6 @@ for known package managers(apt, aptitude, dnf, yum, etc) neither a front-end for
 
 **Note**: Most of the features and functionalities aren't done and/or stable yet. We're working to release a full working and satable version that can run on any operation system, including Microsoft Windows. For now just for debian-based linux distributions.
 
-### Before installing
-This can sound a little weird, but you need a package manager to install a package manager.
-You need to install the `libsqlite3-dev` first. We'll gonna get rid of that in the future
-because it needs be a standalone application.
-
 ## Installation
 ### From releases:
 
