@@ -65,7 +65,7 @@ $ opm install <package>.deb
   - [ ] ...
 
 ## Contribution
-Check the [contribution guidelines](CONTRIBUTING.md).
+Check the [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Help the project to continue
 Maybe when this project will be complete ;)
