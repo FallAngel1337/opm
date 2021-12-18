@@ -17,7 +17,7 @@ fn parse_name(dep: &str) -> &str {
 }
 
 fn check_dependencie(config: &mut Config, dependencie: &str) -> Option<DebPackage> {
-    let dep = cache::db_lookup(config, parse_name(dependencie), true, false).unwrap();
+    let dep = cache::check_installed(dependencie);
     if let Some(dep) = dep.into_iter().next() {
         // TODO: Verify the version
         Some(dep)

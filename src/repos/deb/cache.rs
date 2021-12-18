@@ -1,4 +1,4 @@
-use crate::repos::{config::Config, errors::ConfigError};
+use crate::repos::config::Config;
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
 };
@@ -47,13 +47,14 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 ///
 /// Dump all installed packages from /var/lib/dpkg/status
 /// 
-pub fn dump_installed() -> Vec<Result<ControlFile, ConfigError>> {
+pub fn dump_installed() -> Vec<DebPackage> {
 	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
 
 	let control = control
 		.split("\n\n")
 		.map(|ctrl| ControlFile::from(ctrl))
-		// .filter_map(|ctrl| ControlFile::from(config, ctrl).ok())
+		.filter_map(|ctrl| ctrl.ok())
+		.map(|ctrl| DebPackage { control: ctrl, kind: PkgKind::Binary } )
 		.collect::<Vec<_>>();
 	
 	control
@@ -100,122 +101,17 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 	pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next()
 }
 
-pub fn db_lookup(config: &mut Config, name: &str, exact_match: bool, cache: bool) -> rusqlite::Result<Vec<DebPackage>> {
-	config.setup_db().expect("Failed to setup database");
-
-	let database = if cache {
-		"deb_cache"
+pub fn check_installed(name: &str) -> Option<DebPackage> {
+	let control = dump_installed().into_iter().filter(|pkg| pkg.control.package == name).next();
+	if control.is_none() {
+		None
 	} else {
-		"deb_installed"
-	};
-
-	// Maybe this can introduce some bugs
-	let query = if exact_match {
-		format!(r#"SELECT * FROM {} WHERE package = '{}'"#, database, name)
-	} else {
-		// because
-		// format!(r#"SELECT * FROM {} WHERE name LIKE '%?1%'"#, database)
-		// simply just don't work... and give me `Wrong number of parameters passed to query. Got 1, needed 0`
-		format!(r#"SELECT * FROM {} WHERE package LIKE '%{}%'"#, database, name)
-	};
-
-	if let Some(sqlite) = config.sqlite.as_ref() {
-		let conn = sqlite.get_conn();
-		let mut result = conn.as_ref().unwrap().prepare(&query)?;
-		let packages = result.query_map([], |row| {
-			Ok (
-				DebPackage {
-					control: ControlFile {
-						package: row.get(0)?,
-						version: row.get(1)?,
-						architecture: row.get(2)?,
-						maintainer: row.get(3)?,
-						description: row.get(4)?,
-						filename: row.get(5)?,
-						size: row.get(6)?,
-						md5sum: row.get(7)?,
-						sha1: row.get(8)?,
-						sha256: row.get(9)?,
-						sha512: row.get(10)?,
-						depends: None
-					},
-					kind: PkgKind::Binary
-				}
-			)
-		})?;
-
-		Ok(
-			packages.into_iter()
-				// .filter_map(|pkg| pkg.ok())
-				.map(|pkg| pkg.unwrap())
-				.collect()
-		)
-	} else {
-		Ok (
-			vec![]
+		Some(
+			control.unwrap()
 		)
 	}
 }
 
-pub fn pkg_list(config: &Config) -> rusqlite::Result<Vec<DebPackage>> {
-	if let Some(sqlite) = config.sqlite.as_ref() {
-		let conn = sqlite.get_conn();
-		let mut result = conn.as_ref().unwrap().prepare("SELECT * FROM deb_installed")?;
-		let package = result.query_map([], |row| {
-			Ok (
-				DebPackage {
-					control: ControlFile {
-						package: row.get(0)?,
-						version: row.get(1)?,
-						architecture: row.get(2)?,
-						maintainer: row.get(3)?,
-						description: row.get(4)?,
-						filename: row.get(5)?,
-						size: row.get(6)?,
-						md5sum: row.get(7)?,
-						sha1: row.get(8)?,
-						sha256: row.get(9)?,
-						sha512: row.get(10)?,
-						depends: None
-					},
-					kind: PkgKind::Binary
-				}
-			)
-		})?;
-
-		Ok(
-			package.map(|pkg| pkg.unwrap()).collect::<Vec<_>>()
-		)
-	} else {
-		Ok (
-			vec![]
-		)
-	}
-}
-
-pub fn add_package(config: &Config, pkg: DebPackage, cache: bool) -> rusqlite::Result<()> {
-	 let table = if cache {
-		"deb_cache"
-	} else {
-		"deb_installed"
-	};
-	if let Some(sqlite) = config.sqlite.as_ref() {
-		let query = format!(r#"INSERT INTO {} VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)"#, table);
-		let control = &pkg.control;
-
-		sqlite.execute(&query, [
-			&control.package,
-			&control.version,
-			&control.architecture,
-			&control.maintainer,
-			&control.description,
-			&control.filename,
-			&control.size,
-			&control.md5sum,
-			&control.sha1,
-			&control.sha256,
-			&control.sha512])?;
-	}
-
+pub fn add_package(config: &Config, pkg: DebPackage, cache: bool) -> Result<(), std::io::Error> {
 	Ok(())
 }

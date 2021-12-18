@@ -20,16 +20,12 @@ pub fn setup(config: &mut Config) -> Result<(), SetupError> {
             "y" => {
                 println!("Removing old {:?}", config.db);
                 std::fs::remove_file(&config.db)?;
-                config.setup_db()?;
                 println!("Populating the database");
-                cache::populate_db(config)?;
             }
             _ => ()
         }
     } else {
         config.setup()?;
-        config.setup_db()?;
-        cache::populate_db(config)?;
     }
 
     let is_empty = config.cache.read_dir()?.next().is_none();

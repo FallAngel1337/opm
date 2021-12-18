@@ -3,7 +3,7 @@ use std::io::{Error, ErrorKind};
 use std::env;
 use std::fs;
 
-use super::{database::SQLite, errors::ConfigError};
+use super::errors::ConfigError;
 use super::utils::PackageFormat;
 
 #[derive(Debug)]
@@ -13,8 +13,6 @@ pub struct Config {
 	pub db: PathBuf,
 	pub rls: PathBuf,
 	pub tmp: PathBuf,
-
-	pub sqlite: Option<SQLite>,
 }
 
 #[allow(deprecated)]
@@ -52,24 +50,8 @@ impl Config {
 				db: PathBuf::from(format!("{}/db/pkgs.db", opm_root)),
 				rls: PathBuf::from(format!("{}/cache/rls", opm_root)),
 				tmp: PathBuf::from(format!("{}/tmp", opm_root)),
-				sqlite: None
 			}
 		)
-	}
-
-	pub fn close_db(&self) {
-		if let Some(conn) = self.sqlite.as_ref() {
-			conn.close()
-		}
-	}
-
-	pub fn setup_db(&mut self) -> rusqlite::Result<()> {
-		if self.sqlite.as_ref().is_none() {
-			self.sqlite = Some(
-				SQLite::new(&self.db)?
-			);
-		}
-		Ok(())
 	}
 
 	pub fn setup(&mut self) -> Result<(), Error> {
