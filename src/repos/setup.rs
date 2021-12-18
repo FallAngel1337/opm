@@ -1,49 +1,42 @@
 use std::{path::Path, io::ErrorKind};
 
-use super::{config::Config, errors::SetupError};
-use super::cache;
+use super::{
+    config::Config, 
+    errors::SetupError, 
+    utils::PackageFormat
+};
 
-pub fn setup(config: &mut Config) -> Result<(), SetupError> {
-    println!("Syncing the database ...");
-    
-    if Path::new(&config.db).exists() {
-        println!("It seems you have an old database at {:?}", config.db);
-        println!("Do you want to override it? [y/N]");
-        
-        let mut input = String::new();
-        std::io::stdin()
-            .read_line(&mut input)
-            .expect("Could not read from stdin");
-        let input = input.trim().to_ascii_lowercase();
-        
-        match input.as_ref() {
-            "y" => {
-                println!("Removing old {:?}", config.db);
-                std::fs::remove_file(&config.db)?;
-                config.setup_db()?;
-                println!("Populating the database");
-                cache::populate_db(config)?;
-            }
-            _ => ()
-        }
+pub fn setup() -> Result<Config, SetupError> {
+    let mut config;
+
+    if let Some(pkg_fmt) = PackageFormat::get_format() {
+        config = Config::new(pkg_fmt).unwrap();
     } else {
+        eprintln!("Consider define `PKG_FMT` environment variable!");
+        std::process::exit(1);
+    }
+    
+    if !Path::new(&config.root).exists() {
         config.setup()?;
-        config.setup_db()?;
-        cache::populate_db(config)?;
     }
 
     let is_empty = config.cache.read_dir()?.next().is_none();
 
     if is_empty {
-        println!("Consider do `opm update` before continue ...");
+        println!("Empty cache found! Consider do `opm update` before continue ...");
     }
 
-    Ok(())
+    Ok(config)
 }
 
-pub fn roll_back(config: &Config) {
+#[allow(deprecated)]
+pub fn roll_back() {
     println!("Rolling back ...");
-    match std::fs::remove_dir_all(&config.root){
+    let home = std::env::home_dir().unwrap()
+    .into_os_string().into_string().unwrap();
+    let root = format!("{}/.opm/", home);
+
+    match std::fs::remove_dir_all(root){
         Ok(_) => (),
         Err(e) => match e.kind() {
             ErrorKind::NotFound => (),

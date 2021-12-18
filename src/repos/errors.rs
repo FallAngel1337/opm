@@ -1,7 +1,6 @@
 // use std::error::Error;
 use std::fmt::{self, Display};
 use std::io::Error as ioError;
-use rusqlite::Error as sqliteError;
 use reqwest::Error as reqwestError;
 
 // TODO: Make better erros and create more
@@ -36,12 +35,6 @@ impl Display for InstallError {
 impl From<ioError> for InstallError {
     fn from(err: ioError) -> Self {
         InstallError::IoError(err.to_string())
-    }
-}
-
-impl From<sqliteError> for InstallError {
-    fn from(err: sqliteError) -> Self {
-        InstallError::DataBaseError(err.to_string())
     }
 }
 

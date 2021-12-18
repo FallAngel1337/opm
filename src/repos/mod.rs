@@ -1,6 +1,5 @@
 // Debian related modules
 mod deb;
-mod database;
 
 // General modules
 mod install;

@@ -10,4 +10,8 @@ pub mod sources;
 
 pub use install::install;
 pub use update::update;
-pub use cache::pkg_list;
+pub use cache::{dump_installed, check_installed};
+
+pub mod database {
+    pub const DPKG_STATUS:&'static str = "/var/lib/dpkg";
+}
