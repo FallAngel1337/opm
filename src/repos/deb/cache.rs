@@ -6,7 +6,7 @@ use std::fs;
 
 ///
 /// Dump from the downloded files
-/// 
+///
 pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 	let mut pkgs = Vec::new();
 	for entry in fs::read_dir(&config.cache).unwrap() {
@@ -24,18 +24,17 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 			.into_string()
 			.unwrap();
 
-		let url =  entry
+		let url =  &entry
 			.split("/")
 			.last()
 			.unwrap()
 			.replace("_", "/")
 			.split("/")
-			.next()
-			.unwrap()
-			.to_owned();
+			.collect::<Vec<_>>()[..2]
+			.join("/");		
 
 		control.into_iter().filter_map(|pkg| pkg.ok()).for_each(|mut pkg| {
-			let url = format!("{}/ubuntu/{}", url, &pkg.filename);
+			let url = format!("{}/{}", url, &pkg.filename);
 			pkg.set_filename(&url);
 			pkgs.push(pkg);
 		});
