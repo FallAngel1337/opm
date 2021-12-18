@@ -11,6 +11,8 @@
 - [ ] [Packages removal](#packages-removal)
 - [x] [Packages listing](#packages-listing)
    - [x] Make the querying faster
+- [ ] Pacakage Source
+   - [ ] Sources formats are different on ubuntu-bases from debian-based
 
 
 ### Packages installation
