@@ -13,7 +13,7 @@ for known package managers(apt, aptitude, dnf, yum, etc) neither a front-end for
 ## Installation
 ### From releases:
 
-You can find a binary release for you architecture in the [releases](https://github.com) tab.
+You can find a binary release for you architecture in the [releases](https://github.com/0xc0ffeec0de/opm/releases) tab.
 
 ### From source:
 
@@ -66,10 +66,6 @@ $ opm install <package>.deb
 
 ## Contribution
 Check the [contribution guidelines](CONTRIBUTING.md).
-
-If you want to contribute with the project you can check [here](https://github.com/0xc0ffeec0de) for more details about the project structure, implementation details program logic, well-known bugs, etc to give you a better understanding of whats happening under the hood.
-
-Also, fell free to send a pull request or open an issue. If you miss a feature that you want that opm would have, you wan open an issue and then we'll evaluate if it's possible or not.
 
 ## Help the project to continue
 Maybe when this project will be complete ;)
