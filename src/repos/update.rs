@@ -6,8 +6,7 @@ use super::utils::PackageFormat;
 use super::errors::InstallError;
 use super::config::Config;
 
-pub fn update() -> Result<(), InstallError> {
-    let mut config = Config::new()?;
+pub fn update(config: &mut Config) -> Result<(), InstallError> {
     println!("Current config: {:?}", config);
 
     if let Some(pkg_fmt) = PackageFormat::get_format() {
@@ -15,7 +14,7 @@ pub fn update() -> Result<(), InstallError> {
             PackageFormat::Deb => {
                 use super::deb;
                 let repos = deb::sources::DebianSource::new()?;
-                deb::update(&mut config, &repos)?;
+                deb::update(config, &repos)?;
             }
             PackageFormat::Rpm => {
                 println!("It's a RHEL(-based) distro");

@@ -112,6 +112,7 @@ pub fn check_installed(name: &str) -> Option<DebPackage> {
 	}
 }
 
+#[allow(unused)]
 pub fn add_package(config: &Config, pkg: DebPackage, cache: bool) -> Result<(), std::io::Error> {
 	Ok(())
 }

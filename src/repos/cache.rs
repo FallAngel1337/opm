@@ -3,7 +3,7 @@
 use super::utils::PackageFormat;
 use super::config::Config;
 
-pub fn list_installed(config: &mut Config) {
+pub fn list_installed() {
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {

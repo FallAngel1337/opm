@@ -1,10 +1,11 @@
 use clap::{Arg, App, SubCommand};
-use opm::repos::{self, config::Config};
+use opm::repos;
 use std::process;
 
 fn main() {
-	let mut config = Config::new().unwrap_or_else(|err| {
-		eprintln!("Could not complete the configuration due {}", err);
+	let mut config = repos::setup().unwrap_or_else(|err| {
+		eprintln!("Could not setup the package manager due {}", err);
+		repos::roll_back();
 		process::exit(1);
 	});
 
@@ -47,16 +48,13 @@ fn main() {
 						.arg(Arg::with_name("package")
 							.takes_value(true)
 							.index(1)
-							.required(true)),
-					SubCommand::with_name("setup")
-						.about("setup and configure the package manager")
-						.help("opm's setup & config")
+							.required(true))
 				])
 				.get_matches();
 
 	match matches.occurrences_of("list") {
 		0 => (),
-		1 => repos::list_installed(&mut config),
+		1 => repos::list_installed(),
 		_ => println!("Invalid argument")
 	};
 
@@ -68,7 +66,7 @@ fn main() {
     }
 
     if let Some(_) = matches.subcommand_matches("update") {
-        repos::update().unwrap_or_else(|err| {
+        repos::update(&mut config).unwrap_or_else(|err| {
 			println!("Got and error during update :: {}", err);
 			process::exit(1);
 		})
@@ -88,17 +86,4 @@ fn main() {
 		println!("Searching for {} ...", package.value_of("package").unwrap());
 		repos::search(&mut config, pkg);
     };
-
-    if let Some(_) = matches.subcommand_matches("setup") {
-		println!("Configuring opm, please be patient. While wait go take a cup of coffee ☕");
-
-		repos::setup(&mut config).unwrap_or_else(|err| {
-			eprintln!("Could not setup the package manager due {}", err);
-			repos::roll_back(&config);
-			process::exit(1);
-		});
-
-		println!("Done");
-    };
-
 }

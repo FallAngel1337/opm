@@ -42,6 +42,8 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             .into_string().unwrap();
             
             extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
+        } else {
+            println!("Package {} was not found!", name);
         }
 
     }
