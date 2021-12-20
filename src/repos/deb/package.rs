@@ -35,6 +35,10 @@ pub struct ControlFile {
     pub maintainer: String,
     pub description: String,
     pub depends: Option<Vec<String>>,
+    pub recommends: Option<Vec<String>>,
+    pub suggests: Option<Vec<String>>,
+    pub enhances: Option<Vec<String>>,
+    pub pre_depends: Option<Vec<String>>,
     pub filename: String,
     pub size: String,
     pub md5sum: String,
@@ -85,6 +89,10 @@ impl ControlFile {
             depends: Self::split_deps(Some(&Self::try_get(&map, "Depends")?)),
             // Should be like the others
             // But, when reading /var/lib/dpkg/status it does not have those fields
+            recommends: Self::split_deps(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
+            suggests: Self::split_deps(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
+            enhances: Self::split_deps(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
+            pre_depends: Self::split_deps(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
             filename: Self::try_get(&map, "Filename").unwrap_or_default(),
             size: Self::try_get(&map, "Size").unwrap_or_default(),
             md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
@@ -111,11 +119,15 @@ impl ControlFile {
 
     fn split_deps(dependencies: Option<&String>) -> Option<Vec<String>> {
         if let Some(val) = dependencies {
-            let val = val
-                .split(',')
-                .map(|d| d.trim().to_owned())
-                .collect::<Vec<_>>();
-            Some(val)
+            if !val.is_empty() {
+                let val = val
+                    .split(',')
+                    .map(|d| d.trim().to_owned())
+                    .collect::<Vec<_>>();
+                Some(val)
+            } else {
+                None
+            }
         } else {
             None
         }
