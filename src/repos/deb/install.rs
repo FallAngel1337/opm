@@ -40,7 +40,8 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                         .into_os_string()
                         .into_string().unwrap();
                         
-                        extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
+                        println!("Downloaded {} at {:?}", pkg.control.package, path);
+                        extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
                     }
                 })
             }
@@ -49,7 +50,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             .into_os_string()
             .into_string().unwrap();
             
-            extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
+            extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
         } else {
             println!("Package {} was not found!", name);
         }

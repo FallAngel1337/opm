@@ -24,25 +24,15 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
             // println!("After: -{}-", pkg);
 
             if pkg.contains('|') {
-                let pkgs = pkg.split(" | ")
-                .collect::<Vec<_>>();
-                
-                let installed = pkgs.iter()
-                    .filter_map(|pkg| cache::check_installed(pkg))
-                    .count();
-
-                if installed == 0 {
-                    // NOTE: If none is installed, install the first one
-                    let pkgs = pkgs.into_iter()
+                println!("Found alternative package names: {:?}", pkg);
+                pkg.split(" | ")
                     .filter_map(|pkg| cache::cache_lookup(config, pkg))
-                    .next();
-
-                    if let Some(pkg) = pkgs {
-                        depends.push(pkg)
-                    } else {
-                        return None;
+                    .for_each(|pkg| {
+                    if let Some(mut found) = get_dependencies(config, &pkg) {
+                        depends.append(&mut found);
                     }
-                }
+                });
+
             } else if cache::check_installed(pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg) {
                     // get_dependencies(config, &pkg);

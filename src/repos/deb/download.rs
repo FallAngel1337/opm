@@ -23,7 +23,6 @@ pub async fn download(config: &mut Config, pkg: &DebPackage) -> Result<PathBuf, 
 
     let mut pkg = File::create(&name)?;
     io::copy(&mut content, &mut pkg)?;
-    println!("Done");
 
     Ok(PathBuf::from(name))
 }
