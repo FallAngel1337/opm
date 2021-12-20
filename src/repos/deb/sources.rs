@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::Error;
 
-const DEB_REPOS: &'static str = "/etc/apt/sources.list"; // TODO: add from /etc/apt/sources.list.d/*
+const DEB_REPOS: &'static str = "/etc/apt/sources.list";
 
 #[derive(Debug, Clone)]
 pub struct DebianSource {

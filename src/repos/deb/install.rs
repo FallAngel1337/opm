@@ -10,8 +10,12 @@ use super::{extract, download};
 // TODO: Check for newer versions of the package if installed
 pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     if name.ends_with(".deb") {
-        let _pkg = extract::extract(name, &config.tmp)?;
-        //TODO: Verify if this package is alredy installed
+        let pkg = extract::extract(name, &config.tmp)?;
+        if let Some(pkg) = cache::check_installed(&pkg.control.package) {
+            println!("{} is already installed\nFound:", name);
+            println!("{} - {}", pkg.control.package, pkg.control.version);
+            return Err(InstallError::AlreadyInstalled);
+        }
         println!("Extracting ...");
     } else {
         if let Some(pkg) = cache::check_installed(name) {
