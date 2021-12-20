@@ -12,23 +12,19 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
     if let Some(deps) = &crtl.depends {
         for pkg in deps {
             if pkg.contains('|') {
-                let list = pkg.split(" | ").map(|pkg| pkg.to_owned()).collect::<Vec<_>>();
-                println!("Which one you want to install?\n{:?}\n>> ", list);
-                let mut input = String::new();
-                std::io::stdin()
-                    .read_line(&mut input)
-                    .expect("Failed to read from stdin");
+                let pkgs = pkg.split(" | ")
+                .collect::<Vec<_>>();
 
-                let input = input.trim().parse::<usize>().expect("Invalid number") - 1;
-                let pkg = list.get(input).unwrap_or_else(|| panic!("Could not get the {}nth option", input));
+                let installed = pkgs.iter()
+                    .filter_map(|pkg| cache::check_installed(pkg))
+                    .count();
 
-                if cache::check_installed(pkg).is_none() {
-                    if let Some(pkg) = cache::cache_lookup(config, pkg) {
-                        get_dependencies(config, &pkg);
-                        depends.push(pkg);
-                    } else {
-                        return None;
-                    }
+                if installed == 0 {
+                    // NOTE: If none is installed, install the first one
+                    let pkg = pkgs.into_iter()
+                        .filter_map(|pkg| cache::cache_lookup(config, pkg))
+                        .next().unwrap();
+                    depends.push(pkg)
                 }
             } else if cache::check_installed(pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg) {
@@ -39,6 +35,7 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
                 }
             }
         }
+        depends.dedup();
         Some(depends)
     } else {
         None

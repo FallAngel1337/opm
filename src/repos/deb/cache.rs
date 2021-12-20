@@ -68,19 +68,18 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 		let control = fs::read_to_string(path).unwrap();
 
 		let entry = entry.path()
-			.into_os_string()
-			.into_string()
-			.unwrap();
+		.into_os_string()
+		.into_string()
+		.unwrap();
 
-		let url =  entry
+		let url =  &entry
 			.split('/')
 			.last()
 			.unwrap()
 			.replace("_", "/")
 			.split('/')
-			.next()
-			.unwrap()
-			.to_owned();
+			.collect::<Vec<_>>()[..2]
+			.join("/");
 
 		for ctrl in control.split("\n\n") {
 			for line in ctrl.split('\n') {
@@ -88,7 +87,7 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 					let pkg = line.split(": ").nth(1).unwrap();
 					if pkg == name {
 						let mut control_file = ControlFile::from(ctrl).unwrap();
-						let url = format!("{}/ubuntu/{}", url, &control_file.filename);
+						let url = format!("{}/{}", url, &control_file.filename);
 						control_file.set_filename(&url);
 						pkgs.push(control_file);
 					}

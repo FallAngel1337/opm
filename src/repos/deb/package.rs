@@ -6,7 +6,7 @@ use crate::repos::errors::ConfigError;
 ///
 /// Kind of the package
 ///
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub enum PkgKind {
     Binary,
@@ -82,7 +82,10 @@ impl ControlFile {
         if let Some(v) = value {
             Ok (v.as_ref().unwrap().trim().to_owned())
         } else {
-            Err(ConfigError::Error("Invalid debain's control file! Missing \"Package\" field".to_owned()))
+            Err(ConfigError::Error(
+                    format!("Invalid debain's control file! Missing \"{}\" field", field)
+                )
+            )
         }
     }
 
@@ -106,7 +109,7 @@ impl ControlFile {
 /// 
 /// Debian binary package format structure
 ///
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DebPackage {
     pub control: ControlFile,
     pub kind: PkgKind,
