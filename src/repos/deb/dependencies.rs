@@ -19,12 +19,9 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
     
     if let Some(deps) = &ctrl.depends {
         for pkg in deps {
-            // println!("Before: -{}-", pkg);
             let pkg = parse_name(&pkg);
-            // println!("After: -{}-", pkg);
 
             if pkg.contains('|') {
-                println!("Found alternative package names: {:?}", pkg);
                 pkg.split(" | ")
                     .filter_map(|pkg| cache::cache_lookup(config, pkg))
                     .for_each(|pkg| {
@@ -32,11 +29,8 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
                         depends.append(&mut found);
                     }
                 });
-
             } else if cache::check_installed(pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg) {
-                    // get_dependencies(config, &pkg);
-                    // println!("Got {:?} from cache!", pkg.control.package);
                     depends.push(pkg);
                 } else {
                     return None;
@@ -44,7 +38,6 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
             }
         }
         depends.dedup();
-        // println!("Depends = {:#?}", depends);
     }
     
     if let Some(deps) = &ctrl.recommends {

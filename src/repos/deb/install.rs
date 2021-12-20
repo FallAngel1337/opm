@@ -37,20 +37,21 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 dep.into_iter().for_each(|pkg| {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
-                        .into_os_string()
-                        .into_string().unwrap();
+                            .into_os_string()
+                            .into_string().unwrap();
                         
-                        println!("Downloaded {} at {:?}", pkg.control.package, path);
-                        extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
+                        extract::extract(&path, &config.tmp)
+                            .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
                     }
                 })
             }
             let path = download::download(config, &pkg).unwrap();
             let path = path
-            .into_os_string()
-            .into_string().unwrap();
+                .into_os_string()
+                .into_string().unwrap();
             
-            extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
+            extract::extract(&path, &config.tmp)
+                .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
         } else {
             println!("Package {} was not found!", name);
         }
