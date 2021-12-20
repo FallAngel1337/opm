@@ -2,9 +2,10 @@
    
 ### Tasks
 - [ ] [Improve the UI/UX](#ui_ux)
-- [ ] [Run the pre/post install/remove](#scripts)
+- [ ] [Run the pre/post install/remove scripts](#scripts)
+- [ ] Installing extra dependencies(#installing-extra-dependencies)
 - [ ] [Verify package's integrity](#integrity)
-- [ ] Check the package priority
+- [ ] Check the package priority(#package-priorities)
 - [ ] [Packages installation](#packages-installation)
 - [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
