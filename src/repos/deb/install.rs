@@ -28,8 +28,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         println!("Downloading {} for debian ...", name);
 
         if let Some(pkg) = cache::cache_lookup(config, name) {
-            // println!("FOUND => {:?}", pkg.control.package);
-            // println!("FOUND => {:#?}", pkg);
+            println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 println!("Installing {} new packages", dep.len());
                 dep.into_iter().for_each(|pkg| {
