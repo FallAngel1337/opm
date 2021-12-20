@@ -2,10 +2,7 @@ use crate::repos::config::Config;
 use super::package::DebPackage;
 use super::cache;
 
-// use solvent;
-// use solvent::DepGraph;
-
-pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<DebPackage>> {
+pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPackage>> {
     let crtl = &pkg.control;
     let mut depends = Vec::new();
 
@@ -28,7 +25,7 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
                 }
             } else if cache::check_installed(pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg) {
-                    get_dependencies(config, &pkg);
+                    // get_dependencies(config, &pkg);
                     depends.push(pkg);
                 } else {
                     return None;
@@ -36,6 +33,7 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
             }
         }
         depends.dedup();
+        println!("Depends = {:#?}", depends);
         Some(depends)
     } else {
         None

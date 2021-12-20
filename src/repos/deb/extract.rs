@@ -1,7 +1,6 @@
 use ar::Archive;
 use tar::Archive as tarar;
 use xz2::read::XzDecoder;
-use sha2::{Sha256, Digest};
 
 use std::fs::{self, File};
 use std::io::{self, prelude::*};
@@ -17,12 +16,8 @@ pub fn extract(package: &str, to: &Path) -> Result<DebPackage, InstallError> {
     let mut bytes: Vec<u8> = Vec::new();
     let mut file = File::open(package)
         .unwrap_or_else(|_| panic!("Could not open the file `{}`", package));
-    let mut hasher = Sha256::new();
     file.read_to_end(&mut bytes)
         .unwrap_or_else(|_| panic!("Could not read the file `{}`", package));
-
-    hasher.update(bytes);
-    // let sig = hasher.finalize();
 
     while let Some(entry_result) = archive.next_entry() {
         let mut entry = entry_result?;

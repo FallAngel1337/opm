@@ -13,15 +13,24 @@ pub enum PkgKind {
     Source,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PkgPriority {
+    Required,
+    Important,
+    Standard,
+    Optional,
+    Extra, // Deprecated, but here for compatibility issues
+}
+
 ///
 /// Debian's control file (mandatory fields)
 ///
 // TODO: Add package priority
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ControlFile {
     pub package: String,
-    // pub priority: PkgPriority
     pub version: String,
+    pub priority: PkgPriority,
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
@@ -32,6 +41,19 @@ pub struct ControlFile {
     pub sha1: String,
     pub sha256: String,
     pub sha512: String
+}
+
+impl PkgPriority {
+    fn get_priority(p: &str) -> Self {
+        match p {
+            "required" => PkgPriority::Required,
+            "important" => PkgPriority::Important,
+            "standard" => PkgPriority::Standard,
+            "optional" => PkgPriority::Optional,
+            "extra" => PkgPriority::Extra,
+            _ => panic!("Invalid priority")
+        }
+    }
 }
 
 // TODO: Improve this in the future
@@ -51,11 +73,12 @@ impl ControlFile {
                 values.get(0).map(|v| v.to_owned()),
                 values.get(1).map(|v| v.to_owned())
             );
-        };
+        }
 
         let result = Self {
             package: Self::try_get(&map, "Package")?,
             version: Self::try_get(&map, "Version")?,
+            priority: PkgPriority::get_priority(&Self::try_get(&map, "Priority")?),
             architecture: Self::try_get(&map, "Architecture")?,
             maintainer: Self::try_get(&map, "Maintainer")?,
             description: Self::try_get(&map, "Description")?,
@@ -68,10 +91,7 @@ impl ControlFile {
             sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
             sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
             sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
-        };
-
-        // println!("Package: {}", result.package);
-        
+        };        
 
         Ok(result)
     }
