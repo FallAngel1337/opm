@@ -31,13 +31,15 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 println!("Installing {} new packages", dep.len());
+                dep.iter().for_each(|pkg| print!("{} ", pkg.control.package));
+                println!();
+
                 dep.into_iter().for_each(|pkg| {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
                         .into_os_string()
                         .into_string().unwrap();
                         
-                        println!("Downloaded {} at {:?}", pkg.control.package, path);
                         extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
                     }
                 })

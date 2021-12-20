@@ -26,9 +26,7 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
             if pkg.contains('|') {
                 let pkgs = pkg.split(" | ")
                 .collect::<Vec<_>>();
-
-                println!("Found alternative package names: {:?}", pkgs);
-
+                
                 let installed = pkgs.iter()
                     .filter_map(|pkg| cache::check_installed(pkg))
                     .count();
