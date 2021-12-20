@@ -86,9 +86,9 @@ impl ControlFile {
             architecture: Self::try_get(&map, "Architecture")?,
             maintainer: Self::try_get(&map, "Maintainer")?,
             description: Self::try_get(&map, "Description")?,
-            depends: Self::split_deps(Some(&Self::try_get(&map, "Depends")?)),
             // Should be like the others
             // But, when reading /var/lib/dpkg/status it does not have those fields
+            depends: Self::split_deps(Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
             recommends: Self::split_deps(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
             suggests: Self::split_deps(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
             enhances: Self::split_deps(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),

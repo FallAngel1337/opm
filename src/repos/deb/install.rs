@@ -29,8 +29,9 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
 
         if let Some(pkg) = cache::cache_lookup(config, name) {
             // println!("FOUND => {:?}", pkg.control.package);
-            println!("FOUND => {:#?}", pkg);
+            // println!("FOUND => {:#?}", pkg);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
+                println!("Installing {} new packages", dep.len());
                 dep.into_iter().for_each(|pkg| {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
@@ -39,7 +40,6 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                         
                         println!("Downloaded {} at {:?}", pkg.control.package, path);
                         extract::extract(&path, &config.tmp).unwrap_or_else(|e| panic!("Failed extraction due {}", e));
-                    } else {
                     }
                 })
             }
