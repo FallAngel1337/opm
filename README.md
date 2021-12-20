@@ -8,7 +8,7 @@ This package manager aims to be universal/generic and simple.
 It's always good to remember that `IT IS NOT A WRAPPER`
 for known package managers(apt, aptitude, dnf, yum, etc) neither a front-end for others (dpkg, rpm, etc).
 
-**Note**: Most of the features and functionalities aren't done and/or stable yet. We're working to release a full working and satable version that can run on any operation system, including Microsoft Windows. For now just for debian-based linux distributions.
+**Note**: Most of the features and functionalities aren't done and/or stable yet. We're working to release a full working and stable version that can run on any operation system, including Microsoft Windows. For now just for debian-based linux distributions.
 
 ## Installation
 ### From releases (not-recommended):
