@@ -3,10 +3,10 @@ use super::package::DebPackage;
 use super::cache;
 
 pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPackage>> {
-    let crtl = &pkg.control;
+    let ctrl = &pkg.control;
     let mut depends = Vec::new();
 
-    if let Some(deps) = &crtl.depends {
+    if let Some(deps) = &ctrl.depends {
         for pkg in deps {
             if pkg.contains('|') {
                 let pkgs = pkg.split(" | ")
@@ -34,8 +34,25 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
         }
         depends.dedup();
         println!("Depends = {:#?}", depends);
-        Some(depends)
     } else {
-        None
+        return None;
     }
+    
+    if let Some(deps) = &ctrl.recommends {
+        println!("Recommendded Packages: {:?}", deps);
+    }
+
+    if let Some(deps)  = &ctrl.suggests {
+        println!("Suggested Packages: {:?}", deps);
+    }
+
+    if let Some(deps)  = &ctrl.enhances {
+        println!("Enhancement Packages: {:?}", deps);
+    }
+
+    if let Some(deps)  = &ctrl.pre_depends {
+        println!("Pre-Dependent Packages: {:?}", deps);
+    }
+
+    Some(depends)
 }
