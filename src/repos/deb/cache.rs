@@ -100,6 +100,7 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 	pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next()
 }
 
+#[inline]
 pub fn check_installed(name: &str) -> Option<DebPackage> {
 	dump_installed().into_iter().find(|pkg| pkg.control.package == name)
 }
