@@ -17,7 +17,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 
 		let control = control
 			.split("\n\n")
-			.map(|ctrl| ControlFile::from(ctrl));
+			.map(ControlFile::from);
 			
 		let entry = entry.path()
 			.into_os_string()
@@ -25,11 +25,11 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 			.unwrap();
 
 		let url =  &entry
-			.split("/")
+			.split('/')
 			.last()
 			.unwrap()
 			.replace("_", "/")
-			.split("/")
+			.split('/')
 			.collect::<Vec<_>>()[..2]
 			.join("/");		
 
@@ -51,7 +51,7 @@ pub fn dump_installed() -> Vec<DebPackage> {
 
 	let control = control
 		.split("\n\n")
-		.map(|ctrl| ControlFile::from(ctrl))
+		.map(ControlFile::from)
 		.filter_map(|ctrl| ctrl.ok())
 		.map(|ctrl| DebPackage { control: ctrl, kind: PkgKind::Binary } )
 		.collect::<Vec<_>>();
@@ -73,19 +73,19 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 			.unwrap();
 
 		let url =  entry
-			.split("/")
+			.split('/')
 			.last()
 			.unwrap()
 			.replace("_", "/")
-			.split("/")
+			.split('/')
 			.next()
 			.unwrap()
 			.to_owned();
 
 		for ctrl in control.split("\n\n") {
-			for line in ctrl.split("\n") {
+			for line in ctrl.split('\n') {
 				if line.contains("Package: ") {
-					let pkg = line.split(": ").skip(1).next().unwrap();
+					let pkg = line.split(": ").nth(1).unwrap();
 					if pkg == name {
 						let mut control_file = ControlFile::from(ctrl).unwrap();
 						let url = format!("{}/ubuntu/{}", url, &control_file.filename);
@@ -100,15 +100,9 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 	pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next()
 }
 
+#[inline]
 pub fn check_installed(name: &str) -> Option<DebPackage> {
-	let control = dump_installed().into_iter().filter(|pkg| pkg.control.package == name).next();
-	if control.is_none() {
-		None
-	} else {
-		Some(
-			control.unwrap()
-		)
-	}
+	dump_installed().into_iter().find(|pkg| pkg.control.package == name)
 }
 
 #[allow(unused)]

@@ -44,7 +44,7 @@ fn clear(config: &Config) -> Result<(), InstallError> {
 }
 
 #[tokio::main]
-pub async fn update(config: &mut Config, repos: &Vec<DebianSource>) -> Result<(), InstallError> {
+pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<(), InstallError> {
     clear(config)?;
 
     update_releases(config, repos).await?;
@@ -53,7 +53,7 @@ pub async fn update(config: &mut Config, repos: &Vec<DebianSource>) -> Result<()
     Ok(())
 }
 
-async fn update_cache(config: &Config, repos: &Vec<DebianSource>) -> Result<(), InstallError> {
+async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<(), InstallError> {
     for (i, source) in repos.iter().enumerate() {
         println!("Get {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {
@@ -81,7 +81,7 @@ async fn update_cache(config: &Config, repos: &Vec<DebianSource>) -> Result<(), 
     Ok(())
 }
 
-async fn update_releases(config: &Config, repos: &Vec<DebianSource>) -> Result<(), InstallError> {
+async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<(), InstallError> {
     for (i, source) in repos.iter().enumerate() {
         println!("RLS {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {
