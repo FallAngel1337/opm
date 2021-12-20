@@ -1,6 +1,6 @@
 // use std::env;
 
-const PKG_FMT: &'static str = "PKG_FMT"; // The package format; It could be .deb, .rpm, etc
+const PKG_FMT: &str = "PKG_FMT"; // The package format; It could be .deb, .rpm, etc
 
 #[derive(Debug, Clone, Copy)]
 pub enum PackageFormat {

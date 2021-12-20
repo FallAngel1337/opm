@@ -7,12 +7,7 @@ use super::cache;
 
 fn check_dependencie(dependencie: &str) -> Option<DebPackage> {
     let dep = cache::check_installed(dependencie);
-    if let Some(dep) = dep.into_iter().next() {
-        // TODO: Verify the version
-        Some(dep)
-    } else {
-        None
-    }
+    dep.into_iter().next()
 }
 
 pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<DebPackage>> {
@@ -30,7 +25,7 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
                     .expect("Failed to read from stdin");
 
                 let input = input.trim().parse::<usize>().expect("Invalid number") - 1;
-                let pkg = list.get(input).expect(&format!("Could not get the {}nth option", input));
+                let pkg = list.get(input).unwrap_or_else(|| panic!("Could not get the {}nth option", input));
 
                 if check_dependencie(pkg).is_none() {
                     if let Some(pkg) = cache::cache_lookup(config, pkg) {
@@ -40,14 +35,12 @@ pub fn get_dependencies(config: &mut Config, pkg: &DebPackage) -> Option<Vec<Deb
                         return None;
                     }
                 }
-            } else {
-                if check_dependencie(pkg).is_none() {
-                    if let Some(pkg) = cache::cache_lookup(config, pkg) {
-                        get_dependencies(config, &pkg);
-                        depends.push(pkg);
-                    } else {
-                        return None;
-                    }
+            } else if check_dependencie(pkg).is_none() {
+                if let Some(pkg) = cache::cache_lookup(config, pkg) {
+                    get_dependencies(config, &pkg);
+                    depends.push(pkg);
+                } else {
+                    return None;
                 }
             }
         }

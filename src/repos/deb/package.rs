@@ -42,25 +42,14 @@ impl ControlFile {
     }
 
     pub fn from(contents: &str) -> Result<Self, ConfigError> {
-        // println!("GOT : {}", contents);
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
-        // FIXME: Find a better way of doing it
         for line in contents.lines() {
             let line = line.trim();
-            let values = line.splitn(2, ":").map(|line| line.to_owned()).collect::<Vec<_>>();
+            let values = line.splitn(2, ':').map(|line| line.to_owned()).collect::<Vec<_>>();
             map.insert(
-                if let Some(v) = values.get(0) {
-                    Some(v.to_owned())
-                } else {
-                    None
-                },
-
-                if let Some(v) = values.get(1) {
-                    Some(v.to_owned())
-                } else {
-                    None
-                }
+                values.get(0).map(|v| v.to_owned()),
+                values.get(1).map(|v| v.to_owned())
             );
         };
 
@@ -90,17 +79,17 @@ impl ControlFile {
     // TODO: Maybe I need to make this easier to read
     fn try_get(hashmap: &HashMap<Option<String>, Option<String>>, field: &str) -> Result<String, ConfigError> {
         let value = hashmap.get(&Some(field.to_owned()));
-        if value.is_none() {
-            Err(ConfigError::Error("Invalid debain's control file! Missing \"Package\" field".to_owned()))
+        if let Some(v) = value {
+            Ok (v.as_ref().unwrap().trim().to_owned())
         } else {
-            Ok (value.unwrap().as_ref().unwrap().clone().trim().to_owned())
+            Err(ConfigError::Error("Invalid debain's control file! Missing \"Package\" field".to_owned()))
         }
     }
 
     fn split_deps(dependencies: Option<&String>) -> Option<Vec<String>> {
         if let Some(val) = dependencies {
             let val = val
-                .split(",")
+                .split(',')
                 .map(|d| d.trim().to_owned())
                 .collect::<Vec<_>>();
             Some(val)

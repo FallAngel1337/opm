@@ -65,7 +65,7 @@ fn main() {
         });
     }
 
-    if let Some(_) = matches.subcommand_matches("update") {
+    if matches.subcommand_matches("update").is_some() {
         repos::update(&mut config).unwrap_or_else(|err| {
 			println!("Got and error during update :: {}", err);
 			process::exit(1);

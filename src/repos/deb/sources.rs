@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::Error;
 
-const DEB_REPOS: &'static str = "/etc/apt/sources.list";
+const DEB_REPOS: &str = "/etc/apt/sources.list";
 
 #[derive(Debug, Clone)]
 pub struct DebianSource {
@@ -16,8 +16,8 @@ impl DebianSource {
         let mut v: Vec<Self> = Vec::new();
 
         for d in contents.lines() {
-            if !d.contains("#") && d.starts_with("deb") {
-                let split = d.split(" ").collect::<Vec<&str>>().iter()
+            if !d.contains('#') && d.starts_with("deb") {
+                let split = d.split(' ').collect::<Vec<&str>>().iter()
                     .map(|x| x.to_string()).collect::<Vec<String>>();
                 v.push(
                     DebianSource {
