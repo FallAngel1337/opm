@@ -3,17 +3,48 @@
 ### Tasks
 - [ ] [Improve the UI/UX](#ui_ux)
 - [ ] [Run the pre/post install/remove](#scripts)
-- [ ] [Verify package's integrity](#integrity)
-- [ ] Check the package priority
+- [ ] [Verify integrity](#integrity)
+   - [ ] [Pacakages integrity](#packages-integrity)
+   - [ ] [Repository integrity](#repository-integrity)
+- [ ] [Dependencie Handling](#dependencie-handling)
 - [ ] [Packages installation](#packages-installation)
+   - [ ] User-only installtion
 - [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
 - [ ] [Packages removal](#packages-removal)
 - [x] [Packages listing](#packages-listing)
    - [x] Make the querying faster
 - [ ] Pacakage Source
-   - [ ] Sources formats are different on ubuntu-bases from debian-based
+   - [X] Sources formats are different on ubuntu-bases from debian-based
+- [ ] [Handle Edge Cases](#Handle-Edge-Cases)
 
+### UI-UX
+For now it's showing too much messages and most of then doesn't have meaning
+from the final-user perspective, so we need to make better output messages
+
+### Scripts
+If the packages does have some pre or post install script it should be executed.
+Maybe we can have a feature for malicious scripts execution and prevent'em to harm the user.
+
+### Integrity
+   ### Packages Intergrity
+   All packages have a signature filed, it is a hash that signs the package.
+   It' should be verified, after installation to see if nothing had been corrupted.
+
+   ### Repository Intergrity
+   Most repositopries have a signature, so we sould verify it before downloading from
+   it. Of course, enable the possibilty to force the download from untrusted repositories.
+
+### Dependencie Handling
+Most of the packages depends on others, so we need to handle that dependencies.
+But not all dependencies are required, they can be recommended to enable a new feature of the package.
+By default, install just the essential packages.
+
+### Handle Edge Cases
+`OPM` should work on all use cases, it cannot break itself, not work or even worst...
+break the whole system.
+E.g.: Not having `/var/libg/dpkg/status` on debian based distributions.
+I know it's very rare or thats near impossible, but it can happen... `OPM` need to handle that.
 
 ### Packages installation
 ```
