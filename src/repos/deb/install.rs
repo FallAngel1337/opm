@@ -28,7 +28,6 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             return Err(InstallError::AlreadyInstalled);
         }
 
-        // Downloand and call install on the downloaded packages
         println!("Downloading {} for debian ...", name);
 
         if let Some(pkg) = cache::cache_lookup(config, name) {
@@ -43,7 +42,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 println!("Suggested packages:");
                 sugg.iter().for_each(|pkg| print!("{} ", pkg));
                 
-                deps.into_iter().for_each(|pkg| {
+                for pkg in deps.into_iter() {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
                             .into_os_string()
@@ -51,11 +50,15 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                         
                         let pkg = extract::extract(&path, &config.tmp)
                             .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
+
                         println!("Installing {} ...", pkg.control.package);
-                        scripts::execute_install(&config.tmp).unwrap(); // FIXME: Do not panic! if failed. It should rollback
+                        scripts::execute_install(&config.tmp)?;
+                    } else {
+                        println!("Could not download {}", pkg.control.package);
                     }
-                })
+                }
             }
+
             let path = download::download(config, &pkg).unwrap();
             let path = path
                 .into_os_string()
@@ -64,15 +67,15 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             let pkg = extract::extract(&path, &config.tmp)
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
             println!("Installing {} ...", pkg.control.package);
+
             scripts::execute_install(&config.tmp)?;
             finish(&config.tmp)?;
+
         } else {
             println!("Package {} was not found!", name);
         }
-
     }
     
-
     Ok(())
 }
 
