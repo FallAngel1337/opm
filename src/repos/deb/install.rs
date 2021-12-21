@@ -40,11 +40,9 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 println!("Installing {} NEW packages", deps.len());
                 deps.iter().for_each(|pkg| print!("{} ", pkg.control.package));
                 println!();
-                
                 println!("Suggested packages:");
                 sugg.iter().for_each(|pkg| print!("{} ", pkg));
-                println!();
-
+                
                 deps.into_iter().for_each(|pkg| {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
