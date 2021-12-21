@@ -18,7 +18,7 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
     
     if let Some(deps) = &ctrl.depends {
         for pkg in deps {
-            let pkg = parse_name(&pkg);
+            let pkg = parse_name(pkg);
 
             if pkg.contains('|') {
                 pkg.split(" | ")
