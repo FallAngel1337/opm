@@ -26,6 +26,7 @@ from the final-user perspective, so we need to make better output messages
 ### Scripts
 If the packages does have some pre or post install script it should be executed.
 Maybe we can have a feature for malicious scripts execution and prevent'em to harm the user.
+- Follow: https://wiki.debian.org/MaintainerScripts
 
 ### Integrity
    ### Packages Intergrity

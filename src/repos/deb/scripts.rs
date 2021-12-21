@@ -3,16 +3,17 @@ use std::process::Command;
 use crate::repos::errors::InstallError;
 
 ///
-/// Pre/Post install/remove scripsts execution
-///
-pub fn execute(p: &Path) -> Result<(), InstallError>{
-    let mut command = Command::new("sh");
+/// Pre/Post install/remove scripts execution
+/// TODO: Make this better to execute
 
+pub fn execute_install(p: &Path) -> Result<(), InstallError>{
     if !p.is_dir() {
         Err(InstallError::Error("Package extration folder is not a directory".to_owned()))
     } else {
         for entry in std::fs::read_dir(p).unwrap() {
+
             let path = entry
+                .as_ref()
                 .unwrap()
                 .path()
                 .into_os_string()
@@ -27,15 +28,18 @@ pub fn execute(p: &Path) -> Result<(), InstallError>{
 
             match script.as_ref() {
                 "preinst" => {
-                    command.args(["-c", &path])
-                        .output()
-                        .expect("Failed to execute pre-install script");
+                    if Command::new("sh").args(["-c", &path]).output().is_err() {
+                        eprintln!("Failed to install the package!\nRemoving it ...");
+                        execute_remove(p)?;
+                        return Err(InstallError::Error("Could not execute preinst the script".to_owned()))
+                    }
                 },
 
                 "postinst" => {
-                    command.args(["-c", &path])
-                        .output()
-                        .expect("Failed to execute post-install script");
+                    if Command::new("sh").args(["-c", &path]).output().is_err() {
+                        eprintln!("Failed to configure the package!");
+                        return Err(InstallError::Error("Could not execute postinst the script".to_owned()))
+                    }
                 },
 
                 _ => ()
@@ -44,5 +48,50 @@ pub fn execute(p: &Path) -> Result<(), InstallError>{
         
         Ok(())
     }
-
 }
+
+// TODO: Add a `purge` option
+pub fn execute_remove(p: &Path) -> Result<(), InstallError> {
+    if !p.is_dir() {
+        Err(InstallError::Error("Package extration folder is not a directory".to_owned()))
+    } else {
+        for entry in std::fs::read_dir(p).unwrap() {
+            let path = entry
+                .as_ref()
+                .unwrap()
+                .path()
+                .into_os_string()
+                .into_string()
+                .unwrap();
+
+            let script = &path
+                .rsplit('/')
+                .next()
+                .unwrap()
+                .to_owned();
+
+            match script.as_ref() {
+                "prerm" => {
+                    if Command::new("sh").args(["-c", &path]).output().is_err() {
+                        eprintln!("Failed to install the package!\nRemoving it ...");
+                        execute_remove(p)?;
+                        return Err(InstallError::Error("Could not execute preinst the script".to_owned()))
+                    }
+                },
+
+                "postrm" => {
+                    if Command::new("sh").args(["-c", &path]).output().is_err() {
+                        eprintln!("Failed to install the package!\nRemoving it ...");
+                        execute_remove(p)?;
+                        return Err(InstallError::Error("Could not execute postinst the script".to_owned()))
+                    }
+                },
+
+                _ => ()
+            }
+        }
+        
+        Ok(())
+    }
+}
+

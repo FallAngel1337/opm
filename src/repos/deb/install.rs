@@ -19,7 +19,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         }
         println!("Extracting ...");
         println!("Done");
-        scripts::execute(&config.tmp)?;
+        scripts::execute_install(&config.tmp)?;
     } else {
         if let Some(pkg) = cache::check_installed(name) {
             println!("{} is already installed\nFound:", name);
@@ -62,7 +62,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             
             extract::extract(&path, &config.tmp)
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
-            scripts::execute(&config.tmp)?;
+            scripts::execute_install(&config.tmp)?;
         } else {
             println!("Package {} was not found!", name);
         }
