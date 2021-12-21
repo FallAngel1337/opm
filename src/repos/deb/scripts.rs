@@ -27,14 +27,12 @@ pub fn execute(p: &Path) -> Result<(), InstallError>{
 
             match script.as_ref() {
                 "preinst" => {
-                    println!("Executing pre-install script ...");
                     command.args(["-c", &path])
                         .output()
                         .expect("Failed to execute pre-install script");
                 },
 
                 "postinst" => {
-                    println!("Executing post-install script ...");
                     command.args(["-c", &path])
                         .output()
                         .expect("Failed to execute post-install script");

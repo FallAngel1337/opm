@@ -33,11 +33,18 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         if let Some(pkg) = cache::cache_lookup(config, name) {
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
-                println!("Installing {} new packages", dep.len());
-                dep.iter().for_each(|pkg| print!("{} ", pkg.control.package));
+                let deps = dep.0;
+                let sugg = dep.1;
+
+                println!("Installing {} NEW packages", deps.len());
+                deps.iter().for_each(|pkg| print!("{} ", pkg.control.package));
+                println!();
+                
+                println!("Suggested packages:");
+                sugg.iter().for_each(|pkg| print!("{} ", pkg));
                 println!();
 
-                dep.into_iter().for_each(|pkg| {
+                deps.into_iter().for_each(|pkg| {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
                             .into_os_string()

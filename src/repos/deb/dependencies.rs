@@ -11,11 +11,10 @@ fn parse_name(name: &str) -> &str {
     }
 }
 
-pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPackage>> {
+pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPackage>, Vec<String>)> {
     let ctrl = &pkg.control;
-    println!("Getting dependencies for \"{}\" ...", ctrl.package);
 
-    let mut depends = Vec::new();
+    let (mut depends, mut optional) = (Vec::new(), Vec::new());
     
     if let Some(deps) = &ctrl.depends {
         for pkg in deps {
@@ -26,7 +25,7 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
                     .filter_map(|pkg| cache::cache_lookup(config, pkg))
                     .for_each(|pkg| {
                     if let Some(mut found) = get_dependencies(config, &pkg) {
-                        depends.append(&mut found);
+                        depends.append(&mut found.0);
                     }
                 });
             } else if cache::check_installed(pkg).is_none() {
@@ -41,20 +40,20 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<Vec<DebPack
     }
     
     if let Some(deps) = &ctrl.recommends {
-        println!("Recommendded Packages: {:?}", deps);
+        optional.append(&mut deps.clone())
     }
 
     if let Some(deps)  = &ctrl.suggests {
-        println!("Suggested Packages: {:?}", deps);
+        optional.append(&mut deps.clone())
     }
 
     if let Some(deps)  = &ctrl.enhances {
-        println!("Enhancement Packages: {:?}", deps);
+        optional.append(&mut deps.clone())
     }
 
     if let Some(deps)  = &ctrl.pre_depends {
         println!("Pre-Dependent Packages: {:?}", deps);
     }
 
-    Some(depends)
+    Some((depends, optional))
 }
