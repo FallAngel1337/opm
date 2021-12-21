@@ -3,6 +3,7 @@ mod install;
 mod download;
 mod update;
 mod dependencies;
+mod scripts;
 
 pub mod cache;
 pub mod package;

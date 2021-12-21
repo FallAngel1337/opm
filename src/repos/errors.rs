@@ -10,11 +10,14 @@ pub enum InstallError {
     IoError(String),
     NetworkingError(String),
     DataBaseError(String),
+    Error(String),
     AlreadyInstalled
 }
+
 #[derive(Debug)]pub enum SetupError {
     Error(String)
 }
+
 #[derive(Debug)]
 pub enum ConfigError {
     Error(String)
@@ -27,6 +30,7 @@ impl Display for InstallError {
             InstallError::IoError(msg) => write!(f, "I/O Error => {}", msg),
             InstallError::NetworkingError(msg) => write!(f, "Networking Error => {}", msg),
             InstallError::DataBaseError(msg) => write!(f, "DataBase Error => {}", msg),
+            InstallError::Error(msg) => write!(f, "Error during installation :: {}", msg),
             InstallError::AlreadyInstalled => write!(f, "Package is already installed")
         }
     }

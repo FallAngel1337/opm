@@ -6,6 +6,7 @@ use crate::repos::{errors::InstallError, deb::dependencies};
 use crate::repos::config::Config;
 use super::cache;
 use super::{extract, download};
+use super::scripts;
 
 // TODO: Check for newer versions of the package if installed
 pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
@@ -17,6 +18,8 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             return Err(InstallError::AlreadyInstalled);
         }
         println!("Extracting ...");
+        println!("Done");
+        scripts::execute(&config.tmp)?;
     } else {
         if let Some(pkg) = cache::check_installed(name) {
             println!("{} is already installed\nFound:", name);
@@ -52,6 +55,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             
             extract::extract(&path, &config.tmp)
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
+            scripts::execute(&config.tmp)?;
         } else {
             println!("Package {} was not found!", name);
         }

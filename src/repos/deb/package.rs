@@ -55,7 +55,7 @@ impl PkgPriority {
             "standard" => PkgPriority::Standard,
             "optional" => PkgPriority::Optional,
             "extra" => PkgPriority::Extra,
-            _ => panic!("Invalid priority")
+            _ => PkgPriority::Optional
         }
     }
 }
@@ -82,12 +82,12 @@ impl ControlFile {
         let result = Self {
             package: Self::try_get(&map, "Package")?,
             version: Self::try_get(&map, "Version")?,
-            priority: PkgPriority::get_priority(&Self::try_get(&map, "Priority")?),
             architecture: Self::try_get(&map, "Architecture")?,
             maintainer: Self::try_get(&map, "Maintainer")?,
             description: Self::try_get(&map, "Description")?,
             // Should be like the others
             // But, when reading /var/lib/dpkg/status it does not have those fields
+            priority: PkgPriority::get_priority(&Self::try_get(&map, "Priority").unwrap_or_default()),
             depends: Self::split_deps(Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
             recommends: Self::split_deps(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
             suggests: Self::split_deps(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
