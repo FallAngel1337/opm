@@ -39,18 +39,16 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 println!("Installing {} NEW packages", deps.len());
                 deps.iter().for_each(|pkg| print!("{} ", pkg.control.package));
                 println!();
-                
                 println!("Suggested packages:");
                 sugg.iter().for_each(|pkg| print!("{} ", pkg));
-                println!();
-
+                
                 deps.into_iter().for_each(|pkg| {
                     if let Ok(path) = download::download(config, &pkg) {
                         let path = path
                             .into_os_string()
                             .into_string().unwrap();
                         
-                        extract::extract(&path, &config.tmp)
+                        extract::extract(&path, std::path::Path::new("/"))
                             .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
                     }
                 })
@@ -60,7 +58,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 .into_os_string()
                 .into_string().unwrap();
             
-            extract::extract(&path, &config.tmp)
+            extract::extract(&path, std::path::Path::new("/"))
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
             scripts::execute(&config.tmp)?;
         } else {
