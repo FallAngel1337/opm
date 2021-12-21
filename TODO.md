@@ -9,6 +9,7 @@
 - [ ] [Dependencie Handling](#dependencie-handling)
 - [ ] [Packages installation](#packages-installation)
    - [ ] User-only installtion
+- [ ] Package versioning checking
 - [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
 - [ ] [Packages removal](#packages-removal)
