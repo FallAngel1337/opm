@@ -2,6 +2,7 @@
 /// Debian package install
 /// 
 
+use fs_extra;
 use crate::repos::{errors::InstallError, deb::dependencies};
 use crate::repos::config::Config;
 use super::cache;
@@ -50,8 +51,10 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                             .into_os_string()
                             .into_string().unwrap();
                         
-                        extract::extract(&path, &config.tmp)
+                        let pkg = extract::extract(&path, &config.tmp)
                             .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
+                        println!("Installing {} ...", pkg.control.package);
+                        scripts::execute_install(&config.tmp).unwrap(); // FIXME: Do not panic! if failed. It should rollback
                     }
                 })
             }
@@ -60,15 +63,36 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 .into_os_string()
                 .into_string().unwrap();
             
-            extract::extract(&path, &config.tmp)
+            let pkg = extract::extract(&path, &config.tmp)
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
+            println!("Installing {} ...", pkg.control.package);
             scripts::execute_install(&config.tmp)?;
+            finish(&config.tmp)?;
         } else {
             println!("Package {} was not found!", name);
         }
 
     }
     
+
+    Ok(())
+}
+
+fn finish(p: &std::path::Path) -> Result<(), InstallError> {
+    let options = fs_extra::dir::CopyOptions::new();
+    let mut vec = Vec::new();
+
+    for entry in std::fs::read_dir(&p).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+
+        if path.is_dir() {
+            vec.push(path);
+        }
+    }
+
+    fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
+    fs_extra::remove_items(&vec).unwrap();
 
     Ok(())
 }

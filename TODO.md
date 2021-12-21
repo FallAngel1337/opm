@@ -18,6 +18,7 @@
 - [ ] Pacakage Source
    - [X] Sources formats are different on ubuntu-bases from debian-based
 - [ ] [Handle Edge Cases](#Handle-Edge-Cases)
+- [ ] Add a rollback function (in case of CTRL+C or package installtion/remove failure)
 
 ### UI-UX
 For now it's showing too much messages and most of then doesn't have meaning
