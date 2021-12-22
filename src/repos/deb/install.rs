@@ -105,8 +105,8 @@ fn finish(p: &str) -> Result<(), InstallError> {
         }
     }
 
-    fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
-    fs_extra::remove_items(&vec).unwrap();
+    // fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
+    // fs_extra::remove_items(&vec).unwrap();
 
     Ok(())
 }
