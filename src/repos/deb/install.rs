@@ -92,7 +92,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
 }
 
 fn finish(p: &str) -> Result<(), InstallError> {
-    let options = fs_extra::dir::CopyOptions::new();
+    let _options = fs_extra::dir::CopyOptions::new();
     let mut vec = Vec::new();
     let p = Path::new(p);
 
