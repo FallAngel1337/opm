@@ -34,8 +34,3 @@ Please read the items in the toc so you'll can help us on mergin you PR or fixin
   When you was looking through the code you thought _"I can do this better"_. We dont mind, go ahead an create a PR (should be tagged with `code-improvement`).
   Just make sure it'll not break anything. Just keep in mind that here we follow the [`KISS principle`](https://en.wikipedia.org/wiki/KISS_principle),
   so we'll probably merge your PR, unless it adds much more code complexity/boilerplate (even though it gains more performance).
-  
-## Project guide
-  To help you to get a better understanding of the application, we've created a [guide](https://github.com) through the project. This way you'll get more details about the project structure, implementation details program logic, well-known bugs, etc to give you a better understanding of whats happening under the hood.
-  So you'll can get more familiar with the code and, by consequence, contribute even more to the project.
-  
