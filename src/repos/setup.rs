@@ -20,12 +20,6 @@ pub fn setup() -> Result<Config, SetupError> {
         config.setup()?;
     }
 
-    let is_empty = config.cache.read_dir()?.next().is_none();
-
-    if is_empty {
-        println!("Empty cache found! Consider do `opm update` before continue ...");
-    }
-
     Ok(config)
 }
 

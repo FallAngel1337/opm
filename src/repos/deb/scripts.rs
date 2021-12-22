@@ -6,7 +6,9 @@ use crate::repos::errors::InstallError;
 /// Pre/Post install/remove scripts execution
 /// TODO: Make this better to execute
 
-pub fn execute_install(p: &Path) -> Result<(), InstallError>{
+pub fn execute_install(p: &str) -> Result<(), InstallError>{
+    let p = Path::new(p);
+    
     if !p.is_dir() {
         Err(InstallError::Error("Package extration folder is not a directory".to_owned()))
     } else {

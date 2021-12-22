@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::io::{Error, ErrorKind};
 use std::env;
 use std::fs;
@@ -7,11 +6,11 @@ use super::{errors::ConfigError, utils::PackageFormat};
 
 #[derive(Debug)]
 pub struct Config {
-	pub root: PathBuf,
-	pub cache: PathBuf,
-	pub info: PathBuf,
-	pub rls: PathBuf,
-	pub tmp: PathBuf,
+	pub root: String,
+	pub cache: String,
+	pub info: String,
+	pub rls: String,
+	pub tmp: String,
 }
 
 #[allow(deprecated)]
@@ -19,13 +18,12 @@ impl Config {
 	pub fn new(pkg_fmt: PackageFormat) -> Result<Self, ConfigError> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
-		let (info, opm_root);
+		let opm_root;
 
         match pkg_fmt {
             PackageFormat::Deb => {
                 // use super::deb;
 				opm_root = format!("{}/.opm/{}", home, "deb");
-                info = format!("{}/info", opm_root); /*deb::database::DPKG_STATUS;*/
             },
             PackageFormat::Rpm => {
                 panic!("It's a RHEL(-based) distro");
@@ -38,11 +36,11 @@ impl Config {
 
 		Ok(
 			Self {
-				root: PathBuf::from(&opm_root),
-				cache: PathBuf::from(format!("{}/cache/pkg_cache", opm_root)),
-				info: PathBuf::from(info),
-				rls: PathBuf::from(format!("{}/cache/rls", opm_root)),
-				tmp: PathBuf::from(format!("{}/tmp", opm_root)),
+				cache: format!("{}/cache/pkg_cache", opm_root),
+				rls: format!("{}/cache/rls", opm_root),
+				tmp: format!("{}/tmp", opm_root),
+				info: format!("{}/info", opm_root),
+				root: opm_root,
 			}
 		)
 	}

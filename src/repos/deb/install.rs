@@ -1,3 +1,5 @@
+use std::path::Path;
+
 ///
 /// Debian package install
 /// 
@@ -89,9 +91,10 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     Ok(())
 }
 
-fn finish(p: &std::path::Path) -> Result<(), InstallError> {
+fn finish(p: &str) -> Result<(), InstallError> {
     let options = fs_extra::dir::CopyOptions::new();
     let mut vec = Vec::new();
+    let p = Path::new(p);
 
     for entry in std::fs::read_dir(&p).unwrap() {
         let entry = entry.unwrap();

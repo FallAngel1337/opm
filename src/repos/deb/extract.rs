@@ -35,8 +35,8 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage, Ins
     file.read_to_end(&mut bytes)
         .unwrap_or_else(|_| panic!("Could not read the file `{}`", path));
 
-    let package_dst = format!("{}/{}", config.tmp.clone().into_os_string().into_string().unwrap(), pkg);
-    let control_dst = format!("{}/{}", config.info.clone().into_os_string().into_string().unwrap(), pkg);
+    let package_dst = format!("{}/{}", config.tmp, pkg);
+    let control_dst = format!("{}/{}", config.info, pkg);
 
     std::fs::create_dir_all(&package_dst)?;
     std::fs::create_dir_all(&control_dst)?;

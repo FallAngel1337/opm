@@ -2,7 +2,7 @@ use xz2::read::XzDecoder;
 
 use reqwest;
 
-use std::io::{self, ErrorKind, prelude::*};
+use std::{io::{self, ErrorKind, prelude::*}, path::Path};
 use std::fs::{self, File};
 use std::str;
 
@@ -72,7 +72,7 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<(), Ins
             let url = str::replace(&source.url, "http://", "");
             let url = str::replace(&url, "/", "_");
 
-            let pkg = config.cache.join(format!("{}{}_{}_binary-amd64_Packages", url, source.distribution, perm));
+            let pkg = Path::new(&config.cache).join(format!("{}{}_{}_binary-amd64_Packages", url, source.distribution, perm));
             let mut pkg = File::create(pkg)?;
             io::copy(&mut bytes, &mut pkg)?;
         };
@@ -92,7 +92,7 @@ async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<(), 
             let url = str::replace(&source.url, "http://", "");
             let url = str::replace(&url, "/", "_");
             
-            let rls = config.rls.join(format!("{}{}_{}_binary-amd64_InRelease", url, source.distribution, perm));
+            let rls = Path::new(&config.rls).join(format!("{}{}_{}_binary-amd64_InRelease", url, source.distribution, perm));
             let mut dest = File::create(rls)?;
 
             let content =  response.text().await?;
