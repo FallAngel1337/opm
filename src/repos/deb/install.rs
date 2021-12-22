@@ -3,7 +3,7 @@
 /// 
 
 use fs_extra;
-use crate::repos::{errors::InstallError, deb::{dependencies, package::DebPackage}};
+use crate::repos::{errors::InstallError, deb::dependencies};
 use crate::repos::config::Config;
 use super::cache;
 use super::{extract, download};
@@ -13,7 +13,7 @@ use super::scripts;
 pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     if name.ends_with(".deb") {
         let pkg_name = name.rsplit(".deb").next().unwrap();
-        let pkg = extract::extract(&config, name, pkg_name)?;
+        let pkg = extract::extract(config, name, pkg_name)?;
         if let Some(pkg) = cache::check_installed(&pkg.control.package) {
             println!("{} is already installed\nFound:", name);
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -33,8 +33,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
         println!("Downloading {} for debian ...", name);
         
         if let Some(pkg) = cache::cache_lookup(config, name) {
-            let mut new_packages: Vec<DebPackage> = Vec::new();
-            new_packages.push(pkg.clone());
+            let mut new_packages = vec![pkg.clone()];
 
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
@@ -47,7 +46,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 new_packages.iter().for_each(|pkg| print!("{} ", pkg.control.package));
                 println!();
 
-                if sugg.len() > 0 {
+                if !sugg.is_empty() {
                     println!("Suggested packages:");
                     sugg.iter().for_each(|pkg| print!("{} ", pkg));
                     println!();
@@ -59,7 +58,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                             .into_os_string()
                             .into_string().unwrap();
                         
-                        let pkg = extract::extract(&config, &path, &pkg.control.package)
+                        let pkg = extract::extract(config, &path, &pkg.control.package)
                             .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
 
                         println!("Installing {} ...", pkg.control.package);
@@ -75,7 +74,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 .into_os_string()
                 .into_string().unwrap();
             
-            let pkg = extract::extract(&config, &path, name)
+            let pkg = extract::extract(config, &path, name)
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
             println!("Installing {} ...", pkg.control.package);
 
