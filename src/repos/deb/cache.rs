@@ -2,7 +2,7 @@ use crate::repos::config::Config;
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
 };
-use std::fs;
+use std::{fs, io::ErrorKind};
 
 const DEBIAN_CACHE: &str = "/var/lib/apt/lists/";
 
@@ -34,8 +34,18 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 	for entry in fs::read_dir(cache.cache).unwrap() {
 		let entry = entry.unwrap();
 		let path = entry.path();
-		
-		let control = fs::read_to_string(path).unwrap();
+
+		if path.is_dir() {
+			continue
+		}
+
+		let control = match fs::read_to_string(&path) {
+			Ok(v) => v,
+			Err(e) => match e.kind() {
+				ErrorKind::PermissionDenied => continue,
+				_ => panic!("Unexpected error")
+			}
+		};
 
 		let control = control
 			.split("\n\n")

@@ -108,7 +108,14 @@ impl ControlFile {
     fn try_get(hashmap: &HashMap<Option<String>, Option<String>>, field: &str) -> Result<String, ConfigError> {
         let value = hashmap.get(&Some(field.to_owned()));
         if let Some(v) = value {
-            Ok (v.as_ref().unwrap().trim().to_owned())
+            if let Some(v) = v {
+                Ok (v.trim().to_owned())
+            } else {
+                Err(ConfigError::Error(
+                    format!("Unknown error trying to get \"{}\" field", field)
+                )
+            )
+            }
         } else {
             Err(ConfigError::Error(
                     format!("Invalid debain's control file! Missing \"{}\" field", field)
