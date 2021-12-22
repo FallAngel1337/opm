@@ -11,7 +11,7 @@ use crate::repos::{errors::InstallError, config::Config};
 use super::package::{DebPackage, PkgKind};
 
 fn unpack(filename: &str, dst: &str) -> std::io::Result<()> {
-    let file = File::open(&filename).expect("msg");
+    let file = File::open(&filename)?;
 
     if filename.ends_with(".tar.gz") {
         let tar = GzDecoder::new(file);
@@ -38,13 +38,11 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage, Ins
     let package_dst = format!("{}/{}", config.tmp.clone().into_os_string().into_string().unwrap(), pkg);
     let control_dst = format!("{}/{}", config.info.clone().into_os_string().into_string().unwrap(), pkg);
 
-    std::fs::create_dir_all(&package_dst).expect("msg");
-    std::fs::create_dir_all(&control_dst).expect("msg");
-
-    println!("Created:\n{}\n{}", package_dst, control_dst);
+    std::fs::create_dir_all(&package_dst)?;
+    std::fs::create_dir_all(&control_dst)?;
 
     while let Some(entry_result) = archive.next_entry() {
-        let mut entry = entry_result.expect("msg");
+        let mut entry = entry_result?;
         
         let filename = str::from_utf8(entry.header().identifier()).unwrap().to_string();
         let mut file = File::create(&filename)
@@ -53,10 +51,8 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage, Ins
         io::copy(&mut entry, &mut file)
             .expect("Could not copy the contents of the file");
 
-        println!("FILANEME: {}", filename);
-
         match filename.as_ref() {
-            "data.tar.xz" => unpack(&filename, &package_dst).expect("msg"),
+            "data.tar.xz"|"data.tar.gz" => unpack(&filename, &package_dst).expect("msg"),
             "control.tar.xz"|"control.tar.gz" => unpack(&filename, &control_dst).expect("msg"),
             _ => ()
         }
@@ -66,10 +62,6 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage, Ins
     }
 
     let control_file = &format!("{}/control", control_dst);
-    println!("Control file: {}", control_file);
-    if std::path::Path::new(control_file).exists() {
-        println!("IT EXISTS");
-    }
 
     Ok(
         DebPackage::new(control_file, PkgKind::Binary).expect("msg")

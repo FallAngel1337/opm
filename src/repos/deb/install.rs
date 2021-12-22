@@ -3,7 +3,7 @@
 /// 
 
 use fs_extra;
-use crate::repos::{errors::InstallError, deb::dependencies};
+use crate::repos::{errors::InstallError, deb::{dependencies, package::DebPackage}};
 use crate::repos::config::Config;
 use super::cache;
 use super::{extract, download};
@@ -28,20 +28,30 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
             println!("{} - {}", pkg.control.package, pkg.control.version);
             return Err(InstallError::AlreadyInstalled);
         }
-
+        
+        
         println!("Downloading {} for debian ...", name);
-
+        
         if let Some(pkg) = cache::cache_lookup(config, name) {
+            let mut new_packages: Vec<DebPackage> = Vec::new();
+            new_packages.push(pkg.clone());
+
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 let deps = dep.0;
                 let sugg = dep.1;
 
-                println!("Installing {} NEW packages", deps.len());
-                deps.iter().for_each(|pkg| print!("{} ", pkg.control.package));
+                new_packages.append(&mut deps.clone());
+
+                println!("Installing {} NEW packages", new_packages.len());
+                new_packages.iter().for_each(|pkg| print!("{} ", pkg.control.package));
                 println!();
-                println!("Suggested packages:");
-                sugg.iter().for_each(|pkg| print!("{} ", pkg));
+
+                if sugg.len() > 0 {
+                    println!("Suggested packages:");
+                    sugg.iter().for_each(|pkg| print!("{} ", pkg));
+                    println!();
+                }
                 
                 for pkg in deps.into_iter() {
                     if let Ok(path) = download::download(config, &pkg) {
@@ -93,8 +103,8 @@ fn finish(p: &std::path::Path) -> Result<(), InstallError> {
         }
     }
 
-    // fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
-    // fs_extra::remove_items(&vec).unwrap();
+    fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
+    fs_extra::remove_items(&vec).unwrap();
 
     Ok(())
 }
