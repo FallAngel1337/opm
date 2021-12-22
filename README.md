@@ -59,7 +59,7 @@ SUBCOMMANDS:
     update     update opm's packages cache
 ```
 
-For more details about the usage, check the [docs](https://github.com/0xc0ffeec0de/opm/docs/USAGE.md)
+For more details about the usage, check the [docs](USAGE.md)
 
 
 ## Contribution
