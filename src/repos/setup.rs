@@ -6,11 +6,21 @@ use super::{
     utils::PackageFormat
 };
 
+#[allow(deprecated)]
 pub fn setup() -> Result<Config, SetupError> {
-    let mut config;
+    let home = std::env::home_dir().unwrap()
+    .into_os_string().into_string().unwrap();
+    let root = format!("{}/.opm/", home);
 
-    if let Some(pkg_fmt) = PackageFormat::get_format() {
-        config = Config::new(pkg_fmt).unwrap();
+    let config;
+    Config::from(&format!("{}/.config.json", root));
+
+    if let Some(fmt) = PackageFormat::get_format() {
+        match fmt {
+            PackageFormat::Deb => config = Config::new("deb").unwrap(),
+            PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
+            PackageFormat::Other => panic!("Unrecognized package"),
+        }
     } else {
         eprintln!("Consider define `PKG_FMT` environment variable!");
         std::process::exit(1);

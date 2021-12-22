@@ -3,7 +3,7 @@ use std::io::{Error, ErrorKind};
 use std::env;
 use std::fs;
 
-use super::{errors::ConfigError, utils::PackageFormat};
+use super::errors::ConfigError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -19,37 +19,35 @@ pub struct Config {
 
 #[allow(deprecated)]
 impl Config {
-	pub fn new(pkg_fmt: PackageFormat) -> Result<Self, ConfigError> {
+	pub fn new(fmt: &str) -> Result<Self, ConfigError> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
-		let opm_root;
-
-        match pkg_fmt {
-            PackageFormat::Deb => {
-				opm_root = format!("{}/.opm/{}", home, "deb");
-            },
-            PackageFormat::Rpm => {
-                panic!("It's a RHEL(-based) distro");
-            },
-            PackageFormat::Other => {
-                panic!("Actually we do not have support for you distro!");
-            }
-        }
 
 		Ok(
 			Self {
-				cache: format!("{}/cache/pkg_cache", opm_root),
-				rls: format!("{}/cache/rls", opm_root),
-				tmp: format!("{}/tmp", opm_root),
-				info: format!("{}/info", opm_root),
-				root: opm_root,
+				root: format!("{}/{}/", home, fmt),
+				cache: format!("{}/{}/cache/pkg_cache", home, fmt),
+				rls: format!("{}/{}/cache/rls", home, fmt),
+				tmp: format!("{}/{}/tmp", home, fmt),
+				info: format!("{}/{}/info", home, fmt),
 				use_pre_existing_cache: false,
 				use_pre_existing_db: false,
 			}
 		)
 	}
 
-	pub fn setup(&mut self) -> Result<(), Error> {
+	pub fn from(file: &str) {
+		let contents = fs::read_to_string(file).unwrap();
+		let a: Self = serde_json::from_str(&contents).unwrap();
+		println!("a = {:?}", a);
+	}
+
+	pub fn save(&self, to: &str) {
+		let contents = serde_json::to_string(self).unwrap();
+		fs::write(to, contents).unwrap();
+	}
+
+	pub fn setup(&self) -> Result<(), Error> {
 		match fs::create_dir_all(&self.cache) {
 			Ok(_) => (),
 			Err(e) => match e.kind() {
