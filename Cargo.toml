@@ -13,6 +13,7 @@ tar = "0.4.37"
 xz2 = "0.1.6"
 deb-version = "0.1.1"
 fs_extra = "1.2.0"
+flate2 = "1.0.22"
 
 [dependencies.clap]
 version = "2.33.3"

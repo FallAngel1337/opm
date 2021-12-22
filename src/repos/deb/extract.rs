@@ -1,49 +1,77 @@
 use ar::Archive;
 use tar::Archive as tarar;
 use xz2::read::XzDecoder;
+use flate2::read::GzDecoder;
 
 use std::fs::{self, File};
 use std::io::{self, prelude::*};
 use std::str;
-use std::path::Path;
 
-use crate::repos::errors::InstallError;
+use crate::repos::{errors::InstallError, config::Config};
 use super::package::{DebPackage, PkgKind};
 
-pub fn extract(package: &str, to: &Path) -> Result<DebPackage, InstallError> {
-    let mut archive = Archive::new(File::open(package)?);
-    
+fn unpack(filename: &str, dst: &str) -> std::io::Result<()> {
+    let file = File::open(&filename).expect("msg");
+
+    if filename.ends_with(".tar.gz") {
+        let tar = GzDecoder::new(file);
+        let mut archive = tarar::new(tar);
+        archive.unpack(dst)?;
+    } else if filename.ends_with(".tar.xz") {
+        let tar = XzDecoder::new(file);
+        let mut archive = tarar::new(tar);
+        archive.unpack(dst)?;
+    }
+
+    Ok(())
+}
+
+pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage, InstallError> {
+    let mut archive = Archive::new(File::open(path).expect("msg"));
+
     let mut bytes: Vec<u8> = Vec::new();
-    let mut file = File::open(package)
-        .unwrap_or_else(|_| panic!("Could not open the file `{}`", package));
+    let mut file = File::open(path)
+        .unwrap_or_else(|_| panic!("Could not open the file `{}`", path));
     file.read_to_end(&mut bytes)
-        .unwrap_or_else(|_| panic!("Could not read the file `{}`", package));
+        .unwrap_or_else(|_| panic!("Could not read the file `{}`", path));
+
+    let package_dst = format!("{}/{}", config.tmp.clone().into_os_string().into_string().unwrap(), pkg);
+    let control_dst = format!("{}/{}", config.info.clone().into_os_string().into_string().unwrap(), pkg);
+
+    std::fs::create_dir_all(&package_dst).expect("msg");
+    std::fs::create_dir_all(&control_dst).expect("msg");
+
+    println!("Created:\n{}\n{}", package_dst, control_dst);
 
     while let Some(entry_result) = archive.next_entry() {
-        let mut entry = entry_result?;
+        let mut entry = entry_result.expect("msg");
         
         let filename = str::from_utf8(entry.header().identifier()).unwrap().to_string();
         let mut file = File::create(&filename)
-            .expect("Could not create package file");
+            .expect("Could not create path file");
 
         io::copy(&mut entry, &mut file)
             .expect("Could not copy the contents of the file");
-        
-        if filename.contains(".tar.xz") {
-            let file = File::open(&filename)?;
 
-            let tar = XzDecoder::new(file);
-            let mut archive = tarar::new(tar);
+        println!("FILANEME: {}", filename);
 
-            archive.unpack(to)?;
+        match filename.as_ref() {
+            "data.tar.xz" => unpack(&filename, &package_dst).expect("msg"),
+            "control.tar.xz"|"control.tar.gz" => unpack(&filename, &control_dst).expect("msg"),
+            _ => ()
         }
 
         fs::remove_file(&filename)
             .unwrap_or_else(|_| panic!("Could not remove `{}`", filename));
     }
 
+    let control_file = &format!("{}/control", control_dst);
+    println!("Control file: {}", control_file);
+    if std::path::Path::new(control_file).exists() {
+        println!("IT EXISTS");
+    }
+
     Ok(
-        DebPackage::new(&format!("{}/control", to.to_path_buf().into_os_string()
-                                                .into_string().unwrap()), PkgKind::Binary)?
+        DebPackage::new(control_file, PkgKind::Binary).expect("msg")
     )
 }

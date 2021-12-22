@@ -12,7 +12,8 @@ use super::scripts;
 // TODO: Check for newer versions of the package if installed
 pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
     if name.ends_with(".deb") {
-        let pkg = extract::extract(name, &config.tmp)?;
+        let pkg_name = name.rsplit(".deb").next().unwrap();
+        let pkg = extract::extract(&config, name, pkg_name)?;
         if let Some(pkg) = cache::check_installed(&pkg.control.package) {
             println!("{} is already installed\nFound:", name);
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -48,7 +49,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                             .into_os_string()
                             .into_string().unwrap();
                         
-                        let pkg = extract::extract(&path, &config.tmp)
+                        let pkg = extract::extract(&config, &path, &pkg.control.package)
                             .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
 
                         println!("Installing {} ...", pkg.control.package);
@@ -64,7 +65,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 .into_os_string()
                 .into_string().unwrap();
             
-            let pkg = extract::extract(&path, &config.tmp)
+            let pkg = extract::extract(&config, &path, name)
                 .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
             println!("Installing {} ...", pkg.control.package);
 
@@ -92,8 +93,8 @@ fn finish(p: &std::path::Path) -> Result<(), InstallError> {
         }
     }
 
-    fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
-    fs_extra::remove_items(&vec).unwrap();
+    // fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
+    // fs_extra::remove_items(&vec).unwrap();
 
     Ok(())
 }

@@ -9,7 +9,7 @@ use super::{errors::ConfigError, utils::PackageFormat};
 pub struct Config {
 	pub root: PathBuf,
 	pub cache: PathBuf,
-	pub db: PathBuf,
+	pub info: PathBuf,
 	pub rls: PathBuf,
 	pub tmp: PathBuf,
 }
@@ -19,17 +19,17 @@ impl Config {
 	pub fn new(pkg_fmt: PackageFormat) -> Result<Self, ConfigError> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
-		let (db, opm_root);
+		let (info, opm_root);
 
         match pkg_fmt {
             PackageFormat::Deb => {
-                use super::deb;
-                db = deb::database::DPKG_STATUS;
+                // use super::deb;
 				opm_root = format!("{}/.opm/{}", home, "deb");
-            }
+                info = format!("{}/info", opm_root); /*deb::database::DPKG_STATUS;*/
+            },
             PackageFormat::Rpm => {
                 panic!("It's a RHEL(-based) distro");
-            }
+            },
             PackageFormat::Other => {
                 panic!("Actually we do not have support for you distro!");
             }
@@ -40,7 +40,7 @@ impl Config {
 			Self {
 				root: PathBuf::from(&opm_root),
 				cache: PathBuf::from(format!("{}/cache/pkg_cache", opm_root)),
-				db: PathBuf::from(db),
+				info: PathBuf::from(info),
 				rls: PathBuf::from(format!("{}/cache/rls", opm_root)),
 				tmp: PathBuf::from(format!("{}/tmp", opm_root)),
 			}
@@ -65,6 +65,14 @@ impl Config {
 		}
 
 		match fs::create_dir_all(&self.tmp) {
+			Ok(_) => (),
+			Err(e) => match e.kind() {
+			ErrorKind::AlreadyExists => (),
+				_ => panic!("Some error occurred {}", e)
+			}
+		}
+
+		match fs::create_dir_all(&self.info) {
 			Ok(_) => (),
 			Err(e) => match e.kind() {
 			ErrorKind::AlreadyExists => (),
