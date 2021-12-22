@@ -1,16 +1,20 @@
+use serde::{Serialize, Deserialize};
 use std::io::{Error, ErrorKind};
 use std::env;
 use std::fs;
 
 use super::{errors::ConfigError, utils::PackageFormat};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
 	pub root: String,
 	pub cache: String,
 	pub info: String,
 	pub rls: String,
 	pub tmp: String,
+
+	pub use_pre_existing_cache: bool,
+	pub use_pre_existing_db: bool
 }
 
 #[allow(deprecated)]
@@ -22,7 +26,6 @@ impl Config {
 
         match pkg_fmt {
             PackageFormat::Deb => {
-                // use super::deb;
 				opm_root = format!("{}/.opm/{}", home, "deb");
             },
             PackageFormat::Rpm => {
@@ -33,7 +36,6 @@ impl Config {
             }
         }
 
-
 		Ok(
 			Self {
 				cache: format!("{}/cache/pkg_cache", opm_root),
@@ -41,6 +43,8 @@ impl Config {
 				tmp: format!("{}/tmp", opm_root),
 				info: format!("{}/info", opm_root),
 				root: opm_root,
+				use_pre_existing_cache: false,
+				use_pre_existing_db: false,
 			}
 		)
 	}
