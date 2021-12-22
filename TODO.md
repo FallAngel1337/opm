@@ -2,20 +2,20 @@
    
 ### Tasks
 - [ ] [Improve the UI/UX](#ui_ux)
-- [ ] [Run the pre/post install/remove](#scripts)
+- [X] [Run the pre/post install/remove](#scripts)
 - [ ] [Verify integrity](#integrity)
    - [ ] [Pacakages integrity](#packages-integrity)
    - [ ] [Repository integrity](#repository-integrity)
-- [ ] [Dependencie Handling](#dependencie-handling)
-- [ ] [Packages installation](#packages-installation)
+- [X] [Dependencie Handling](#dependencie-handling)
+- [X] [Packages installation](#packages-installation)
    - [ ] User-only installtion
-- [ ] Package versioning checking
+- [X] Package versioning checking
 - [x] [Packages update](#packages-update)
    - [ ] Improve the download speed (using async)
 - [ ] [Packages removal](#packages-removal)
 - [x] [Packages listing](#packages-listing)
    - [x] Make the querying faster
-- [ ] Pacakage Source
+- [X] Pacakage Source
    - [X] Sources formats are different on ubuntu-bases from debian-based
 - [ ] [Handle Edge Cases](#Handle-Edge-Cases)
 - [ ] Add a rollback function (in case of CTRL+C or package installtion/remove failure)

@@ -23,6 +23,7 @@ $ git clone git@github.com:0xc0ffeec0de/opm.git
 $ cd opm/
 ```
 If you have [docker](https://www.docker.com/) installed you can run `docker build -t opm .` to run it inside a container.
+
 **NOTE**: You need to define a environment variable called `PKG_FMT` to define on which package format `opm` will be working with. For now just `deb` is supported.
 
 ## Features:
@@ -38,30 +39,28 @@ If you have [docker](https://www.docker.com/) installed you can run `docker buil
 ## Usage
 ```
 $ opm --help
-Usage: opm <[install|update|remove]> [options] <package_name>
+Oxidized Package Manager v0.1
+FallAngel <fallangel@protonmail.com>
+A fully package manager made in Rust
+
+USAGE:
+    opm [FLAGS] [SUBCOMMAND]
+
+FLAGS:
+    -h, --help       Prints help information
+    -l, --list       List all installed packages
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    help       Prints this message or the help of the given subcommand(s)
+    install    install a package
+    remove     remove a package
+    search     search for a package
+    update     update opm's packages cache
 ```
 
-### Installing a package
-```
-$ sudo opm install python3
+For more details about the usage, check the [docs](https://github.com/0xc0ffeec0de/opm/docs/USAGE.md)
 
-# Installing for YOUR current user
-$ opm install --user python3
-```
-
-Also you can install directly.
-E.g:
-```
-$ opm install <package>.deb
-```
-
-### Supported Package Features
-  #### Debian Packages:
-  - [X] Binary package installation
-  - [ ] Source package installation
-  - [X] Handles dependencies
-  - [ ] Running pre/post install/remove scripts
-  - [ ] ...
 
 ## Contribution
 Check the [CONTRIBUTING.md](CONTRIBUTING.md).
