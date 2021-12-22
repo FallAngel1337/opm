@@ -11,11 +11,12 @@ pub fn setup() -> Result<Config, SetupError> {
     let home = std::env::home_dir().unwrap()
     .into_os_string().into_string().unwrap();
     let root = format!("{}/.opm/", home);
+    let config_file = format!("{}/.config.json", root);
+    let config ;
 
-    let config;
-    Config::from(&format!("{}/.config.json", root));
-
-    if let Some(fmt) = PackageFormat::get_format() {
+    if Path::new(&config_file).exists() {
+        config = Config::from(&config_file);
+    } else if let Some(fmt) = PackageFormat::get_format() {
         match fmt {
             PackageFormat::Deb => config = Config::new("deb").unwrap(),
             PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
@@ -25,11 +26,14 @@ pub fn setup() -> Result<Config, SetupError> {
         eprintln!("Consider define `PKG_FMT` environment variable!");
         std::process::exit(1);
     }
+
+    println!("Config: {:?}", config);
     
     if !Path::new(&config.root).exists() {
         config.setup()?;
     }
 
+    config.save(&format!("{}/.config.json", root));
     Ok(config)
 }
 

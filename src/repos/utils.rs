@@ -22,5 +22,14 @@ impl PackageFormat {
             None
         }
     }
+
+    pub fn from(fmt: &str) -> Self {
+        match fmt {
+            "deb" => PackageFormat::Deb,
+            "rpm" => PackageFormat::Rpm,
+            "oth" => PackageFormat::Other,
+            _ => panic!("Invalid format")
+        }
+    }
 }
 

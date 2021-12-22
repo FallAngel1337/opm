@@ -12,6 +12,7 @@ pub struct Config {
 	pub info: String,
 	pub rls: String,
 	pub tmp: String,
+	pub fmt: String,
 
 	pub use_pre_existing_cache: bool,
 	pub use_pre_existing_db: bool
@@ -22,24 +23,24 @@ impl Config {
 	pub fn new(fmt: &str) -> Result<Self, ConfigError> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
-
+		let root = format!("{}/.opm/{}", home, fmt);
 		Ok(
 			Self {
-				root: format!("{}/{}/", home, fmt),
-				cache: format!("{}/{}/cache/pkg_cache", home, fmt),
-				rls: format!("{}/{}/cache/rls", home, fmt),
-				tmp: format!("{}/{}/tmp", home, fmt),
-				info: format!("{}/{}/info", home, fmt),
+				cache: format!("{}/cache/pkg_cache", root),
+				rls: format!("{}/cache/rls", root),
+				tmp: format!("{}/tmp", root),
+				info: format!("{}/info", root),
+				fmt: fmt.to_owned(),
 				use_pre_existing_cache: false,
 				use_pre_existing_db: false,
+				root
 			}
 		)
 	}
 
-	pub fn from(file: &str) {
+	pub fn from(file: &str) -> Self {
 		let contents = fs::read_to_string(file).unwrap();
-		let a: Self = serde_json::from_str(&contents).unwrap();
-		println!("a = {:?}", a);
+		serde_json::from_str(&contents).unwrap()
 	}
 
 	pub fn save(&self, to: &str) {
