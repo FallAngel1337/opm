@@ -4,12 +4,34 @@ use super::{
 };
 use std::fs;
 
+const DEBIAN_CACHE: &str = "/var/lib/apt/lists/";
+
+struct Cache<'a> {
+	cache: &'a str
+}
+
+impl<'a> Cache<'a> {
+	fn get_cache(config: &'a Config) -> Self {
+		if config.use_pre_existing_cache {
+			Cache {
+				cache: DEBIAN_CACHE
+			}
+		} else {
+			Cache {
+				cache: &config.cache
+			}
+		}
+	}
+}
+
 ///
 /// Dump from the downloded files
 ///
 pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 	let mut pkgs = Vec::new();
-	for entry in fs::read_dir(&config.cache).unwrap() {
+	let cache = Cache::get_cache(config);
+	
+	for entry in fs::read_dir(cache.cache).unwrap() {
 		let entry = entry.unwrap();
 		let path = entry.path();
 		
@@ -31,7 +53,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 			.replace("_", "/")
 			.split('/')
 			.collect::<Vec<_>>()[..2]
-			.join("/");		
+			.join("/");
 
 		control.into_iter().filter_map(|pkg| pkg.ok()).for_each(|mut pkg| {
 			let url = format!("{}/{}", url, &pkg.filename);
@@ -47,7 +69,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 /// Dump all installed packages from /var/lib/dpkg/status
 /// 
 pub fn dump_installed() -> Vec<DebPackage> {
-	let control = fs::read_to_string("/var/lib/dpkg/status").unwrap();
+	let control = fs::read_to_string(super::database::DEBIAN_DATABASE).unwrap();
 
 	let control = control
 		.split("\n\n")
@@ -61,7 +83,9 @@ pub fn dump_installed() -> Vec<DebPackage> {
 
 pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 	let mut pkgs = Vec::new();
-	for entry in fs::read_dir(&config.cache).unwrap() {
+	let cache = Cache::get_cache(config);
+
+	for entry in fs::read_dir(cache.cache).unwrap() {
 		let entry = entry.unwrap();
 		let path = entry.path();
 		
