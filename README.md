@@ -1,7 +1,7 @@
 # OPM (Oxidized Package Manager)
 
 A `apt`-like system's package manager written in Rust for many operation systems distributions packages 
-(See [supported-packages](#supported-packages). For more details check [supported-package-features](#supported-package-features)).
+(See [supported-packages](#supported-packages)).
 It provides either a higher level interface and a low-level one for those who want to build and inspect the packages.
 This package manager aims to be universal/generic and simple. 
 
