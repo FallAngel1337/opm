@@ -7,7 +7,7 @@ pub fn setup() -> Result<Config> {
     let home = std::env::home_dir().unwrap()
     .into_os_string().into_string().unwrap();
     let root = format!("{}/.opm/", home);
-    let config_file = format!("{}/.config.json", root);
+    let config_file = format!("{}/config.json", root);
     let config ;
 
     if Path::new(&config_file).exists() {
