@@ -53,13 +53,28 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
             let pkg = parse_name(pkg);
 
             if pkg.contains('|') {
-                pkg.split(" | ")
-                    .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
-                    .for_each(|pkg| {
-                        if let Some(mut found) = get_dependencies(config, &pkg) {
-                            depends.append(&mut found.0);
-                        }
-                    });
+                // Recursion was causing the process to be killed by the OOM
+                // pkg.split(" | ")
+                //     .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
+                //     .for_each(|pkg| {
+                //         if let Some(mut found) = get_dependencies(config, &pkg) {
+                //             depends.append(&mut found.0);
+                //         }
+                //     });
+                let pkgs = pkg.split(" | ")
+                    .collect::<Vec<_>>();
+
+                let installed = pkgs.iter()
+                    .filter_map(|pkg| cache::check_installed(pkg))
+                    .count();
+
+                if installed == 0 {
+                    // NOTE: If none is installed, install the first one
+                    let pkg = pkgs.into_iter()
+                        .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
+                        .next().unwrap();
+                    depends.push(pkg)
+                }
             } else if cache::check_installed(pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg).unwrap() {
                     let pkgv = &pkg.control.version;

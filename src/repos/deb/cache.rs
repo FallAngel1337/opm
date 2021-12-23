@@ -1,5 +1,5 @@
 use anyhow::{self, Result, Context};
-use crate::repos::config::Config;
+use crate::repos::{config::Config, errors::InstallError};
 use crate::repos::errors::CacheError;
 
 use super::{
@@ -58,7 +58,10 @@ pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 			Ok(v) => v,
 			Err(e) => match e.kind() {
 				ErrorKind::PermissionDenied => continue,
-				_ => panic!("Unexpected error :: {}", e)
+				_ => { 
+					eprintln!("Unexpected error :: {}", e);
+					break;
+				}
 			}
 		};
 
@@ -107,45 +110,22 @@ pub fn dump_installed() -> Vec<DebPackage> {
 }
 
 pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
-	let mut pkgs = Vec::new();
-	let cache = Cache::get_cache(config)?;
+	let dump = cache_dump(config)?
+		.into_iter()
+		.find(|control| control.package == name);
 
-	for entry in fs::read_dir(cache.cache).unwrap() {
-		let entry = entry.unwrap();
-		let path = entry.path();
-		
-		let control = fs::read_to_string(path).unwrap();
-
-		let entry = entry.path()
-		.into_os_string()
-		.into_string()
-		.unwrap();
-
-		let url =  &entry
-			.split('/')
-			.last()
-			.unwrap()
-			.replace("_", "/")
-			.split('/')
-			.collect::<Vec<_>>()[..2]
-			.join("/");
-
-		for ctrl in control.split("\n\n") {
-			for line in ctrl.split('\n') {
-				if line.contains("Package: ") {
-					let pkg = line.split(": ").nth(1).unwrap();
-					if pkg == name {
-						let mut control_file = ControlFile::from(ctrl).unwrap();
-						let url = format!("{}/{}", url, &control_file.filename);
-						control_file.set_filename(&url);
-						pkgs.push(control_file);
-					}
+	if let Some(control) = dump {
+		Ok(
+			Some (
+				DebPackage {
+					control,
+					kind: PkgKind::Binary
 				}
-			}
-		}
+			)
+		)
+	} else {
+		anyhow::bail!(InstallError::NotFoundError(format!("Package {} coult not be found (at {})", name, config.cache)))
 	}
-
-	Ok(pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next())
 }
 
 #[inline]
