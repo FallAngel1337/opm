@@ -27,7 +27,7 @@ pub fn setup() -> Result<Config> {
         config.setup()?;
     }
 
-    config.save(&format!("{}/.config.json", root));
+    config.save(&format!("{}/config.json", root));
     Ok(config)
 }
 
