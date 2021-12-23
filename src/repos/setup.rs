@@ -1,13 +1,9 @@
+use anyhow::Result;
 use std::{path::Path, io::ErrorKind};
-
-use super::{
-    config::Config, 
-    errors::SetupError, 
-    utils::PackageFormat
-};
+use super::{config::Config, utils::PackageFormat};
 
 #[allow(deprecated)]
-pub fn setup() -> Result<Config, SetupError> {
+pub fn setup() -> Result<Config> {
     let home = std::env::home_dir().unwrap()
     .into_os_string().into_string().unwrap();
     let root = format!("{}/.opm/", home);
@@ -18,7 +14,7 @@ pub fn setup() -> Result<Config, SetupError> {
         config = Config::from(&config_file);
     } else if let Some(fmt) = PackageFormat::get_format() {
         match fmt {
-            PackageFormat::Deb => config = Config::new("deb").unwrap(),
+            PackageFormat::Deb => config = Config::new("deb")?,
             PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
             PackageFormat::Other => panic!("Unrecognized package"),
         }
@@ -26,8 +22,6 @@ pub fn setup() -> Result<Config, SetupError> {
         eprintln!("Consider define `PKG_FMT` environment variable!");
         std::process::exit(1);
     }
-
-    println!("Config: {:?}", config);
     
     if !Path::new(&config.root).exists() {
         config.setup()?;

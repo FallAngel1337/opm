@@ -1,89 +1,64 @@
-// use std::error::Error;
+use anyhow::Error;
 use std::fmt::{self, Display};
-use std::io::Error as ioError;
-use reqwest::Error as reqwestError;
 
 // TODO: Make better erros and create more
 #[derive(Debug)]
 pub enum InstallError {
-    InvalidPackage(String),
-    IoError(String),
-    NetworkingError(String),
-    DataBaseError(String),
+    InvalidPackage { err: Error },
+    NetworkingError { err: Error },
+    AlreadyInstalled,
+    NotFoundError(String),
     Error(String),
-    AlreadyInstalled
-}
-
-#[derive(Debug)]pub enum SetupError {
-    Error(String)
 }
 
 #[derive(Debug)]
-pub enum ConfigError {
-    Error(String)
+pub struct SetupError {
+    pub msg: String
+}
+
+#[derive(Debug)]
+pub struct  ConfigError {
+    pub msg: String
+}
+
+impl std::error::Error for InstallError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self)
+    }
 }
 
 impl Display for InstallError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InstallError::InvalidPackage(msg) => write!(f, "Invalid Package => {}", msg),
-            InstallError::IoError(msg) => write!(f, "I/O Error => {}", msg),
-            InstallError::NetworkingError(msg) => write!(f, "Networking Error => {}", msg),
-            InstallError::DataBaseError(msg) => write!(f, "DataBase Error => {}", msg),
-            InstallError::Error(msg) => write!(f, "Error during installation :: {}", msg),
-            InstallError::AlreadyInstalled => write!(f, "Package is already installed")
+            InstallError::InvalidPackage { err } => write!(f, "Invalid Package :: \"{}\"", err),
+            InstallError::NetworkingError { err } => write!(f, "Networking Error :: \"{}\"", err),
+            InstallError::AlreadyInstalled => write!(f, "Package is already installed"),
+            InstallError::NotFoundError(pkg) => write!(f, "Package {} was not found", pkg),
+            InstallError::Error(msg) => write!(f, "Error during installation :: {}", msg)
         }
     }
 }
 
-impl From<ioError> for InstallError {
-    fn from(err: ioError) -> Self {
-        InstallError::IoError(err.to_string())
-    }
-}
-
-impl From<reqwestError> for InstallError {
-    fn from(err: reqwestError) -> Self {
-        InstallError::NetworkingError(err.to_string())
-    }
-}
-
-impl From<ConfigError> for InstallError {
-    fn from(err: ConfigError) -> Self {
-        InstallError::InvalidPackage(err.to_string())
-    }
-}
-
-impl Display for SetupError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SetupError::Error(msg) => write!(f, "{}", msg)
-        }
-    }
-}
-
-impl<E: std::error::Error + 'static> From<E> for SetupError {
-    fn from(error: E) -> Self {
-        SetupError::Error(error.to_string())
-    }
-}
-
-impl<E: std::error::Error + 'static> From<E> for ConfigError {
-    fn from(error: E) -> Self {
-        ConfigError::Error(error.to_string())
+impl std::error::Error for ConfigError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self)
     }
 }
 
 impl Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ConfigError::Error(msg) => write!(f, "{}", msg)
-        }
+        write!(f, "ConfigError :: {}", self.msg)
     }
 }
 
-impl From<InstallError> for ConfigError {
-    fn from(err: InstallError) -> Self {
-        ConfigError::Error(err.to_string())
+impl std::error::Error for SetupError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self)
+    }
+}
+
+impl Display for SetupError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SetupError :: {}", self.msg)
     }
 }

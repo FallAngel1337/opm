@@ -1,7 +1,8 @@
+use anyhow::{self, Result, bail};
+use crate::repos::errors::ConfigError;
 use std::collections::HashMap;
 use std::fs;
 
-use crate::repos::errors::ConfigError;
 
 ///
 /// Kind of the package
@@ -25,7 +26,6 @@ pub enum PkgPriority {
 ///
 /// Debian's control file (mandatory fields)
 ///
-// TODO: Add package priority
 #[derive(Debug, Clone, PartialEq)]
 pub struct ControlFile {
     pub package: String,
@@ -62,12 +62,12 @@ impl PkgPriority {
 
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(file: &str) -> Result<Self, ConfigError> {
+    pub fn new(file: &str) -> Result<Self> {
         let contents = fs::read_to_string(file)?;
         Self::from(&contents)
     }
 
-    pub fn from(contents: &str) -> Result<Self, ConfigError> {
+    pub fn from(contents: &str) -> Result<Self> {
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
         for line in contents.lines() {
@@ -105,22 +105,16 @@ impl ControlFile {
     }
 
     // TODO: Maybe I need to make this easier to read
-    fn try_get(hashmap: &HashMap<Option<String>, Option<String>>, field: &str) -> Result<String, ConfigError> {
+    fn try_get(hashmap: &HashMap<Option<String>, Option<String>>, field: &str) -> Result<String> {
         let value = hashmap.get(&Some(field.to_owned()));
         if let Some(v) = value {
             if let Some(v) = v {
                 Ok (v.trim().to_owned())
             } else {
-                Err(ConfigError::Error(
-                    format!("Unknown error trying to get \"{}\" field", field)
-                )
-            )
+                bail!(ConfigError { msg: format!("Unknown error trying to get \"{}\" field", field) });
             }
         } else {
-            Err(ConfigError::Error(
-                    format!("Invalid debain's control file! Missing \"{}\" field", field)
-                )
-            )
+            bail!(ConfigError { msg: format!("Invalid debain's control file! Missing \"{}\" field", field) });
         }
     }
 
@@ -155,7 +149,7 @@ pub struct DebPackage {
 }
 
 impl DebPackage {
-    pub fn new(file: &str, kind: PkgKind) -> Result<Self, ConfigError> {
+    pub fn new(file: &str, kind: PkgKind) -> Result<Self> {
         Ok(
             DebPackage {
                 control: ControlFile::new(file)?,

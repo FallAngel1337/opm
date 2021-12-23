@@ -2,11 +2,11 @@
 /// Generic package update
 /// 
 
+use anyhow::Result;
 use super::utils::PackageFormat;
-use super::errors::InstallError;
 use super::config::Config;
 
-pub fn update(config: &mut Config) -> Result<(), InstallError> {
+pub fn update(config: &mut Config) -> Result<()> {
     match PackageFormat::from(&config.fmt) {
         PackageFormat::Deb => {
             use super::deb;

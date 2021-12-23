@@ -1,9 +1,8 @@
+use anyhow::Result;
 use serde::{Serialize, Deserialize};
-use std::io::{Error, ErrorKind};
+use std::io::ErrorKind;
 use std::env;
 use std::fs;
-
-use super::errors::ConfigError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -20,7 +19,7 @@ pub struct Config {
 
 #[allow(deprecated)]
 impl Config {
-	pub fn new(fmt: &str) -> Result<Self, ConfigError> {
+	pub fn new(fmt: &str) -> Result<Self> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
 		let root = format!("{}/.opm/{}", home, fmt);
@@ -48,7 +47,7 @@ impl Config {
 		fs::write(to, contents).unwrap();
 	}
 
-	pub fn setup(&self) -> Result<(), Error> {
+	pub fn setup(&self) -> Result<()> {
 		match fs::create_dir_all(&self.cache) {
 			Ok(_) => (),
 			Err(e) => match e.kind() {

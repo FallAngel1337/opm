@@ -1,3 +1,4 @@
+use anyhow::Result;
 use xz2::read::XzDecoder;
 
 use reqwest;
@@ -7,10 +8,9 @@ use std::fs::{self, File};
 use std::str;
 
 use super::sources::DebianSource;
-use crate::repos::errors::InstallError;
 use crate::repos::config::Config;
 
-fn clear(config: &Config) -> Result<(), InstallError> {
+fn clear(config: &Config) -> Result<()> {
     match fs::remove_dir_all(&config.cache){
         Ok(_) => (),
         Err(e) => match e.kind() {
@@ -44,7 +44,7 @@ fn clear(config: &Config) -> Result<(), InstallError> {
 }
 
 #[tokio::main]
-pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<(), InstallError> {
+pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<()> {
     clear(config)?;
 
     update_releases(config, repos).await?;
@@ -53,7 +53,7 @@ pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<(), I
     Ok(())
 }
 
-async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<(), InstallError> {
+async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
     for (i, source) in repos.iter().enumerate() {
         println!("Get {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {
@@ -81,7 +81,7 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<(), Ins
     Ok(())
 }
 
-async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<(), InstallError> {
+async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> {
     for (i, source) in repos.iter().enumerate() {
         println!("RLS {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {

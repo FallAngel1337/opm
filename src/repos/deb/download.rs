@@ -1,6 +1,6 @@
+use anyhow::Result;
 use std::{path::PathBuf, fs::File, io};
 
-use crate::repos::errors::InstallError;
 use crate::repos::config::Config;
 
 use super::package::DebPackage;
@@ -8,7 +8,7 @@ use super::package::DebPackage;
 use reqwest;
 
 #[tokio::main]
-pub async fn download(config: &mut Config, pkg: &DebPackage) -> Result<PathBuf, InstallError> {
+pub async fn download(config: &mut Config, pkg: &DebPackage) -> Result<PathBuf> {
     println!("Downloading {} ...", pkg.control.package);
 
     let response = reqwest::get(format!("http://{}", pkg.control.filename)).await?;

@@ -1,3 +1,4 @@
+use anyhow::{self, Result};
 use std::path::Path;
 
 ///
@@ -12,23 +13,21 @@ use super::{extract, download};
 use super::scripts;
 
 // TODO: Check for newer versions of the package if installed
-pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
+pub fn install(config: &mut Config, name: &str) -> Result<()> {
     if name.ends_with(".deb") {
         let pkg_name = name.rsplit(".deb").next().unwrap();
         let pkg = extract::extract(config, name, pkg_name)?;
+        
         if let Some(pkg) = cache::check_installed(&pkg.control.package) {
-            println!("{} is already installed\nFound:", name);
             println!("{} - {}", pkg.control.package, pkg.control.version);
-            return Err(InstallError::AlreadyInstalled);
+            anyhow::bail!(InstallError::AlreadyInstalled);
         }
-        println!("Extracting ...");
-        println!("Done");
+
         scripts::execute_install(&config.tmp)?;
     } else {
         if let Some(pkg) = cache::check_installed(name) {
-            println!("{} is already installed\nFound:", name);
             println!("{} - {}", pkg.control.package, pkg.control.version);
-            return Err(InstallError::AlreadyInstalled);
+            anyhow::bail!(InstallError::AlreadyInstalled);
         }
         
         
@@ -60,8 +59,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                             .into_os_string()
                             .into_string().unwrap();
                         
-                        let pkg = extract::extract(config, &path, &pkg.control.package)
-                            .unwrap_or_else(|e| panic!("Failed dependencie extraction due {}", e));
+                        let pkg = extract::extract(config, &path, &pkg.control.package)?;
 
                         println!("Installing {} ...", pkg.control.package);
                         scripts::execute_install(&config.tmp)?;
@@ -76,15 +74,14 @@ pub fn install(config: &mut Config, name: &str) -> Result<(), InstallError> {
                 .into_os_string()
                 .into_string().unwrap();
             
-            let pkg = extract::extract(config, &path, name)
-                .unwrap_or_else(|e| panic!("Failed package extraction due {}", e));
+            let pkg = extract::extract(config, &path, name)?;
             println!("Installing {} ...", pkg.control.package);
 
             scripts::execute_install(&config.tmp)?;
             finish(&config.tmp)?;
 
         } else {
-            println!("Package {} was not found!", name);
+            anyhow::bail!(InstallError::NotFoundError(name.to_string()));
         }
     }
     
