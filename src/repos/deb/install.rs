@@ -30,10 +30,9 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
             anyhow::bail!(InstallError::AlreadyInstalled);
         }
         
-        
         println!("Downloading {} for debian ...", name);
         
-        if let Some(pkg) = cache::cache_lookup(config, name) {
+        if let Some(pkg) = cache::cache_lookup(config, name)? {
             let mut new_packages = vec![pkg.clone()];
 
             println!("Found {:?}", pkg.control.package);

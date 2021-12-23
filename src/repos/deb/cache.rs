@@ -1,25 +1,39 @@
+use anyhow::{self, Result, Context};
 use crate::repos::config::Config;
+use crate::repos::errors::CacheError;
+
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
 };
 use std::{fs, io::ErrorKind};
 
 const DEBIAN_CACHE: &str = "/var/lib/apt/lists/";
-
 struct Cache<'a> {
 	cache: &'a str
 }
 
 impl<'a> Cache<'a> {
-	fn get_cache(config: &'a Config) -> Self {
+	fn get_cache(config: &'a Config) -> Result<Self> {
 		if config.use_pre_existing_cache {
-			Cache {
-				cache: DEBIAN_CACHE
+			if !std::path::Path::new(DEBIAN_CACHE).exists() {
+				anyhow::bail!(CacheError { msg: format!("{} was not found", DEBIAN_CACHE) });
 			}
+			
+			Ok(
+				Cache {
+					cache: DEBIAN_CACHE
+				}
+			)
 		} else {
-			Cache {
-				cache: &config.cache
+			if !std::path::Path::new(&config.cache).exists() {
+				anyhow::bail!(CacheError { msg: format!("{} was not found", config.cache) });
 			}
+
+			Ok(
+				Cache {
+					cache: &config.cache
+				}
+			)
 		}
 	}
 }
@@ -27,11 +41,12 @@ impl<'a> Cache<'a> {
 ///
 /// Dump from the downloded files
 ///
-pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
+pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 	let mut pkgs = Vec::new();
-	let cache = Cache::get_cache(config);
+	let cache = Cache::get_cache(config)
+		.context("Failed to read the cache file")?;
 	
-	for entry in fs::read_dir(cache.cache).unwrap() {
+	for entry in fs::read_dir(cache.cache)? {
 		let entry = entry.unwrap();
 		let path = entry.path();
 
@@ -43,7 +58,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 			Ok(v) => v,
 			Err(e) => match e.kind() {
 				ErrorKind::PermissionDenied => continue,
-				_ => panic!("Unexpected error")
+				_ => panic!("Unexpected error :: {}", e)
 			}
 		};
 
@@ -72,7 +87,7 @@ pub fn cache_dump(config: &Config) -> Vec<ControlFile> {
 		});
 	}
 
-	pkgs
+	Ok(pkgs)
 }
 
 ///
@@ -91,9 +106,9 @@ pub fn dump_installed() -> Vec<DebPackage> {
 	control
 }
 
-pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
+pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 	let mut pkgs = Vec::new();
-	let cache = Cache::get_cache(config);
+	let cache = Cache::get_cache(config)?;
 
 	for entry in fs::read_dir(cache.cache).unwrap() {
 		let entry = entry.unwrap();
@@ -130,7 +145,7 @@ pub fn cache_lookup(config: &Config, name: &str) -> Option<DebPackage> {
 		}
 	}
 
-	pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next()
+	Ok(pkgs.into_iter().map(|control| DebPackage { control, kind: PkgKind::Binary }).next())
 }
 
 #[inline]

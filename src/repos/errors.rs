@@ -21,6 +21,11 @@ pub struct  ConfigError {
     pub msg: String
 }
 
+#[derive(Debug)]
+pub struct CacheError {
+    pub msg: String
+}
+
 impl std::error::Error for InstallError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(self)
@@ -58,6 +63,18 @@ impl std::error::Error for SetupError {
 }
 
 impl Display for SetupError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SetupError :: {}", self.msg)
+    }
+}
+
+impl std::error::Error for CacheError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self)
+    }
+}
+
+impl Display for CacheError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SetupError :: {}", self.msg)
     }

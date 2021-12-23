@@ -54,14 +54,14 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
 
             if pkg.contains('|') {
                 pkg.split(" | ")
-                    .filter_map(|pkg| cache::cache_lookup(config, pkg))
+                    .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
                     .for_each(|pkg| {
                         if let Some(mut found) = get_dependencies(config, &pkg) {
                             depends.append(&mut found.0);
                         }
                     });
             } else if cache::check_installed(pkg).is_none() {
-                if let Some(pkg) = cache::cache_lookup(config, pkg) {
+                if let Some(pkg) = cache::cache_lookup(config, pkg).unwrap() {
                     let pkgv = &pkg.control.version;
                     if let Some(depv) = depv {
                         if !check_version(pkgv, depv) {
