@@ -58,8 +58,6 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
                             .into_os_string()
                             .into_string().unwrap();
                         
-                        println!("PATH = {}", path);
-
                         let pkg = extract::extract(config, &path, &pkg.control.package)?;
 
                         println!("Installing {} ...", pkg.control.package);
