@@ -122,7 +122,7 @@ pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 			)
 		)
 	} else {
-		anyhow::bail!(InstallError::NotFoundError(format!("Package {} coult not be found (at {})", name, config.cache)))
+		anyhow::bail!(InstallError::NotFoundError(format!("Package {} could not be found (at {})", name, config.cache)))
 	}
 }
 

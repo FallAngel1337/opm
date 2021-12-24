@@ -37,9 +37,9 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
 
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
-                let deps = dep.0;
-                let sugg = dep.1;
-
+                let (deps, sugg) = dep;
+                println!(">> {:#?}", deps);
+                
                 new_packages.append(&mut deps.clone());
 
                 println!("Installing {} NEW packages", new_packages.len());
