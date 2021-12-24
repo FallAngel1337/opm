@@ -1,11 +1,11 @@
 use anyhow::{self, Result, Context};
 use crate::repos::{config::Config, errors::InstallError};
 use crate::repos::errors::CacheError;
+use std::fs;
 
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
 };
-use std::{fs, io::ErrorKind};
 
 const DEBIAN_CACHE: &str = "/var/lib/apt/lists/";
 struct Cache<'a> {
@@ -49,19 +49,17 @@ pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 	for entry in fs::read_dir(cache.cache)? {
 		let entry = entry.unwrap();
 		let path = entry.path();
+		let path_str = path.clone().into_os_string().into_string().unwrap();
 
-		if path.is_dir() {
+		if path.is_dir() || !path_str.contains('_') {
 			continue
 		}
 
 		let control = match fs::read_to_string(&path) {
 			Ok(v) => v,
-			Err(e) => match e.kind() {
-				ErrorKind::PermissionDenied => continue,
-				_ => { 
-					eprintln!("Unexpected error :: {}", e);
-					break;
-				}
+			Err(e) => {
+				eprintln!("Unexpected error :: {}", e);
+				break;
 			}
 		};
 

@@ -57,11 +57,14 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
                         let path = path
                             .into_os_string()
                             .into_string().unwrap();
+                        
+                        println!("PATH = {}", path);
 
                         let pkg = extract::extract(config, &path, &pkg.control.package)?;
 
                         println!("Installing {} ...", pkg.control.package);
                         scripts::execute_install(&config.tmp)?;
+                        finish(Path::new(&format!("{}/{}", &config.tmp, pkg.control.package)))?;
                     } else {
                         println!("Could not download {}", pkg.control.package);
                     }
@@ -77,7 +80,7 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
             println!("Installing {} ...", pkg.control.package);
 
             scripts::execute_install(&config.tmp)?;
-            finish(&config.tmp)?;
+            finish(Path::new(&config.tmp))?;
 
         } else {
             anyhow::bail!(InstallError::NotFoundError(name.to_string()));
@@ -87,22 +90,20 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
     Ok(())
 }
 
-fn finish(p: &str) -> Result<(), InstallError> {
+fn finish(p: &Path) -> Result<()> {
     let options = fs_extra::dir::CopyOptions::new();
-    let mut vec = Vec::new();
-    let p = Path::new(p);
+    let mut items = vec![];
 
     for entry in std::fs::read_dir(&p).unwrap() {
-        let entry = entry.unwrap();
+        let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
-            vec.push(path);
+            items.push(path);
         }
     }
-
-   // fs_extra::copy_items(&vec, std::path::Path::new("/"), &options).unwrap();
-   // fs_extra::remove_items(&vec).unwrap();
-
+    
+    fs_extra::copy_items(&items, std::path::Path::new("/"), &options).unwrap();
+    fs_extra::remove_items(&items).unwrap();
     Ok(())
 }
