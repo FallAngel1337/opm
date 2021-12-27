@@ -36,11 +36,12 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
         if let Some(pkg) = cache::cache_lookup(config, name)? {
             let mut new_packages = vec![pkg.clone()];
+            let mut tasks = vec![];
 
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 let (deps, sugg) = dep;
-                
+                // println!("Deps: {:?}", deps);
                 new_packages.append(&mut deps.clone());
 
                 println!("Installing {} NEW packages", new_packages.len());
@@ -53,44 +54,29 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                     println!();
                 }
 
-                let mut tasks = vec![];
-                for pkg in deps.iter() {
+                
+                for pkg in deps.into_iter() {
                     tasks.push(download::download(config, pkg));
                 }
 
-                for path in future::join_all(tasks).await {
-                    let path = path?
-                        .into_os_string()
-                        .into_string().unwrap();
-
-                    let pkg = extract::extract(config, &path, &pkg.control.package)?;
-
-                    println!("Installing {} ...", pkg.control.package);
-                    scripts::execute_install(&config.tmp)?;
-                    finish(Path::new(&format!("{}/{}", config.tmp, pkg.control.package)))?;
-                }
             }
 
-            // let path = path
-            //     .into_os_string()
-            //     .into_string().unwrap();
-            
-            // let pkg = extract::extract(config, &path, &pkg.control.package)?;
+            tasks.push(download::download(config, pkg));
 
-            // println!("Installing {} ...", pkg.control.package);
-            // scripts::execute_install(config.tmp)?;
-            // finish(Path::new(&format!("{}/{}", config.tmp, pkg.control.package)))?;
-            
-            let path = download::download(config, &pkg).await?;
-            let path = path
-                .into_os_string()
-                .into_string().unwrap();
+            for data in future::join_all(tasks).await {
+                let data = data?;
+                let (path, pkg_name) = data;
 
-            let pkg = extract::extract(config, &path, name)?;
-            println!("Installing {} ...", pkg.control.package);
+                let path = path
+                    .into_os_string()
+                    .into_string().unwrap();
 
-            scripts::execute_install(&config.tmp)?;
-            finish(Path::new(&config.tmp))?;
+                extract::extract(config, &path, &pkg_name)?;
+                println!("Installing {} ...", pkg_name);
+                let path = format!("{}/{}", config.tmp, pkg_name);
+                scripts::execute_install(&config.tmp)?;
+                finish(Path::new(&path))?;
+            }
 
         } else {
             anyhow::bail!(InstallError::NotFoundError(name.to_string()));
@@ -113,7 +99,7 @@ fn finish(p: &Path) -> Result<()> {
         }
     }
     
-    fs_extra::copy_items(&items, std::path::Path::new("/"), &options).unwrap();
-    fs_extra::remove_items(&items).unwrap();
+    fs_extra::copy_items(&items, std::path::Path::new("/"), &options);//.unwrap();
+    fs_extra::remove_items(&items);//.unwrap();
     Ok(())
 }

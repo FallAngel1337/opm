@@ -30,6 +30,8 @@ fn unpack(filename: &str, dst: &str) -> Result<()> {
 }
 
 pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage> {
+    print!("Extracting {} ... ", pkg);
+
     let mut archive = Archive::new(File::open(path).expect("msg"));
     let mut bytes: Vec<u8> = Vec::new();
 
@@ -68,6 +70,7 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage> {
     }
 
     let control_file = &format!("{}/control", control_dst);
+    println!("Done");
 
     Ok(
         DebPackage::new(control_file, PkgKind::Binary).expect("msg")
