@@ -6,11 +6,12 @@ use anyhow::Result;
 use super::utils::PackageFormat;
 use super::config::Config;
 
-pub fn install(config: &mut Config, name: &str) -> Result<()> {
+#[tokio::main]
+pub async fn install(config: &mut Config, name: &str) -> Result<()> {
     match PackageFormat::from(&config.fmt) {
         PackageFormat::Deb => {
             use super::deb;
-            deb::install(config, name)?; 
+            deb::install(config, name).await?; 
         }
         PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");

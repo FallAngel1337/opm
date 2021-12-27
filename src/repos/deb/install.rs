@@ -14,7 +14,6 @@ use super::scripts;
 use futures::future;
 
 // TODO: Check for newer versions of the package if installed
-#[tokio::main]
 pub async fn install(config: &Config, name: &str) -> Result<()> {
     if name.ends_with(".deb") {
         let pkg_name = name.rsplit(".deb").next().unwrap();
@@ -99,7 +98,7 @@ fn finish(p: &Path) -> Result<()> {
         }
     }
     
-    fs_extra::copy_items(&items, std::path::Path::new("/"), &options);//.unwrap();
-    fs_extra::remove_items(&items);//.unwrap();
+    fs_extra::copy_items(&items, std::path::Path::new("/"), &options).unwrap();
+    fs_extra::remove_items(&items).unwrap();
     Ok(())
 }
