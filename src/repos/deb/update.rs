@@ -1,13 +1,14 @@
 use anyhow::Result;
 use xz2::read::XzDecoder;
-
+use std::{
+    io::{ErrorKind, prelude::*},
+    fs::{self, File},
+    path::Path,
+    str
+};
 use reqwest;
-
-use std::{io::{ErrorKind, prelude::*}, path::Path};
-use std::fs;
-use std::str;
+use sha2::{Sha256, Digest};
 use futures::future;
-
 use super::sources::DebianSource;
 use crate::repos::config::Config;
 
@@ -45,7 +46,7 @@ fn clear(config: &Config) -> Result<()> {
 }
 
 pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<()> {
-    clear(config)?;
+    // clear(config)?;
 
     update_releases(config, repos).await?;
     update_cache(config, repos).await?;
@@ -90,6 +91,7 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
 
 async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> {
     let mut tasks = vec![];
+    
     for (i, source) in repos.iter().enumerate() {
         println!("RLS {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {
@@ -99,15 +101,34 @@ async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> 
             let url = str::replace(&url, "/", "_");
             
             let rls = Path::new(&config.rls).join(format!("{}{}_{}_binary-amd64_InRelease", url, source.distribution, perm));
+            
+            let mut data = Vec::new();
+            if let Ok(mut file) = File::open(&rls) {
+                file.read_to_end(&mut data)?;
+            }
+
+            let mut old_hash = Sha256::new();
+            old_hash.update(data);
+            let old_hash = old_hash.finalize();
+            
             tasks.push(tokio::spawn(async move {
                 let response = reqwest::get(release_file).await.unwrap();
                 let mut dest = tokio::fs::File::create(rls).await.unwrap();
                 let content =  response.text().await.unwrap();
-                tokio::io::copy(&mut content.as_bytes(), &mut dest).await.unwrap();
+
+                let mut new_hash = Sha256::new();
+                new_hash.update(content.as_bytes());
+                let new_hash = new_hash.finalize();
+                
+                if old_hash != new_hash {
+                    tokio::io::copy(&mut content.as_bytes(), &mut dest).await.unwrap();
+                }
+
             }));
         }
     }
 
     future::join_all(tasks).await;
     Ok(())
+    // Ok(*new_sources.borrow())
 }
