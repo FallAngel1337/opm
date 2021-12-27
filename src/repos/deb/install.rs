@@ -11,9 +11,11 @@ use crate::repos::config::Config;
 use super::cache;
 use super::{extract, download};
 use super::scripts;
+use futures::future;
 
 // TODO: Check for newer versions of the package if installed
-pub fn install(config: &mut Config, name: &str) -> Result<()> {
+#[tokio::main]
+pub async fn install(config: &Config, name: &str) -> Result<()> {
     if name.ends_with(".deb") {
         let pkg_name = name.rsplit(".deb").next().unwrap();
         let pkg = extract::extract(config, name, pkg_name)?;
@@ -38,7 +40,6 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 let (deps, sugg) = dep;
-                println!(">> {:#?}", deps);
                 
                 new_packages.append(&mut deps.clone());
 
@@ -52,24 +53,35 @@ pub fn install(config: &mut Config, name: &str) -> Result<()> {
                     println!();
                 }
 
-                for pkg in deps.into_iter() {
-                    if let Ok(path) = download::download(config, &pkg) {
-                        let path = path
-                            .into_os_string()
-                            .into_string().unwrap();
-                        
-                        let pkg = extract::extract(config, &path, &pkg.control.package)?;
+                let mut tasks = vec![];
+                for pkg in deps.iter() {
+                    tasks.push(download::download(config, pkg));
+                }
 
-                        println!("Installing {} ...", pkg.control.package);
-                        scripts::execute_install(&config.tmp)?;
-                        finish(Path::new(&format!("{}/{}", &config.tmp, pkg.control.package)))?;
-                    } else {
-                        println!("Could not download {}", pkg.control.package);
-                    }
+                for path in future::join_all(tasks).await {
+                    let path = path?
+                        .into_os_string()
+                        .into_string().unwrap();
+
+                    let pkg = extract::extract(config, &path, &pkg.control.package)?;
+
+                    println!("Installing {} ...", pkg.control.package);
+                    scripts::execute_install(&config.tmp)?;
+                    finish(Path::new(&format!("{}/{}", config.tmp, pkg.control.package)))?;
                 }
             }
 
-            let path = download::download(config, &pkg).unwrap();
+            // let path = path
+            //     .into_os_string()
+            //     .into_string().unwrap();
+            
+            // let pkg = extract::extract(config, &path, &pkg.control.package)?;
+
+            // println!("Installing {} ...", pkg.control.package);
+            // scripts::execute_install(config.tmp)?;
+            // finish(Path::new(&format!("{}/{}", config.tmp, pkg.control.package)))?;
+            
+            let path = download::download(config, &pkg).await?;
             let path = path
                 .into_os_string()
                 .into_string().unwrap();

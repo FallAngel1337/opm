@@ -34,8 +34,8 @@ fn check_version(pkgv: &str, depv: &str) -> bool {
 
     match *sig {
         "=" => result == Equal,
-        ">" => result == Greater,
-        "<" => result == Less,
+        ">>" => result == Greater,
+        "<<" => result == Less,
         ">=" => result == Greater || result == Equal,
         "<=" => result == Less || result == Equal,
         _ => false
@@ -49,38 +49,36 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
 
     if let Some(deps) = &ctrl.depends {
         for pkg in deps {
+            println!("Getting {} ...", pkg);
             let depv = get_version(pkg);
             let pkg = parse_name(pkg);
 
             if pkg.contains('|') {
                 // Recursion was causing the process to be killed by the OOM
-                pkg.split(" | ")
-                    .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
-                    .for_each(|pkg| {
-                        if let Some(mut found) = get_dependencies(config, &pkg) {
-                            depends.append(&mut found.0);
-                        }
-                    });
-                // let pkgs = pkg.split(" | ")
-                //     .collect::<Vec<_>>();
+                // pkg.split(" | ")
+                //     .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
+                //     .for_each(|pkg| {
+                //         if let Some(mut found) = get_dependencies(config, &pkg) {
+                //             depends.append(&mut found.0);
+                //         }
+                //     });
+                let pkgs = pkg.split(" | ")
+                    .filter_map(cache::check_installed);
 
-                // let installed = pkgs.iter()
-                //     .filter_map(|pkg| cache::check_installed(pkg))
-                //     .count();
+                if pkgs.clone().count() == 0 {
+                    // NOTE: If none is installed, install the first one
+                    let pkg = pkgs
+                        .filter_map(|pkg| cache::cache_lookup(config, &pkg.control.package).unwrap())
+                        .next().unwrap();
 
-                // if installed == 0 {
-                //     // NOTE: If none is installed, install the first one
-                //     let pkg = pkgs.into_iter()
-                //         .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
-                //         .next().unwrap();
-                //     depends.push(pkg)
-                // }
+                    depends.push(pkg)
+                }
             } else if cache::check_installed(pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg).unwrap() {
                     let pkgv = &pkg.control.version;
                     if let Some(depv) = depv {
                         if !check_version(pkgv, depv) {
-                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkg.control.package, pkgv, pkg.control.package, depv);
+                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkgv, pkg.control.package, pkg.control.package, depv);
                         }
                     }
                     depends.push(pkg);
