@@ -4,7 +4,7 @@ mod install_tests {
     
     #[test]
     #[should_panic]
-    fn install_deb() {
+    fn install_not_found_deb_install() {
         let mut config = config::Config::new("deb").unwrap();
         install(&mut config, "iNvAlIdPaCkAgE.deb").unwrap();
     }
