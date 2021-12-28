@@ -19,14 +19,14 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
         let pkg_name = name.rsplit(".deb").next().unwrap();
         let pkg = extract::extract(config, name, pkg_name)?;
 
-        if let Some(pkg) = cache::check_installed(&pkg.control.package) {
+        if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
             anyhow::bail!(InstallError::AlreadyInstalled);
         }
 
         scripts::execute_install(&config.tmp)?;
     } else {
-        if let Some(pkg) = cache::check_installed(name) {
+        if let Some(pkg) = cache::check_installed(config, name) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
             anyhow::bail!(InstallError::AlreadyInstalled);
         }
@@ -40,7 +40,6 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             println!("Found {:?}", pkg.control.package);
             if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
                 let (deps, sugg) = dep;
-                // println!("Deps: {:?}", deps);
                 new_packages.append(&mut deps.clone());
 
                 println!("Installing {} NEW packages", new_packages.len());
@@ -53,11 +52,9 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                     println!();
                 }
 
-                
                 for pkg in deps.into_iter() {
                     tasks.push(download::download(config, pkg));
                 }
-
             }
 
             tasks.push(download::download(config, pkg));
@@ -70,13 +67,13 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                     .into_os_string()
                     .into_string().unwrap();
 
-                extract::extract(config, &path, &pkg_name)?;
+                let pkg = extract::extract(config, &path, &pkg_name)?;
                 println!("Installing {} ...", pkg_name);
                 let path = format!("{}/{}", config.tmp, pkg_name);
-                scripts::execute_install(&config.tmp)?;
+                scripts::execute_install(&config.info)?;
                 finish(Path::new(&path))?;
+                cache::add_package(config, pkg)?;
             }
-
         } else {
             anyhow::bail!(InstallError::NotFoundError(name.to_string()));
         }
@@ -88,8 +85,9 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 fn finish(p: &Path) -> Result<()> {
     let options = fs_extra::dir::CopyOptions::new();
     let mut items = vec![];
+    println!("p = {:?}", p);
 
-    for entry in std::fs::read_dir(&p).unwrap() {
+    for entry in std::fs::read_dir(&p)? {
         let entry = entry?;
         let path = entry.path();
 
@@ -98,7 +96,9 @@ fn finish(p: &Path) -> Result<()> {
         }
     }
     
-    fs_extra::copy_items(&items, std::path::Path::new("/"), &options).unwrap();
-    fs_extra::remove_items(&items).unwrap();
+    println!("=> {:#?}", items);
+    fs_extra::copy_items(&items, std::path::Path::new("/"), &options)?;
+    fs_extra::remove_items(&items)?;
+
     Ok(())
 }

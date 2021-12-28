@@ -57,7 +57,7 @@ fn main() {
 
 	match matches.occurrences_of("list") {
 		0 => (),
-		1 => repos::list_installed(),
+		1 => repos::list_installed(&config),
 		_ => println!("Invalid argument")
 	};
 

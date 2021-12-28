@@ -49,31 +49,26 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
 
     if let Some(deps) = &ctrl.depends {
         for pkg in deps {
-            println!("Getting {} ...", pkg);
             let depv = get_version(pkg);
             let pkg = parse_name(pkg);
 
             if pkg.contains('|') {
-                // Recursion was causing the process to be killed by the OOM
-                pkg.split(" | ")
-                    .filter_map(|pkg| cache::cache_lookup(config, pkg).unwrap())
-                    .for_each(|pkg| {
-                        if let Some(mut found) = get_dependencies(config, &pkg) {
-                            depends.append(&mut found.0);
-                        }
-                    });
-                // let pkgs = pkg.split(" | ")
-                //     .filter_map(cache::check_installed);
+                let installed = pkg.split(" | ")
+                    .filter_map(|pkg| cache::check_installed(config, pkg))
+                    .count();
 
-                // if pkgs.clone().count() == 0 {
-                //     // NOTE: If none is installed, install the first one
-                //     let pkg = pkgs
-                //         .filter_map(|pkg| cache::cache_lookup(config, &pkg.control.package).unwrap())
-                //         .next().unwrap();
+                if installed == 0 {
+                    // NOTE: If none is installed, install the first one
+                    let mut pkg = pkg.split(" | ")
+                    .filter_map(|pkg| cache::cache_lookup(config, pkg).ok())
+                    .flatten()
+                    .collect::<Vec<_>>();
 
-                //     depends.push(pkg)
-                // }
-            } else if cache::check_installed(pkg).is_none() {
+                    if !pkg.is_empty() {
+                        depends.append(&mut pkg);
+                    }
+                }
+            } else if cache::check_installed(config, pkg).is_none() {
                 if let Some(pkg) = cache::cache_lookup(config, pkg).unwrap() {
                     let pkgv = &pkg.control.version;
                     if let Some(depv) = depv {

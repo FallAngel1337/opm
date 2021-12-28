@@ -1,3 +1,4 @@
+#![allow(unused)]
 use anyhow::{self, Result, bail};
 use crate::repos::errors::ConfigError;
 use std::collections::HashMap;
@@ -30,7 +31,7 @@ pub enum PkgPriority {
 pub struct ControlFile {
     pub package: String,
     pub version: String,
-    pub priority: PkgPriority,
+    pub priority: String,
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
@@ -39,6 +40,8 @@ pub struct ControlFile {
     pub suggests: Option<Vec<String>>,
     pub enhances: Option<Vec<String>>,
     pub pre_depends: Option<Vec<String>>,
+    pub breaks: Option<Vec<String>>,
+    pub conflicts: Option<Vec<String>>,
     pub filename: String,
     pub size: String,
     pub md5sum: String,
@@ -87,12 +90,14 @@ impl ControlFile {
             description: Self::try_get(&map, "Description")?,
             // Should be like the others
             // But, when reading /var/lib/dpkg/status it does not have those fields
-            priority: PkgPriority::get_priority(&Self::try_get(&map, "Priority").unwrap_or_default()),
+            priority: Self::try_get(&map, "Priority").unwrap_or_default(),
             depends: Self::split_deps(Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
             recommends: Self::split_deps(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
             suggests: Self::split_deps(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
             enhances: Self::split_deps(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
             pre_depends: Self::split_deps(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
+            breaks: Self::split_deps(Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
+            conflicts: Self::split_deps(Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
             filename: Self::try_get(&map, "Filename").unwrap_or_default(),
             size: Self::try_get(&map, "Size").unwrap_or_default(),
             md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),

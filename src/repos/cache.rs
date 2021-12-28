@@ -2,12 +2,12 @@ use anyhow::Result;
 use super::utils::PackageFormat;
 use super::config::Config;
  
-pub fn list_installed() {
+pub fn list_installed(config: &Config) {
 	if let Some(pkg_fmt) = PackageFormat::get_format() {
 		match pkg_fmt {
 			PackageFormat::Deb => {
 				use super::deb;
-				deb::dump_installed()
+				deb::dump_installed(config)
 					.into_iter()
 					.for_each(|pkg| {
 						println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)

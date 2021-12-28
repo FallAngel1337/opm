@@ -82,7 +82,7 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
                 let content = response.bytes().await.unwrap();
                 let content: &[u8] = content.as_ref();
 
-                println!("HIT {}: {} [{} kB]", i+1, pkgcache, content.len() / 1024);
+                println!("Hit {}: {} [{} kB]", i+1, pkgcache, content.len() / 1024);
                 
                 let mut data = XzDecoder::new(content);
                 let mut bytes = Vec::new();
@@ -131,7 +131,7 @@ async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> 
             tasks.push(tokio::spawn(async move {
                 let response = reqwest::get(&release_file).await.unwrap();
                 let content =  response.text().await.unwrap();
-                println!("HIT {}: {} [{} kB]", i+1, release_file, content.len() / 1024);
+                println!("Hit {}: {} [{} kB]", i+1, release_file, content.len() / 1024);
                 
                 let mut new_hash = Sha256::new();
                 new_hash.update(content.as_bytes());

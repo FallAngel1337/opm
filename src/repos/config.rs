@@ -9,6 +9,7 @@ pub struct Config {
 	pub root: String,
 	pub cache: String,
 	pub info: String,
+	pub db: String,
 	pub rls: String,
 	pub tmp: String,
 	pub fmt: String,
@@ -25,10 +26,11 @@ impl Config {
 		let root = format!("{}/.opm/{}", home, fmt);
 		Ok(
 			Self {
-				cache: format!("{}/cache/pkg_cache", root),
+				cache: format!("{}/cache/pkg", root),
 				rls: format!("{}/cache/rls", root),
 				tmp: format!("{}/tmp", root),
 				info: format!("{}/info", root),
+				db: format!("{}/db", root),
 				fmt: fmt.to_owned(),
 				use_pre_existing_cache: false,
 				use_pre_existing_db: false,
@@ -74,6 +76,24 @@ impl Config {
 
 		match fs::create_dir_all(&self.info) {
 			Ok(_) => (),
+			Err(e) => match e.kind() {
+			ErrorKind::AlreadyExists => (),
+				_ => panic!("Some error occurred {}", e)
+			}
+		}
+
+		match fs::File::create(&self.db) {
+			Ok(_) => {
+				use super::utils::PackageFormat;
+				match PackageFormat::from(&self.fmt) {
+					PackageFormat::Deb => {
+						use super::deb::database::DEBIAN_DATABASE;
+						fs::copy(DEBIAN_DATABASE, &self.db)?;
+					}
+					PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
+					PackageFormat::Other => panic!("Unrecognized package"),
+				}
+			},
 			Err(e) => match e.kind() {
 			ErrorKind::AlreadyExists => (),
 				_ => panic!("Some error occurred {}", e)

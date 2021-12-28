@@ -1,7 +1,7 @@
 use anyhow::{self, Result, Context};
 use crate::repos::{config::Config, errors::InstallError};
 use crate::repos::errors::CacheError;
-use std::fs;
+use std::{fs, io::Write};
 
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
@@ -94,8 +94,14 @@ pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 ///
 /// Dump all installed packages from /var/lib/dpkg/status
 /// 
-pub fn dump_installed() -> Vec<DebPackage> {
-	let control = fs::read_to_string(super::database::DEBIAN_DATABASE).unwrap();
+pub fn dump_installed(config: &Config) -> Vec<DebPackage> {
+	let db = if config.use_pre_existing_db {
+		super::database::DEBIAN_DATABASE
+	} else {
+		&config.db
+	};
+
+	let control = fs::read_to_string(db).unwrap();
 
 	let control = control
 		.split("\n\n")
@@ -122,16 +128,65 @@ pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 			)
 		)
 	} else {
-		anyhow::bail!(InstallError::NotFoundError(format!("Package {} could not be found (at {})", name, config.cache)))
+		anyhow::bail!(InstallError::NotFoundError(name.to_string()));
 	}
 }
 
 #[inline]
-pub fn check_installed(name: &str) -> Option<DebPackage> {
-	dump_installed().into_iter().find(|pkg| pkg.control.package == name)
+pub fn check_installed(config: &Config, name: &str) -> Option<DebPackage> {
+	dump_installed(config).into_iter().find(|pkg| pkg.control.package == name)
 }
 
 #[allow(unused)]
-pub fn add_package(config: &Config, pkg: DebPackage, cache: bool) -> Result<(), std::io::Error> {
+///
+/// Add a package to the database
+/// 
+// TODO: Add the other fields
+pub fn add_package(config: &Config, pkg: DebPackage) -> Result<()> {
+	let pkg = pkg.control;
+	let db = if config.use_pre_existing_db {
+		super::database::DEBIAN_DATABASE
+	} else {
+		&config.db
+	};
+
+	let mut data = format!("Package: {}
+Version: {}
+Priority: {}
+Architecture: {}
+Maintainer: {}
+Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.maintainer, pkg.description);
+
+	let mut depends = "".to_string();
+	let mut breaks = "".to_string();
+	let mut conflicts = "".to_string();
+
+	if let Some(d) = pkg.depends {
+		depends = d.join(", ");
+		data.push_str(&format!("\nDepends: {}", depends));
+	}
+
+	if let Some(d) = pkg.breaks {
+		breaks = d.join(", ");
+		data.push_str(&format!("\nBreaks: {}", breaks));
+	}
+	
+	if let Some(d) = pkg.conflicts {
+		conflicts = d.join(", ");
+		data.push_str(&format!("\nConflicts: {}", conflicts));
+	}
+
+	data.push('\n');
+
+	println!("DB = {}", db);
+	let mut file = fs::OpenOptions::new()
+		.write(true)
+		.append(true)
+		.open(db)?;
+
+	if let Err(e) = writeln!(file, "{}", data) {
+		eprintln!("Couldn't write to db: {}", e);
+	}
+
 	Ok(())
 }
