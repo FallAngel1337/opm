@@ -18,7 +18,7 @@ pub fn clear(config: &Config) -> Result<()> {
         Err(e) => match e.kind() {
             ErrorKind::AlreadyExists => (),
             ErrorKind::NotFound => (),
-            _ => panic!("fuck {}", e)
+            _ => panic!("Got and unexpected error :: {}", e)
         }
     }
     match fs::remove_dir_all(&config.rls){
@@ -26,7 +26,7 @@ pub fn clear(config: &Config) -> Result<()> {
         Err(e) => match e.kind() {
             ErrorKind::AlreadyExists => (),
             ErrorKind::NotFound => (),
-            _ => panic!("fuck {}", e)
+            _ => panic!("Got and unexpected error :: {}", e)
         }
     }
     match fs::remove_dir_all(&config.tmp){
@@ -34,7 +34,7 @@ pub fn clear(config: &Config) -> Result<()> {
         Err(e) => match e.kind() {
             ErrorKind::AlreadyExists => (),
             ErrorKind::NotFound => (),
-            _ => panic!("fuck {}", e)
+            _ => panic!("Got and unexpected error :: {}", e)
         }
     }
 
@@ -59,7 +59,6 @@ pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<()> {
 async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
     let mut tasks = vec![];
     for (i, source) in repos.iter().enumerate() {
-        // println!("Get {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {
             let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.xz", source.url, source.distribution, perm); // Binary packages ONLY for now
 
@@ -112,7 +111,6 @@ async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> 
     let mut tasks = vec![];
     
     for (i, source) in repos.iter().enumerate() {
-        // println!("RLS {}: {} {} {:?}", i+1, source.url, source.distribution, source.components);
         for perm in source.components.iter() {
             let release_file = format!("{}dists/{}/InRelease", source.url, source.distribution);
             
@@ -150,5 +148,4 @@ async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> 
 
     future::join_all(tasks).await;
     Ok(())
-    // Ok(*new_sources.borrow())
 }

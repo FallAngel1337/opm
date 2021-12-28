@@ -42,7 +42,7 @@ pub fn roll_back() {
         Ok(_) => (),
         Err(e) => match e.kind() {
             ErrorKind::NotFound => (),
-            _ => panic!("fuck {}", e)
+            _ => panic!("Clould not rollback due {}", e)
         }
     }
 }
