@@ -12,7 +12,7 @@ fn main() {
     let matches = App::new("Oxidized Package Manager")
 				.version("v0.1")
 				.author("FallAngel <fallangel@protonmail.com>")
-				.about("A fully package manager made in Rust")
+				.about("A package manager fully written in Rust")
 				.arg(Arg::with_name("list")
 					.short("l")
 					.long("list")
@@ -48,7 +48,10 @@ fn main() {
 						.arg(Arg::with_name("package")
 							.takes_value(true)
 							.index(1)
-							.required(true))
+							.required(true)),
+					SubCommand::with_name("clear")
+						.about("Clear OPM's cache")
+						.help("Clear OPM's cache")
 				])
 				.get_matches();
 
@@ -86,6 +89,13 @@ fn main() {
 		println!("Searching for {} ...", package.value_of("package").unwrap());
 		repos::search(&mut config, pkg).unwrap_or_else(|err| {
 			eprintln!("Failed to search for {} due {}", pkg, err);
+			process::exit(1);
+		});
+    };
+
+    if matches.subcommand_matches("clear").is_some() {
+		repos::clear(&config).unwrap_or_else(|err| {
+			eprintln!("Failed to clear cache due {}", err);
 			process::exit(1);
 		});
     };

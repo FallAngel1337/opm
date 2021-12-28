@@ -12,6 +12,6 @@ pub mod utils;
 pub mod errors;
 
 pub use install::install;
-pub use update::update;
+pub use update::{update, clear};
 pub use cache::{list_installed, search};
 pub use setup::{setup, roll_back};

@@ -10,7 +10,7 @@ pub mod package;
 pub mod sources;
 
 pub use install::install;
-pub use update::update;
+pub use update::{update, clear};
 pub use cache::{dump_installed, check_installed};
 
 pub mod database {

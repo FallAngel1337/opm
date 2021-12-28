@@ -24,3 +24,20 @@ pub async fn update(config: &mut Config) -> Result<()> {
 
     Ok(())
 }
+
+pub fn clear(config: &Config) -> Result<()> {
+    match PackageFormat::from(&config.fmt) {
+        PackageFormat::Deb => {
+            use super::deb;
+            deb::clear(config)?;
+        }
+        PackageFormat::Rpm => {
+            println!("It's a RHEL(-based) distro");
+        }
+        PackageFormat::Other => {
+            println!("Actually we do not have support for you distro!");
+        }
+    }
+
+    Ok(())
+}
