@@ -1,4 +1,13 @@
-# OPM (Oxidized Package Manager)
+# OPM (Oxidized Package Manager) 📦
+</p>
+<p align="center">
+  </a>
+    <img alt="GitHub" src="https://img.shields.io/github/license/0xc0ffeec0de/opm">
+    <img alt="GitHub issues" src="https://img.shields.io/github/issues/0xc0ffeec0de/opm">
+    <img alt="GitHub commit activity (branch)" src="https://img.shields.io/github/commit-activity/w/0xc0ffeec0de/opm/master">
+  </a>
+</p>
+
 
 A `apt`-like system's package manager written in Rust for many operation systems distributions packages 
 (See [supported-packages](#supported-packages)).
