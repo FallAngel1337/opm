@@ -18,6 +18,10 @@ mod install_tests {
     #[test]
     fn install_already_installed() {
         let mut config = config::Config::new("deb").unwrap();
+<<<<<<< HEAD
         install(&mut config, "dpkg").unwrap_err();
+=======
+        install(&mut config, "cargo").unwrap_err();
+>>>>>>> 2af5f24c42d96e89665ba6b90aebc43c41ebdb7b
     }
 }
