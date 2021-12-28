@@ -3,28 +3,24 @@ use super::utils::PackageFormat;
 use super::config::Config;
  
 pub fn list_installed(config: &Config) {
-	if let Some(pkg_fmt) = PackageFormat::get_format() {
-		match pkg_fmt {
-			PackageFormat::Deb => {
-				use super::deb;
-				deb::dump_installed(config)
-					.into_iter()
-					.for_each(|pkg| {
-						println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)
-					});
-			},
-			PackageFormat::Rpm => {
-				println!("It's a RHEL(-based) distro");
-				}
-				PackageFormat::Other => {
-					println!("Actually we do not have support for you distro!");
-				}
+	match PackageFormat::from(&config.fmt) {
+		PackageFormat::Deb => {
+			use super::deb;
+			deb::dump_installed(config)
+				.into_iter()
+				.for_each(|pkg| {
+					println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)
+				});
+		},
+		PackageFormat::Rpm => {
+			println!("It's a RHEL(-based) distro");
 			}
-	} else {
-        eprintln!("Consider define `PKG_FMT` environment variable!");
-        std::process::exit(1);
-    }
+		PackageFormat::Other => {
+			println!("Actually we do not have support for you distro!");
+		}
+	}
 }
+
 
 pub fn search(config: &mut Config, name: &str) -> Result<()> {
 	match PackageFormat::from(&config.fmt) {
