@@ -11,7 +11,7 @@
    - [ ] User-only installtion
 - [X] Package versioning checking
 - [x] [Packages update](#packages-update)
-   - [ ] Improve the download speed (using async)
+   - [X] Improve the download speed (using async)
 - [ ] [Packages removal](#packages-removal)
 - [x] [Packages listing](#packages-listing)
    - [x] Make the querying faster

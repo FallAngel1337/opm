@@ -11,7 +11,9 @@ for known package managers(apt, aptitude, dnf, yum, etc) neither a front-end for
 **Note**: Most of the features and functionalities aren't done and/or stable yet. We're working to release a full working and stable version that can run on any operation system, including Microsoft Windows. For now just for debian-based linux distributions.
 
 ## Installation
-### From releases (not-recommended):
+**NOTE:** Since OPM is not stable yet, it's not recommended to use it on your OS directly
+
+### From releases:
 
 You can find a binary release for you architecture in the [releases](https://github.com/0xc0ffeec0de/opm/releases) tab.
 
@@ -21,10 +23,15 @@ You'll need to have [rust and cargo](https://www.rust-lang.org/tools/install) in
 ```
 $ git clone git@github.com:0xc0ffeec0de/opm.git
 $ cd opm/
+$ RUSTC_FLAGS="-C target-cpu=native" cargo build --release
+$ PKG_FMT=deb target/release/opm --help
 ```
-If you have [docker](https://www.docker.com/) installed you can run `docker build -t opm .` to run it inside a container.
-
-**NOTE**: You need to define a environment variable called `PKG_FMT` to define on which package format `opm` will be working with. For now just `deb` is supported.
+If you have [docker](https://www.docker.com/) installed
+```
+$ docker build -t opm .
+$ docker container run -dit --name opt_test opm
+$ docker container exec -it opm_test bash
+```
 
 ## Features:
   - [ ] Customizable
@@ -41,7 +48,7 @@ If you have [docker](https://www.docker.com/) installed you can run `docker buil
 $ opm --help
 Oxidized Package Manager v0.1
 FallAngel <fallangel@protonmail.com>
-A fully package manager made in Rust
+A package manager fully written in Rust
 
 USAGE:
     opm [FLAGS] [SUBCOMMAND]
@@ -52,6 +59,7 @@ FLAGS:
     -V, --version    Prints version information
 
 SUBCOMMANDS:
+    clear      Clear OPM's cache
     help       Prints this message or the help of the given subcommand(s)
     install    install a package
     remove     remove a package
