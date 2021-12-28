@@ -85,7 +85,6 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 fn finish(p: &Path) -> Result<()> {
     let options = fs_extra::dir::CopyOptions::new();
     let mut items = vec![];
-    println!("p = {:?}", p);
 
     for entry in std::fs::read_dir(&p)? {
         let entry = entry?;
@@ -96,7 +95,6 @@ fn finish(p: &Path) -> Result<()> {
         }
     }
     
-    println!("=> {:#?}", items);
     fs_extra::copy_items(&items, std::path::Path::new("/"), &options)?;
     fs_extra::remove_items(&items)?;
 

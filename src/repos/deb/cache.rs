@@ -178,7 +178,6 @@ Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.
 
 	data.push('\n');
 
-	println!("DB = {}", db);
 	let mut file = fs::OpenOptions::new()
 		.write(true)
 		.append(true)
