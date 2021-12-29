@@ -257,10 +257,7 @@ mod test {
 	#[ignore]
 	fn cache_lookup_test() {
 		let config = repos::setup().unwrap();
-<<<<<<< HEAD
-=======
 		dbg!("[cache_lookup_test]", &config);
->>>>>>> tests
 		let pkg = cache_lookup(&config, "invalidPackage0101").unwrap();
 		assert!(pkg.is_none());
 	}
