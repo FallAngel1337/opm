@@ -43,6 +43,25 @@ impl<'a> Cache<'a> {
 	}
 }
 
+pub fn db_dump(config: &Config) -> Vec<DebPackage> {
+	let db = if config.use_pre_existing_db {
+		super::database::DEBIAN_DATABASE
+	} else {
+		&config.db
+	};
+
+	let control = fs::read_to_string(db).unwrap();
+
+	let control = control
+		.split("\n\n")
+		.map(ControlFile::from)
+		.filter_map(|ctrl| ctrl.ok())
+		.map(|ctrl| DebPackage { control: ctrl, kind: PkgKind::Binary } )
+		.collect::<Vec<_>>();
+	
+	control
+}
+
 fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
@@ -133,6 +152,9 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 	anyhow::bail!(CacheError { msg: format!("{} was not found", cache.cache) });
 }
 
+///
+/// Search for a package in the cache that `contains` `name`
+/// 
 #[inline]
 pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage>>> {
 	Ok (
@@ -140,30 +162,14 @@ pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage
 	)
 }
 
+///
+/// Search for a package in the cache that is equal to `name`
+/// 
 #[inline]
 pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 	Ok (
 		cache_inter(config, name, true)?.pkg
 	)
-}
-
-pub fn db_dump(config: &Config) -> Vec<DebPackage> {
-	let db = if config.use_pre_existing_db {
-		super::database::DEBIAN_DATABASE
-	} else {
-		&config.db
-	};
-
-	let control = fs::read_to_string(db).unwrap();
-
-	let control = control
-		.split("\n\n")
-		.map(ControlFile::from)
-		.filter_map(|ctrl| ctrl.ok())
-		.map(|ctrl| DebPackage { control: ctrl, kind: PkgKind::Binary } )
-		.collect::<Vec<_>>();
-	
-	control
 }
 
 #[inline]
@@ -186,22 +192,18 @@ Architecture: {}
 Maintainer: {}
 Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.maintainer, pkg.description);
 
-	let mut depends = "".to_string();
-	let mut breaks = "".to_string();
-	let mut conflicts = "".to_string();
-
 	if let Some(d) = pkg.depends {
-		depends = d.join(", ");
+		let depends = d.join(", ");
 		data.push_str(&format!("\nDepends: {}", depends));
 	}
 
 	if let Some(d) = pkg.breaks {
-		breaks = d.join(", ");
+		let breaks = d.join(", ");
 		data.push_str(&format!("\nBreaks: {}", breaks));
 	}
 	
 	if let Some(d) = pkg.conflicts {
-		conflicts = d.join(", ");
+		let conflicts = d.join(", ");
 		data.push_str(&format!("\nConflicts: {}", conflicts));
 	}
 
@@ -230,9 +232,11 @@ mod test {
 	}
 
 	#[test]
-	fn cache_dump_test() {
+	fn cache_search_test() {
 		let config = Config::new("deb").unwrap();
-		cache_dump(&config).unwrap();
+		let pkg = cache_search(&config, "invalidPackage0101").unwrap();
+		// dbg!("PKG = {:?}", &pkg);
+		assert!(pkg.unwrap().is_empty());
 	}
 
 	#[test]
@@ -242,6 +246,7 @@ mod test {
 		assert!(db_dump(&config).len() > 0);
 	}
 
+	// This was crashing and idk why
 	#[test]
 	fn cache_lookup_test() {
 		let config = Config::new("deb").unwrap();
