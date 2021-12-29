@@ -103,3 +103,112 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
 
     Some((depends, optional))
 }
+
+#[cfg(test)]
+mod test {
+    use crate::repos::deb::package::{ControlFile, PkgKind};
+    use super::*;
+    #[test]
+    fn parse_name_test() {
+        assert_eq!(parse_name("demo_pkg (>= 1.33.7)"), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (<= 1.33.7)"), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (<< 1.33.7)"), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (>> 1.33.7)"), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (= 1.33.7)"), "demo_pkg");
+        
+        assert_eq!(parse_name("demo_pkg (>= 1.33.7("), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (<= 1.33.7("), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (<< 1.33.7("), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (>> 1.33.7("), "demo_pkg");
+        assert_eq!(parse_name("demo_pkg (= 1.33.7("), "demo_pkg");
+        
+        assert!(parse_name("demo_pkg )>= 1.33.7)") != "demo_pkg");
+        assert!(parse_name("demo_pkg )<= 1.33.7)") != "demo_pkg");
+        assert!(parse_name("demo_pkg )<< 1.33.7)") != "demo_pkg");
+        assert!(parse_name("demo_pkg )>> 1.33.7)") != "demo_pkg");
+        assert!(parse_name("demo_pkg )= 1.33.7)")  != "demo_pkg");
+        
+        assert!(parse_name("demo_pkg )>= 1.33.7(") != "demo_pkg");
+        assert!(parse_name("demo_pkg )<= 1.33.7(") != "demo_pkg");
+        assert!(parse_name("demo_pkg )<< 1.33.7(") != "demo_pkg");
+        assert!(parse_name("demo_pkg )>> 1.33.7(") != "demo_pkg");
+        assert!(parse_name("demo_pkg )= 1.33.7(")  != "demo_pkg");
+    }
+
+    #[test]
+    fn get_version_test() {
+        assert_eq!(get_version("demo_pkg"), None);
+
+        assert_eq!(get_version("demo_pkg (>= 1.33.7)").unwrap(), ">= 1.33.7");
+        assert_eq!(get_version("demo_pkg (<= 1.33.7)").unwrap(), "<= 1.33.7");
+        assert_eq!(get_version("demo_pkg (<< 1.33.7)").unwrap(), "<< 1.33.7");
+        assert_eq!(get_version("demo_pkg (>> 1.33.7)").unwrap(), ">> 1.33.7");
+        assert_eq!(get_version("demo_pkg (= 1.33.7)").unwrap(), "= 1.33.7");
+        
+        assert_eq!(get_version("demo_pkg (>= 1.33.7("), None);
+        assert_eq!(get_version("demo_pkg (<= 1.33.7("), None);
+        assert_eq!(get_version("demo_pkg (<< 1.33.7("), None);
+        assert_eq!(get_version("demo_pkg (>> 1.33.7("), None);
+        assert_eq!(get_version("demo_pkg (= 1.33.7("), None);
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_version_test_panic() {
+        get_version("demo_pkg )>= 1.33.7)").unwrap();
+        get_version("demo_pkg )<= 1.33.7)").unwrap();
+        get_version("demo_pkg )<< 1.33.7)").unwrap();
+        get_version("demo_pkg )>> 1.33.7)").unwrap();
+        get_version("demo_pkg )= 1.33.7)").unwrap();
+        
+        get_version("demo_pkg )>= 1.33.7(").unwrap();
+        get_version("demo_pkg )<= 1.33.7(").unwrap();
+        get_version("demo_pkg )<< 1.33.7(").unwrap();
+        get_version("demo_pkg )>> 1.33.7(").unwrap();
+        get_version("demo_pkg )= 1.33.7(").unwrap();
+    }
+
+    #[test]
+    fn check_version_test() {
+        assert!(check_version("1.33.7", "<= 1.33.8"));
+        assert!(check_version("1.33.7", ">= 1.33.7"));
+        assert!(check_version("1.33.7", "= 1.33.7"));
+        assert!(!check_version("1.33.7", "<< 1.33.7"));
+        assert!(!check_version("1.33.7", ">> 1.33.7"));
+    }
+
+    // This was also crashing and idk why
+    #[test]
+    #[ignore]
+    fn get_dependencies_test() {
+        let config = Config::new("deb").unwrap();
+        let data = r"Package: accountsservice
+        Architecture: amd64
+        Version: 0.6.55-0ubuntu11
+        Priority: standard
+        Section: gnome
+        Origin: Ubuntu
+        Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+        Original-Maintainer: Debian freedesktop.org maintainers <pkg-freedesktop-maintainers@lists.alioth.debian.org>
+        Bugs: https://bugs.launchpad.net/ubuntu/+filebug
+        Installed-Size: 452
+        Depends: dbus, libaccountsservice0 (= 0.6.55-0ubuntu11), libc6 (>= 2.4), libglib2.0-0 (>= 2.44), libpolkit-gobject-1-0 (>= 0.99)
+        Suggests: gnome-control-center
+        Filename: pool/main/a/accountsservice/accountsservice_0.6.55-0ubuntu11_amd64.deb
+        Size: 60940
+        MD5sum: 87a0e27c83950d864d901ceca0f2b49c
+        SHA1: ce92ea3783ca4ca6cdb5115381379f9c1317566b
+        SHA256: e34884d71bb98002bf0c775479aa31ee5011ded1abf969ffe6496874de499f42
+        Homepage: https://www.freedesktop.org/wiki/Software/AccountsService/
+        Description: query and manipulate user account information
+        Task: standard
+        Description-md5: 8aeed0a03c7cd494f0c4b8d977483d7e";
+        let res = get_dependencies(&config, &DebPackage {
+            control: ControlFile::from(data).unwrap(),
+            kind: PkgKind::Binary
+        });
+
+        dbg!("=> {:?}", res);
+        assert!(2 == 3);
+    }
+}

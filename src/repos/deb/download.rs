@@ -5,7 +5,7 @@ use crate::repos::config::Config;
 use super::package::DebPackage;
 use reqwest;
 
-pub async fn download<'a>(config: &Config, pkg: DebPackage) -> Result<(PathBuf, String)> {
+pub async fn download(config: &Config, pkg: DebPackage) -> Result<(PathBuf, String)> {
     let pkg_name = pkg.control.package;
     println!("Downloading {} ...", pkg_name);
 

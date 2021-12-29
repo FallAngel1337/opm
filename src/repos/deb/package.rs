@@ -164,3 +164,34 @@ impl DebPackage {
         )
     }
 }
+
+#[cfg(test)]
+mod test {
+	use super::*;
+    #[test]
+    fn package_from_test() {
+        let data = r"Package: accountsservice
+Architecture: amd64
+Version: 0.6.55-0ubuntu11
+Priority: standard
+Section: gnome
+Origin: Ubuntu
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Original-Maintainer: Debian freedesktop.org maintainers <pkg-freedesktop-maintainers@lists.alioth.debian.org>
+Bugs: https://bugs.launchpad.net/ubuntu/+filebug
+Installed-Size: 452
+Depends: dbus, libaccountsservice0 (= 0.6.55-0ubuntu11), libc6 (>= 2.4), libglib2.0-0 (>= 2.44), libpolkit-gobject-1-0 (>= 0.99)
+Suggests: gnome-control-center
+Filename: pool/main/a/accountsservice/accountsservice_0.6.55-0ubuntu11_amd64.deb
+Size: 60940
+MD5sum: 87a0e27c83950d864d901ceca0f2b49c
+SHA1: ce92ea3783ca4ca6cdb5115381379f9c1317566b
+SHA256: e34884d71bb98002bf0c775479aa31ee5011ded1abf969ffe6496874de499f42
+Homepage: https://www.freedesktop.org/wiki/Software/AccountsService/
+Description: query and manipulate user account information
+Task: standard
+Description-md5: 8aeed0a03c7cd494f0c4b8d977483d7e";
+		ControlFile::from(data).unwrap();
+	}
+
+}
