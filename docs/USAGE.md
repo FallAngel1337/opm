@@ -11,19 +11,16 @@
     - [Package inspect](#package-inspect)
 
 ## Basic Usage
-This all involves the high-level api
+This all involves the high-level API
 
 ### Package Installation
-**NOTE:** It does not store the package in a database for now due testing phase. We're working on that
-It'll require superuser privileges to perform this action
-
 You can search and install by the name
 ```
 $ opm install <package_name>
 ```
-Or if you have a `.deb` package you can give the path to it as an argument and then the package will be installed
+Or if you have a package file (e.g.: `.deb`) you can give the path to it as an argument and then the package will be installed
 ```
-$ opm install <package_name>.deb
+$ opm install /path/to/the/<package_name>.deb
 ```
 
 ### Package Removing
@@ -38,7 +35,7 @@ You can search for a package by it's name
 ```
 $ opm search <package_name>
 ```
-This will bring you can a list with names that are `contains` the name you provide.
+This will bring you a list with names that `contains` the name you've searched for.
 
 E.g.: `tmux` can bring `python3-tmux`
 
@@ -53,7 +50,7 @@ $ opm -l
 ```
 
 ## Advanced Usage
-This all involves the low-level api
+This all involves the low-level API
 None are ready, it's just for "preview"
 
 ### Package Building
