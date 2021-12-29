@@ -240,6 +240,7 @@ mod test {
 	}
 
 	#[test]
+	#[ignore]
 	fn db_dump_test() {
 		let config = Config::new("deb").unwrap();
 		// THIS MAY NOT BE GOOD, IF YOU HAVE AN EMPTY DATABASED IT'LL FAIL
