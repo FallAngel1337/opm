@@ -10,7 +10,7 @@
 </p>
 
 
-A `apt`-like system's package manager written in Rust for many operation systems distributions packages 
+A `apt`-like systems package manager written in Rust for many operating systems packages.
 (See [supported-packages](#supported-packages)).
 It provides either a higher level interface and a low-level one for those who want to build and inspect the packages.
 This package manager aims to be universal/generic and simple. 
@@ -42,11 +42,6 @@ $ docker build -t opm .
 $ docker container run -dit --name opt_test opm
 $ docker container exec -it opm_test bash
 ```
-
-## Features:
-  - [ ] Customizable
-  - [ ] User-only installations
-  - [ ] ...
 
 ## Supported Packages:
   - [X] deb
