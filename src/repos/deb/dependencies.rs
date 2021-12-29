@@ -181,7 +181,7 @@ mod test {
     #[test]
     #[ignore]
     fn get_dependencies_test() {
-        let mut config = repos::setup().unwrap();
+        let config = repos::setup().unwrap();
         let data = r"Package: accountsservice
         Architecture: amd64
         Version: 0.6.55-0ubuntu11

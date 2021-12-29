@@ -228,13 +228,13 @@ mod test {
 
 	#[test]
 	fn get_cache_test() {
-		let mut config = repos::setup().unwrap();
+		let config = repos::setup().unwrap();
 		Cache::get_cache(&config).unwrap();
 	}
 
 	#[test]
 	fn cache_search_test() {
-		let mut config = repos::setup().unwrap();
+		let config = repos::setup().unwrap();
 		let pkg = cache_search(&config, "invalidPackage0101").unwrap();
 		// dbg!("PKG = {:?}", &pkg);
 		assert!(pkg.unwrap().is_empty());
@@ -243,7 +243,7 @@ mod test {
 	#[test]
 	#[ignore]
 	fn db_dump_test() {
-		let mut config = repos::setup().unwrap();
+		let config = repos::setup().unwrap();
 		// THIS MAY NOT BE GOOD, IF YOU HAVE AN EMPTY DATABASED IT'LL FAIL
 		assert!(db_dump(&config).len() > 0);
 	}
@@ -252,7 +252,7 @@ mod test {
 	#[test]
 	#[ignore]
 	fn cache_lookup_test() {
-		let mut config = repos::setup().unwrap();
+		let config = repos::setup().unwrap();
 		let pkg = cache_lookup(&config, "invalidPackage0101").unwrap();
 		assert!(pkg.is_none());
 	}
