@@ -106,7 +106,7 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
 
 #[cfg(test)]
 mod test {
-    use crate::repos::deb::package::{ControlFile, PkgKind};
+    use crate::repos::{self, deb::package::{ControlFile, PkgKind}};
     use super::*;
     #[test]
     fn parse_name_test() {
@@ -181,7 +181,7 @@ mod test {
     #[test]
     #[ignore]
     fn get_dependencies_test() {
-        let config = Config::new("deb").unwrap();
+        let mut config = repos::setup().unwrap();
         let data = r"Package: accountsservice
         Architecture: amd64
         Version: 0.6.55-0ubuntu11
