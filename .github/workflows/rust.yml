@@ -13,6 +13,7 @@ jobs:
   build:
       env:
         RUSTC_FLAGS: -C target-cpu=native
+      continue-on-error: true
 
       runs-on: ubuntu-latest
 
