@@ -6,7 +6,7 @@ pub fn list_installed(config: &Config) {
 	match PackageFormat::from(&config.fmt) {
 		PackageFormat::Deb => {
 			use super::deb;
-			deb::dump_installed(config)
+			deb::db_dump(config)
 				.into_iter()
 				.for_each(|pkg| {
 					println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)

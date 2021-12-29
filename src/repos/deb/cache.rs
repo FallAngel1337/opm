@@ -38,9 +38,6 @@ impl<'a> Cache<'a> {
 	}
 }
 
-///
-/// Dump from the downloded files
-///
 pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 	let mut pkgs = Vec::new();
 	let cache = Cache::get_cache(config)
@@ -91,10 +88,7 @@ pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 	Ok(pkgs)
 }
 
-///
-/// Dump all installed packages from /var/lib/dpkg/status
-/// 
-pub fn dump_installed(config: &Config) -> Vec<DebPackage> {
+pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 	let db = if config.use_pre_existing_db {
 		super::database::DEBIAN_DATABASE
 	} else {
@@ -134,7 +128,7 @@ pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 
 #[inline]
 pub fn check_installed(config: &Config, name: &str) -> Option<DebPackage> {
-	dump_installed(config).into_iter().find(|pkg| pkg.control.package == name)
+	db_dump(config).into_iter().find(|pkg| pkg.control.package == name)
 }
 
 #[allow(unused)]
@@ -188,4 +182,12 @@ Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.
 	}
 
 	Ok(())
+}
+
+#[cfg(test)]
+mod test {
+	#[test]
+	fn a() {
+		assert_eq!(2, 2);
+	}
 }

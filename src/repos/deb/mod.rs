@@ -11,7 +11,7 @@ pub mod sources;
 
 pub use install::install;
 pub use update::{update, clear};
-pub use cache::{dump_installed, check_installed};
+pub use cache::{db_dump, check_installed};
 
 pub mod database {
     pub const DEBIAN_DATABASE: &str = "/var/lib/dpkg/status";
