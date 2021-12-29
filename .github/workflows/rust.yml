@@ -13,6 +13,7 @@ jobs:
   build:
       env:
         RUSTC_FLAGS: -C target-cpu=native
+        PKG_FMT: deb
       continue-on-error: true
 
       runs-on: ubuntu-latest
