@@ -1,5 +1,5 @@
 use anyhow::{self, Result, Context};
-use crate::repos::{config::Config, errors::InstallError};
+use crate::repos::config::Config;
 use crate::repos::errors::CacheError;
 use std::{fs, io::Write};
 
@@ -10,6 +10,11 @@ use super::{
 const DEBIAN_CACHE: &str = "/var/lib/apt/lists/";
 struct Cache<'a> {
 	cache: &'a str
+}
+
+struct CacheResult {
+	pkg: Option<DebPackage>,
+	pkgs: Option<Vec<DebPackage>>
 }
 
 impl<'a> Cache<'a> {
@@ -38,8 +43,7 @@ impl<'a> Cache<'a> {
 	}
 }
 
-pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
-	let mut pkgs = Vec::new();
+fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
 	
@@ -60,32 +64,87 @@ pub fn cache_dump(config: &Config) -> Result<Vec<ControlFile>> {
 			}
 		};
 
-		let control = control
-			.split("\n\n")
-			.map(ControlFile::from);
-			
+		let mut control = control
+		.split("\n\n")
+		.map(ControlFile::from)
+		.filter_map(|pkg| pkg.ok());
+	
 		let entry = entry.path()
-			.into_os_string()
-			.into_string()
-			.unwrap();
+		.into_os_string()
+		.into_string()
+		.unwrap();
 
 		let url =  &entry
-			.split('/')
-			.last()
-			.unwrap()
-			.replace("_", "/")
-			.split('/')
-			.collect::<Vec<_>>()[..2]
-			.join("/");
+		.split('/')
+		.last()
+		.unwrap()
+		.replace("_", "/")
+		.split('/')
+		.collect::<Vec<_>>()[..2]
+		.join("/");
 
-		control.into_iter().filter_map(|pkg| pkg.ok()).for_each(|mut pkg| {
-			let url = format!("{}/{}", url, &pkg.filename);
-			pkg.set_filename(&url);
-			pkgs.push(pkg);
-		});
+		if exact {
+			let control = control.find(|pkg| pkg.package == name);
+
+			if let Some(mut pkg) = control {
+				let url = format!("{}/{}", url, &pkg.filename);
+				pkg.set_filename(&url);
+				
+				return Ok(
+					CacheResult {
+						pkg: Some(
+							DebPackage {
+								control: pkg,
+								kind: PkgKind::Binary
+							}
+						),
+						pkgs: None
+					}
+				);
+			} else {
+				anyhow::bail!(CacheError { msg: format!("{} was not found", cache.cache) });
+			}
+		} else {
+			let mut pkgs = vec![];
+			
+			pkgs.append(
+				&mut control
+				.filter(|pkg| pkg.package.contains(name))
+				.map(|mut pkg| {
+					let url = format!("{}/{}", url, &pkg.filename);
+					pkg.set_filename(&url);
+					DebPackage {
+						control: pkg,
+						kind: PkgKind::Binary
+					}
+				})
+				.collect::<Vec<_>>()
+			);
+
+			return Ok(
+				CacheResult {
+					pkg: None,
+					pkgs: Some(pkgs)
+				}
+			);
+		}
 	}
 
-	Ok(pkgs)
+	anyhow::bail!(CacheError { msg: format!("{} was not found", cache.cache) });
+}
+
+#[inline]
+pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage>>> {
+	Ok (
+		cache_inter(config, name, false)?.pkgs
+	)
+}
+
+#[inline]
+pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
+	Ok (
+		cache_inter(config, name, true)?.pkg
+	)
 }
 
 pub fn db_dump(config: &Config) -> Vec<DebPackage> {
@@ -107,35 +166,11 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 	control
 }
 
-pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
-	let dump = cache_dump(config)?
-		.into_iter()
-		.find(|control| control.package == name);
-
-	if let Some(control) = dump {
-		Ok(
-			Some (
-				DebPackage {
-					control,
-					kind: PkgKind::Binary
-				}
-			)
-		)
-	} else {
-		anyhow::bail!(InstallError::NotFoundError(name.to_string()));
-	}
-}
-
 #[inline]
 pub fn check_installed(config: &Config, name: &str) -> Option<DebPackage> {
 	db_dump(config).into_iter().find(|pkg| pkg.control.package == name)
 }
 
-#[allow(unused)]
-///
-/// Add a package to the database
-/// 
-// TODO: Add the other fields
 pub fn add_package(config: &Config, pkg: DebPackage) -> Result<()> {
 	let pkg = pkg.control;
 	let db = if config.use_pre_existing_db {
@@ -186,8 +221,31 @@ Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.
 
 #[cfg(test)]
 mod test {
+	use super::*;
+
 	#[test]
-	fn a() {
-		assert_eq!(2, 2);
+	fn get_cache_test() {
+		let config = Config::new("deb").unwrap();
+		Cache::get_cache(&config).unwrap();
+	}
+
+	#[test]
+	fn cache_dump_test() {
+		let config = Config::new("deb").unwrap();
+		cache_dump(&config).unwrap();
+	}
+
+	#[test]
+	fn db_dump_test() {
+		let config = Config::new("deb").unwrap();
+		// THIS MAY NOT BE GOOD, IF YOU HAVE AN EMPTY DATABASED IT'LL FAIL
+		assert!(db_dump(&config).len() > 0);
+	}
+
+	#[test]
+	fn cache_lookup_test() {
+		let config = Config::new("deb").unwrap();
+		let pkg = cache_lookup(&config, "invalidPackage0101").unwrap();
+		assert!(pkg.is_none());
 	}
 }

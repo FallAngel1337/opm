@@ -7,14 +7,14 @@ pub fn list_installed(config: &Config) {
 		PackageFormat::Deb => {
 			use super::deb;
 			deb::db_dump(config)
-				.into_iter()
-				.for_each(|pkg| {
-					println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)
-				});
+			.into_iter()
+			.for_each(|pkg| {
+				println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)
+			});
 		},
 		PackageFormat::Rpm => {
 			println!("It's a RHEL(-based) distro");
-			}
+		}
 		PackageFormat::Other => {
 			println!("Actually we do not have support for you distro!");
 		}
@@ -26,12 +26,15 @@ pub fn search(config: &mut Config, name: &str) -> Result<()> {
 	match PackageFormat::from(&config.fmt) {
 		PackageFormat::Deb => {
 			use super::deb;
-			deb::cache::cache_dump(config)?
+			let result = deb::cache::cache_search(config, name)?;
+			if let Some(pkgs) = result {
+				pkgs
 				.into_iter()
-				.filter(|pkg| pkg.package.contains(name))
 				.for_each(|pkg| {
-					println!("{} {} - {}", pkg.package, pkg.version, pkg.description)
+					println!("{} - {}", pkg.control.package, pkg.control.description);
 				});
+			}
+
 			Ok(())
 		},
 		PackageFormat::Rpm => {
