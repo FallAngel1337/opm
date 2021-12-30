@@ -5,13 +5,12 @@ use std::path::Path;
 /// Debian package install
 ///
 
-use fs_extra;
 use crate::repos::{errors::InstallError, deb::dependencies};
 use crate::repos::config::Config;
-use super::cache;
 use super::{extract, download};
-use super::scripts;
+use super::{cache, scripts, signatures};
 use futures::future;
+use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 pub async fn install(config: &Config, name: &str) -> Result<()> {
@@ -67,7 +66,16 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                     .into_os_string()
                     .into_string().unwrap();
 
+                    
                 let pkg = extract::extract(config, &path, &pkg_name)?;
+                
+                println!("Checking the signatures ...");
+                if !signatures::verify_sig(&pkg, Path::new(&path))? {
+                    println!("Packages signatures did not match ...");
+                } else {
+                    println!("OK");
+                }
+
                 println!("Installing {} ...", pkg_name);
                 let path = format!("{}/{}", config.tmp, pkg_name);
                 scripts::execute_install(&config.info)?;
