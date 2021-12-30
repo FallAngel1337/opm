@@ -1,9 +1,9 @@
-use anyhow::{Result, Context};
+use anyhow::Result;
 use xz2::read::XzDecoder;
 use flate2::read::GzDecoder;
 use std::{
     io::{ErrorKind, prelude::*},
-    fs::{self, File},
+    fs,
     path::Path,
     str
 };
@@ -12,19 +12,14 @@ use futures::future;
 use super::sources::DebianSource;
 use crate::repos::config::Config;
 
-fn unpack(filename: &str, data: &[u8], bytes: &mut Vec<u8>) -> Result<()> {
-
-    if filename.ends_with(".tar.gz") {
+fn unpack(filename: &str, data: &[u8], bytes: &mut Vec<u8>) {
+    if filename.ends_with(".gz") {
         let mut tar = GzDecoder::new(data);
-        tar.read_to_end(bytes)
-        .with_context(|| format!("Could not unpack {} archive", filename))?;
-    } else if filename.ends_with(".tar.xz") {
+        tar.read_to_end(bytes).unwrap_or_default();
+    } else if filename.ends_with(".xz") {
         let mut tar = XzDecoder::new(data);
-        tar.read_to_end(bytes)
-        .with_context(|| format!("Could not unpack {} archive", filename))?;
+        tar.read_to_end(bytes).unwrap_or_default();
     }
-
-    Ok(())
 }
 
 pub fn clear(config: &Config) -> Result<()> {
@@ -72,38 +67,39 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
     for (i, source) in repos.iter().enumerate() {
         for perm in source.components.iter() {
             // Binary packages ONLY for now
-            let pkgcache_xz = format!("{}dists/{}/{}/binary-amd64/Packages.xz", source.url, source.distribution, perm);
-            let pkgcache_gz = format!("{}dists/{}/{}/binary-amd64/Packages.gz", source.url, source.distribution, perm);
+            let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.xz", source.url, source.distribution, perm);
+            let response = match reqwest::get(&pkgcache).await {
+                Ok(r) => Some(r),
+                Err(_) => {
+                    let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.gz", source.url, source.distribution, perm);
+                    match reqwest::get(&pkgcache).await {
+                        Ok(r) => Some(r),
+                        Err(e) => {
+                            eprintln!("Could not get the package at {} due {}", pkgcache, e);
+                            None
+                        }
+                    }
+                }
+            };
 
             let url = str::replace(&source.url, "http://", "");
             let url = str::replace(&url, "/", "_");
 
             let pkg = Path::new(&config.cache).join(format!("{}dists_{}_{}_binary-amd64_Packages", url, source.distribution, perm));
-
-            let old_size = if let Ok(mut file) = File::open(&pkg) {
-                let mut old_data = Vec::new();
-                file.read_to_end(&mut old_data)?
-            } else {
-                0
-            };
             
             tasks.push(tokio::spawn(async move {
-                let (response_xz, response_gz) = (reqwest::get(&pkgcache_xz).await, reqwest::get(&pkgcache_gz).await);
-                
-                let content = if let Ok(res) = response_xz { (&pkgcache_xz, res) } else { (&pkgcache_gz, response_gz.unwrap()) };
-                let pkgcache = content.0;
-                let content = content.1.bytes().await.unwrap();
-
-                println!("Hit {}: {} [{} kB]", i+1, pkgcache, content.len() / 1024);
-                
-                let mut bytes = Vec::new();
-                unpack(pkgcache, content.as_ref(), &mut bytes).unwrap();
-                let mut bytes: &[u8] = bytes.as_ref();
-                
-                if bytes.len() != old_size {
+                if let Some(res) = response {
+                    let content = res.bytes().await.unwrap();
+                    println!("Hit {}: {} [{} kB]", i+1, pkgcache, content.len() / 1024);
+                    
+                    let mut bytes = Vec::new();
+                    unpack(&pkgcache, content.as_ref(), &mut bytes);
+                    let mut bytes: &[u8] = bytes.as_ref();
+                    
                     let mut pkg = tokio::fs::File::create(pkg).await.unwrap();
                     tokio::io::copy(&mut bytes, &mut pkg).await.unwrap();
                 }
+
             }));
         };
     }
@@ -124,24 +120,13 @@ async fn update_releases(config: &Config, repos: &[DebianSource]) -> Result<()> 
             
             let rls = Path::new(&config.rls).join(format!("{}dists_{}_{}_binary-amd64_InRelease", url, source.distribution, perm));
             
-            let old_size = if let Ok(mut file) = File::open(&rls) {
-                let mut old_data = Vec::new();
-                file.read_to_end(&mut old_data)?
-            } else {
-                0
-            };
-            
             tasks.push(tokio::spawn(async move {
                 let response = reqwest::get(&release_file).await.unwrap();
                 let content =  response.text().await.unwrap();
                 println!("Hit {}: {} [{} kB]", i+1, release_file, content.len() / 1024);
                 
-                if content.len() != old_size {
-                    let mut dest = tokio::fs::File::create(rls).await.unwrap();
-                    tokio::io::copy(&mut content.as_bytes(), &mut dest).await.unwrap();
-                    
-                }
-
+                let mut dest = tokio::fs::File::create(rls).await.unwrap();
+                tokio::io::copy(&mut content.as_bytes(), &mut dest).await.unwrap();
             }));
         }
     }
