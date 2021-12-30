@@ -1,47 +1,56 @@
-use anyhow::Result;
+use anyhow::{self, Result};
+use crate::repos::errors::SignatureError;
 use sha2::{Sha256, Sha512, Digest};
 use sha1::Sha1;
 use std::{path::Path, fs};
 use super::package::DebPackage;
 
 // TODO: Made this code less... worst
-pub fn verify_sig(pkg: &DebPackage, path: &Path) -> Result<bool> {
-    let pkg_md5 = &pkg.control.md5sum;
-    let pkg_sha1 = &pkg.control.sha1;
-    let pkg_sha256 = &pkg.control.sha256;
-    let pkg_sha512 = &pkg.control.sha512;
+pub fn verify_sig(pkg: &DebPackage, path: &Path) -> Result<()> {
+    let control = &pkg.control;
 
     let data = fs::read(path)?;
-    let mut sha1 = Sha1::new();
-    let mut sha256 = Sha256::new();
-    let mut sha512 = Sha512::new();
     
-    sha1.update(&data);
-    sha256.update(&data);
-    sha512.update(&data);
+    if !control.md5sum.is_empty() {
+        let md5 = format!("{:x}", md5::compute(&data));
+        println!("md5 = {}", md5); 
+        if control.md5sum != md5 {
+            anyhow::bail!(SignatureError::MD5(control.md5sum.to_string(), md5))
+        }
+    }
+    
+    if !control.sha1.is_empty() {
+        let mut sha1 = Sha1::new();
+        sha1.update(&data);
+        let sha1 = format!("{:x}", sha1.finalize());
+        println!("sha1 = {}", sha1);
+        if *control.sha1 != sha1 {
+            anyhow::bail!(SignatureError::SHA1(control.sha1.to_string(), sha1))
+        }
+    }
+    
+    if !control.sha256.is_empty() {
+        let mut sha256 = Sha256::new();
+        sha256.update(&data);
+        let sha256 = format!("{:x}", sha256.finalize());
+        println!("sha256 = {}", sha256);
 
-    let md5_sig = format!("{:x}", md5::compute(&data));
+        if *control.sha256 != sha256 {
+            anyhow::bail!(SignatureError::SHA256(control.sha256.to_string(), sha256))
+        }
+    }
 
-    let mut sha1_sig = String::new();
-    sha1.finalize().as_slice()
-    .iter()
-    .for_each(|c| sha1_sig.push_str(&*format!("{:02x}", c)));
+    if !control.sha512.is_empty() {
+        let mut sha512 = Sha512::new();
+        sha512.update(&data);
+        let sha512 = format!("{:x}", sha512.finalize());
+        println!("sha512 = {}", sha512);
 
-    let mut sha256_sig = String::new();
-    sha256.finalize().as_slice()
-    .iter()
-    .for_each(|c| sha256_sig.push_str(&*format!("{:02x}", c)));
+        if *control.sha512 != sha512 {
+            anyhow::bail!(SignatureError::SHA512(control.sha512.to_string(), sha512))
+        }
+    }
 
-    let mut sha512_sig = String::new();
-    sha512.finalize().as_slice()
-    .iter()
-    .for_each(|c| sha512_sig.push_str(&*format!("{:02x}", c)));
 
-    Ok (
-        *pkg_md5 == md5_sig &&
-        *pkg_sha1 == sha1_sig &&
-        *pkg_sha256 == sha256_sig &&
-        *pkg_sha512 == sha512_sig
-    )
-
+    Ok(())
 }
