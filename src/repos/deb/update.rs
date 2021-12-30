@@ -60,7 +60,9 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
     let mut tasks = vec![];
     for (i, source) in repos.iter().enumerate() {
         for perm in source.components.iter() {
-            let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.xz", source.url, source.distribution, perm); // Binary packages ONLY for now
+            // Binary packages ONLY for now
+            let pkgcache_xz = format!("{}dists/{}/{}/binary-amd64/Packages.xz", source.url, source.distribution, perm);
+            let pkgcache_gz = format!("{}dists/{}/{}/binary-amd64/Packages.gz", source.url, source.distribution, perm);
 
             let url = str::replace(&source.url, "http://", "");
             let url = str::replace(&url, "/", "_");
@@ -77,14 +79,15 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
             let old_hash = old_hash.finalize();
             
             tasks.push(tokio::spawn(async move {
-                let response = reqwest::get(&pkgcache).await.unwrap();
+                let (response_xz, response_gz) = (reqwest::get(&pkgcache_xz).await, reqwest::get(&pkgcache_gz).await);
                 
-                let content = response.bytes().await.unwrap();
-                let content: &[u8] = content.as_ref();
+                let content = if let Ok(res) = response_xz { (&pkgcache_xz, res) } else { (&pkgcache_gz, response_gz.unwrap()) };
+                let pkgcache = content.0;
+                let content = content.1.bytes().await.unwrap();
 
                 println!("Hit {}: {} [{} kB]", i+1, pkgcache, content.len() / 1024);
                 
-                let mut data = XzDecoder::new(content);
+                let mut data = XzDecoder::new(content.as_ref());
                 let mut bytes = Vec::new();
                 
                 data.read_to_end(&mut bytes).unwrap_or_default();
