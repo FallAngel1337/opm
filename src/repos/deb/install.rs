@@ -14,6 +14,8 @@ use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 pub async fn install(config: &Config, name: &str) -> Result<()> {
+    crate::repos::lock::lock()?;
+
     if name.ends_with(".deb") {
         let pkg_name = name.rsplit(".deb").next().unwrap();
         let pkg = extract::extract(config, name, pkg_name)?;
