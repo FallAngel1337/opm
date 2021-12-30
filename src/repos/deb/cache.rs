@@ -121,7 +121,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 					}
 				);
 			} else {
-				anyhow::bail!(CacheError { msg: format!("{} was not found", cache.cache) });
+				anyhow::bail!(CacheError { msg: format!("{} was not found at {}", name, cache.cache) });
 			}
 		} else {
 			let mut pkgs = vec![];

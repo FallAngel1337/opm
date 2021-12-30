@@ -101,6 +101,6 @@ impl std::error::Error for CacheError {
 
 impl Display for CacheError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SetupError :: {}", self.msg)
+        write!(f, "CacheError :: {}", self.msg)
     }
 }
