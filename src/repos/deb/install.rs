@@ -8,7 +8,7 @@ use std::path::Path;
 use crate::repos::{errors::InstallError, deb::dependencies};
 use crate::repos::config::Config;
 use super::{extract, download};
-use super::{cache, scripts, signatures};
+use super::{cache, scripts};
 use futures::future;
 use fs_extra;
 
@@ -70,11 +70,6 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 let pkg = extract::extract(config, &path, &pkg_name)?;
                 
                 println!("Checking the signatures ...");
-                if !signatures::verify_sig(&pkg, Path::new(&path))? {
-                    println!("Packages signatures did not match ...");
-                } else {
-                    println!("OK");
-                }
 
                 println!("Installing {} ...", pkg_name);
                 let path = format!("{}/{}", config.tmp, pkg_name);
