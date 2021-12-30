@@ -8,7 +8,15 @@ pub enum InstallError {
     NetworkingError { err: Error },
     AlreadyInstalled,
     NotFoundError(String),
-    Error(String),
+    Error(String)
+}
+
+#[derive(Debug)]
+pub enum SignatureError {
+    MD5(String, String),
+    SHA1(String, String),
+    SHA256(String, String),
+    SHA512(String, String)
 }
 
 #[derive(Debug)]
@@ -41,6 +49,23 @@ impl Display for InstallError {
             InstallError::NotFoundError(pkg) => write!(f, "Package {} was not found", pkg),
             InstallError::Error(msg) => write!(f, "Error during installation :: {}", msg)
         }
+    }
+}
+
+impl Display for SignatureError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SignatureError::MD5(rs, ex) => write!(f, "Mismatched MD5 Hash got {} expected {}", rs, ex),
+            SignatureError::SHA1(rs, ex) => write!(f, "Mismatched SHA1 Hash got {} expected {}", rs, ex),
+            SignatureError::SHA256(rs, ex)=> write!(f, "Mismatched SHA256 Hash got {} expected {}", rs, ex),
+            SignatureError::SHA512(rs, ex) => write!(f, "Mismatched SHA512 Hash got {} expected {}", rs, ex),
+        }
+    }
+}
+
+impl std::error::Error for SignatureError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self)
     }
 }
 
