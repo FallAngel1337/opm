@@ -6,11 +6,14 @@ pub fn list_installed(config: &Config) {
 	match PackageFormat::from(&config.fmt) {
 		PackageFormat::Deb => {
 			use super::deb;
-			deb::db_dump(config)
-			.into_iter()
+			let dump = deb::db_dump(config);
+			dump
+			.iter()
 			.for_each(|pkg| {
 				println!("{} {} - {}", pkg.control.package, pkg.control.version, pkg.control.description)
 			});
+
+			println!("Found {} packages installed", dump.len())
 		},
 		PackageFormat::Rpm => {
 			println!("It's a RHEL(-based) distro");
@@ -29,10 +32,12 @@ pub fn search(config: &mut Config, name: &str) -> Result<()> {
 			let result = deb::cache::cache_search(config, name)?;
 			if let Some(pkgs) = result {
 				pkgs
-				.into_iter()
+				.iter()
 				.for_each(|pkg| {
 					println!("{} - {}", pkg.control.package, pkg.control.description);
 				});
+				
+				println!("Found {} packages for `{}`", pkgs.len(), name);
 			}
 
 			Ok(())
