@@ -6,6 +6,7 @@ mod install;
 mod update;
 mod cache;
 mod setup;
+mod lock;
 
 pub mod config;
 pub mod utils;
