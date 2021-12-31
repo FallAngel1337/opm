@@ -12,7 +12,12 @@ Please read the items in the toc so you'll can help us on mergin you PR or fixin
 
 
 ## Bug reporting
-See the [SECUTIRY.md](SECURITY.md) for more information.
+ Before reporting check if it was already reported on the [issues tab](https://github.com/0xc0ffeec0de/opm/issues).
+ If you got faced by a bug, you can open an issue describing the problem. When reporting it's always good to give some context, like when, where and what was expected then.
+ So things like what was you expecting to get, your operation system and version, rustc, toolchain and cargo version, if got some unexpected `panic!` enable the `RUST_BACKTRACE=full` environment variable.
+ Basically the more info you gave the better.
+ 
+ For secutiry bugs check [SECUTIRY.md](SECURITY.md) for more information.
  
 ## New features
   You got an idea of a good feature that would be good in `opm`. We appreciate it ^-^.
