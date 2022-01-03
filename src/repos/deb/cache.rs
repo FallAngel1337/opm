@@ -12,6 +12,7 @@ struct Cache<'a> {
 	cache: &'a str
 }
 
+#[derive(Debug)]
 struct CacheResult {
 	pkg: Option<DebPackage>,
 	pkgs: Option<Vec<DebPackage>>
@@ -54,7 +55,7 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 
 	let control = control
 		.split("\n\n")
-		.map(ControlFile::from)
+		.map(|contents| ControlFile::new(config, contents))
 		.filter_map(|ctrl| ctrl.ok())
 		.map(|ctrl| DebPackage { control: ctrl, kind: PkgKind::Binary } )
 		.collect::<Vec<_>>();
@@ -62,10 +63,16 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 	control
 }
 
-fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
+fn cache_inter(config: &Config, name: &str, exact: bool, deps: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
 	
+	let f = if deps {
+		ControlFile::from
+	} else {
+		ControlFile::new
+	};
+
 	for entry in fs::read_dir(cache.cache)? {
 		let entry = entry.unwrap();
 		let path = entry.path();
@@ -85,9 +92,10 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 
 		let mut control = control
 		.split("\n\n")
-		.map(ControlFile::from)
+		.filter(|pkg| pkg.contains(&format!("Package: {}", name)))
+		.map(|contents| f(config, contents))
 		.filter_map(|pkg| pkg.ok());
-	
+
 		let entry = entry.path()
 		.into_os_string()
 		.into_string()
@@ -108,7 +116,6 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 			if let Some(mut pkg) = control {
 				let url = format!("{}/{}", url, &pkg.filename);
 				pkg.set_filename(&url);
-				
 				return Ok(
 					CacheResult {
 						pkg: Some(
@@ -119,16 +126,13 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 						),
 						pkgs: None
 					}
-				);
-			} else {
-				anyhow::bail!(CacheError { msg: format!("{} was not found at {}", name, cache.cache) });
+				)
 			}
 		} else {
 			let mut pkgs = vec![];
-			
+
 			pkgs.append(
 				&mut control
-				.filter(|pkg| pkg.package.contains(name))
 				.map(|mut pkg| {
 					let url = format!("{}/{}", url, &pkg.filename);
 					pkg.set_filename(&url);
@@ -140,12 +144,14 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 				.collect::<Vec<_>>()
 			);
 
-			return Ok(
-				CacheResult {
-					pkg: None,
-					pkgs: Some(pkgs)
-				}
-			);
+			if !pkgs.is_empty() {
+				return Ok(
+					CacheResult {
+						pkg: None,
+						pkgs: Some(pkgs)
+					}
+				);
+			}
 		}
 	}
 
@@ -158,7 +164,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 #[inline]
 pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage>>> {
 	Ok (
-		cache_inter(config, name, false)?.pkgs
+		cache_inter(config, name, false, false)?.pkgs
 	)
 }
 
@@ -168,7 +174,14 @@ pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage
 #[inline]
 pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 	Ok (
-		cache_inter(config, name, true)?.pkg
+		cache_inter(config, name, true, false)?.pkg
+	)
+}
+
+#[inline]
+pub fn cache_lookup_deps(config: &Config, name: &str) -> Result<Option<DebPackage>> {
+	Ok (
+		cache_inter(config, name, true, true)?.pkg
 	)
 }
 
@@ -193,17 +206,20 @@ Maintainer: {}
 Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.maintainer, pkg.description);
 
 	if let Some(d) = pkg.depends {
-		let depends = d.join(", ");
+		let mut depends = String::new();
+		d.into_iter().for_each(|pkg| depends.push_str(&pkg.package));
 		data.push_str(&format!("\nDepends: {}", depends));
 	}
 
 	if let Some(d) = pkg.breaks {
-		let breaks = d.join(", ");
+		let mut breaks = String::new();
+		d.into_iter().for_each(|pkg| breaks.push_str(&pkg.package));
 		data.push_str(&format!("\nBreaks: {}", breaks));
 	}
 	
 	if let Some(d) = pkg.conflicts {
-		let conflicts = d.join(", ");
+		let mut conflicts = String::new();
+		d.into_iter().for_each(|pkg| conflicts.push_str(&pkg.package));
 		data.push_str(&format!("\nConflicts: {}", conflicts));
 	}
 
