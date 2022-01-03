@@ -63,14 +63,14 @@ fn main() {
 
     if let Some(package) = matches.subcommand_matches("install") {
         repos::install(&mut config, package.value_of("package").unwrap()).unwrap_or_else(|err| {
-            println!("Got an error during installation :: {}", err);
+            eprintln!("Got an error during installation :: {}", err);
             process::exit(1);
         });
     }
 
     if matches.subcommand_matches("update").is_some() {
         repos::update(&mut config).unwrap_or_else(|err| {
-			println!("Got and error during update :: {}", err);
+			eprintln!("Got and error during update :: {}", err);
 			process::exit(1);
 		})
     }
