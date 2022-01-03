@@ -42,17 +42,21 @@ fn check_version(pkgv: &str, depv: &str) -> bool {
     }
 }
 
-pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPackage>, Vec<String>)> {
-    let ctrl = &pkg.control;
+pub fn get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>, Vec<String>)> {
+    let ctrl = match cache::cache_lookup(config, parse_name(pkg)) {
+        Ok(Some(pkg)) => pkg.control,
+        _ => return None
+    };
 
     let (mut depends, mut optional) = (Vec::new(), Vec::new());
 
     if let Some(deps) = &ctrl.depends {
         for pkg in deps {
-            let depv = get_version(pkg);
-            let pkg = parse_name(pkg);
+            let depv = get_version(&pkg.package);
+            let pkg = parse_name(&pkg.package);
 
             if pkg.contains('|') {
+                println!("PIPED {}", pkg);
                 let installed = pkg.split(" | ")
                     .filter_map(|pkg| cache::check_installed(config, pkg))
                     .count();
@@ -86,27 +90,27 @@ pub fn get_dependencies(config: &Config, pkg: &DebPackage) -> Option<(Vec<DebPac
     }
     
     if let Some(deps) = &ctrl.recommends {
-        optional.append(&mut deps.clone())
+        deps.iter().for_each(|d| optional.push(d.package.clone()))
     }
 
     if let Some(deps)  = &ctrl.suggests {
-        optional.append(&mut deps.clone())
+        deps.iter().for_each(|d| optional.push(d.package.clone()))
     }
 
     if let Some(deps)  = &ctrl.enhances {
-        optional.append(&mut deps.clone())
+        deps.iter().for_each(|d| optional.push(d.package.clone()))
     }
 
     if let Some(deps)  = &ctrl.pre_depends {
         println!("Pre-Dependent Packages: {:?}", deps);
     }
 
+    println!("Depends = {:#?}", depends);
     Some((depends, optional))
 }
 
 #[cfg(test)]
 mod test {
-    use crate::repos::{self, deb::package::{ControlFile, PkgKind}};
     use super::*;
     #[test]
     fn parse_name_test() {
@@ -181,34 +185,7 @@ mod test {
     #[test]
     #[ignore]
     fn get_dependencies_test() {
-        let config = repos::setup().unwrap();
-        let data = r"Package: accountsservice
-        Architecture: amd64
-        Version: 0.6.55-0ubuntu11
-        Priority: standard
-        Section: gnome
-        Origin: Ubuntu
-        Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
-        Original-Maintainer: Debian freedesktop.org maintainers <pkg-freedesktop-maintainers@lists.alioth.debian.org>
-        Bugs: https://bugs.launchpad.net/ubuntu/+filebug
-        Installed-Size: 452
-        Depends: dbus, libaccountsservice0 (= 0.6.55-0ubuntu11), libc6 (>= 2.4), libglib2.0-0 (>= 2.44), libpolkit-gobject-1-0 (>= 0.99)
-        Suggests: gnome-control-center
-        Filename: pool/main/a/accountsservice/accountsservice_0.6.55-0ubuntu11_amd64.deb
-        Size: 60940
-        MD5sum: 87a0e27c83950d864d901ceca0f2b49c
-        SHA1: ce92ea3783ca4ca6cdb5115381379f9c1317566b
-        SHA256: e34884d71bb98002bf0c775479aa31ee5011ded1abf969ffe6496874de499f42
-        Homepage: https://www.freedesktop.org/wiki/Software/AccountsService/
-        Description: query and manipulate user account information
-        Task: standard
-        Description-md5: 8aeed0a03c7cd494f0c4b8d977483d7e";
-        let res = get_dependencies(&config, &DebPackage {
-            control: ControlFile::from(data).unwrap(),
-            kind: PkgKind::Binary
-        });
-
-        dbg!("=> {:?}", res);
-        assert!(2 == 3);
+        let config = crate::repos::setup().unwrap();
+        assert!(get_dependencies(&config, "accountsservice").is_some());
     }
 }

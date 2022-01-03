@@ -212,6 +212,7 @@ mod test {
 	use super::*;
     #[test]
     fn package_from_test() {
+        let config = crate::repos::setup().unwrap();
         let data = r"Package: accountsservice
 Architecture: amd64
 Version: 0.6.55-0ubuntu11
@@ -233,7 +234,7 @@ Homepage: https://www.freedesktop.org/wiki/Software/AccountsService/
 Description: query and manipulate user account information
 Task: standard
 Description-md5: 8aeed0a03c7cd494f0c4b8d977483d7e";
-		ControlFile::from(data).unwrap();
+		ControlFile::from(&config, data).unwrap();
 	}
 
 }
