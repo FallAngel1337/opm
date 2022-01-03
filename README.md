@@ -1,3 +1,10 @@
+</p>
+<p align="center">
+  </a>
+    <img alt="Logo" src="images/logo.png">
+  </a>
+</p>
+
 # OPM (Oxidized Package Manager) 📦
 </p>
 <p align="center">
