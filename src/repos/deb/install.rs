@@ -33,7 +33,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
         }
 
         println!("Installing {} for debian ...", name);
-        print!("Looking up for dependencies ...");
+        println!("Looking up for dependencies ...");
         if let Some(pkg) = cache::cache_lookup_deps(config, name)? {
             println!("Done");
             let mut new_packages = 1;
