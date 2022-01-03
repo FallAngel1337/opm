@@ -95,9 +95,10 @@ async fn update_cache(config: &Config, repos: &[DebianSource]) -> Result<()> {
                     let mut bytes = Vec::new();
                     unpack(&pkgcache, content.as_ref(), &mut bytes);
                     let mut bytes: &[u8] = bytes.as_ref();
-                    
-                    let mut pkg = tokio::fs::File::create(pkg).await.unwrap();
-                    tokio::io::copy(&mut bytes, &mut pkg).await.unwrap();
+                    if !bytes.is_empty() {
+                        let mut pkg = tokio::fs::File::create(pkg).await.unwrap();
+                        tokio::io::copy(&mut bytes, &mut pkg).await.unwrap();
+                    }
                 }
 
             }));
