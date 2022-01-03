@@ -1,5 +1,5 @@
 use anyhow::{self, Result, Context};
-use crate::repos::config::Config;
+use crate::repos::{config::Config, errors::InstallError};
 use crate::repos::errors::CacheError;
 use std::{fs, io::Write};
 
@@ -155,7 +155,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool, deps: bool) -> Result<C
 		}
 	}
 
-	anyhow::bail!(CacheError { msg: format!("{} was not found", cache.cache) });
+	anyhow::bail!(InstallError::NotFoundError(name.to_string()));
 }
 
 ///
