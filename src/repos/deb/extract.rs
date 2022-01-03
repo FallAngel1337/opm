@@ -73,6 +73,6 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage> {
     println!("Done");
 
     Ok(
-        DebPackage::new(control_file, PkgKind::Binary).expect("msg")
+        DebPackage::new(config, control_file, PkgKind::Binary).expect("msg")
     )
 }
