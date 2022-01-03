@@ -1,7 +1,7 @@
 </p>
 <p align="center">
   </a>
-    <img alt="Logo" src="images/logo.png">
+    <img alt="Logo" src="docs/images/logo.png">
   </a>
 </p>
 
