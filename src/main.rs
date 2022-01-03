@@ -10,7 +10,7 @@ fn main() {
 	});
 
     let matches = App::new("Oxidized Package Manager")
-				.version("v0.1")
+				.version("v0.5")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A package manager fully written in Rust")
 				.arg(Arg::with_name("list")
@@ -83,7 +83,7 @@ fn main() {
 		}
 		process::exit(1);
     };
-	
+
     if let Some(package) = matches.subcommand_matches("search") {
 		let pkg =  package.value_of("package").unwrap();
 		println!("Searching for {} ...", package.value_of("package").unwrap());
