@@ -5,7 +5,7 @@ use std::path::Path;
 /// Debian package install
 ///
 
-use crate::repos::{errors::InstallError, deb::dependencies};
+use crate::repos::{errors::InstallError, deb::package::{DebPackage, PkgKind}};
 use crate::repos::config::Config;
 use super::{extract, download};
 use super::{cache, scripts};
@@ -32,33 +32,25 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             anyhow::bail!(InstallError::AlreadyInstalled);
         }
 
-        println!("Downloading {} for debian ...", name);
-
-        if let Some(pkg) = cache::cache_lookup(config, name)? {
-            let mut new_packages = vec![pkg.clone()];
+        println!("Installing {} for debian ...", name);
+        print!("Looking up for dependencies ...");
+        if let Some(pkg) = cache::cache_lookup_deps(config, name)? {
+            println!("Done");
+            let mut new_packages = 1;
             let mut tasks = vec![];
 
             println!("Found {:?}", pkg.control.package);
-            if let Some(dep) = dependencies::get_dependencies(config, &pkg) {
-                let (deps, sugg) = dep;
-                new_packages.append(&mut deps.clone());
 
-                println!("Installing {} NEW packages", new_packages.len());
-                new_packages.iter().for_each(|pkg| print!("{} ", pkg.control.package));
-                println!();
-
-                if !sugg.is_empty() {
-                    println!("Suggested packages:");
-                    sugg.iter().for_each(|pkg| print!("{} ", pkg));
-                    println!();
-                }
-
-                for pkg in deps.into_iter() {
-                    tasks.push(download::download(config, pkg));
+            if let Some(dependencies) = &pkg.control.depends {
+               for control in dependencies.iter() {
+                    tasks.push(download::download(config, DebPackage { control: control.clone(), kind: PkgKind::Binary }));
+                    new_packages += 1;
                 }
             }
 
             tasks.push(download::download(config, pkg));
+
+            println!("Installing {} NEW package", new_packages);
 
             for data in future::join_all(tasks).await {
                 let data = data?;
@@ -67,7 +59,6 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 let path = path
                     .into_os_string()
                     .into_string().unwrap();
-
                     
                 let pkg = extract::extract(config, &path, &pkg_name)?;
                 
@@ -89,19 +80,24 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
 fn finish(p: &Path) -> Result<()> {
     let options = fs_extra::dir::CopyOptions::new();
-    let mut items = vec![];
 
     for entry in std::fs::read_dir(&p)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
-            items.push(path);
+            // fs_extra::dir::create_all(&path, false).unwrap();
+            match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
+                Ok(_) => (),
+                Err(e) => match e.kind {
+                    fs_extra::error::ErrorKind::AlreadyExists => (),
+                    fs_extra::error::ErrorKind::NotFound => (),
+                    _ => panic!("Some error occurred :: {:?} - {}", path, e)
+		        }
+            };
+            fs_extra::dir::remove(&path).unwrap();
         }
     }
-    
-    fs_extra::copy_items(&items, std::path::Path::new("/"), &options)?;
-    fs_extra::remove_items(&items)?;
-
+     
     Ok(())
 }
