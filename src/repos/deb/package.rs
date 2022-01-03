@@ -1,8 +1,10 @@
 #![allow(unused)]
 use anyhow::{self, Result, bail};
-use crate::repos::errors::ConfigError;
+use crate::repos::{errors::ConfigError, config::Config};
 use std::collections::HashMap;
 use std::fs;
+
+use super::{cache, dependencies::get_dependencies};
 
 
 ///
@@ -35,13 +37,13 @@ pub struct ControlFile {
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
-    pub depends: Option<Vec<String>>,
-    pub recommends: Option<Vec<String>>,
-    pub suggests: Option<Vec<String>>,
-    pub enhances: Option<Vec<String>>,
-    pub pre_depends: Option<Vec<String>>,
-    pub breaks: Option<Vec<String>>,
-    pub conflicts: Option<Vec<String>>,
+    pub depends: Option<Vec<ControlFile>>,
+    pub recommends: Option<Vec<ControlFile>>,
+    pub suggests: Option<Vec<ControlFile>>,
+    pub enhances: Option<Vec<ControlFile>>,
+    pub pre_depends: Option<Vec<ControlFile>>,
+    pub breaks: Option<Vec<ControlFile>>,
+    pub conflicts: Option<Vec<ControlFile>>,
     pub filename: String,
     pub size: String,
     pub md5sum: String,
@@ -65,12 +67,7 @@ impl PkgPriority {
 
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(file: &str) -> Result<Self> {
-        let contents = fs::read_to_string(file)?;
-        Self::from(&contents)
-    }
-
-    pub fn from(contents: &str) -> Result<Self> {
+    pub fn new(config: &Config, contents: &str) -> Result<Self> {
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
         for line in contents.lines() {
@@ -82,31 +79,73 @@ impl ControlFile {
             );
         }
 
-        let result = Self {
-            package: Self::try_get(&map, "Package")?,
-            version: Self::try_get(&map, "Version")?,
-            architecture: Self::try_get(&map, "Architecture")?,
-            maintainer: Self::try_get(&map, "Maintainer")?,
-            description: Self::try_get(&map, "Description")?,
-            // Should be like the others
-            // But, when reading /var/lib/dpkg/status it does not have those fields
-            priority: Self::try_get(&map, "Priority").unwrap_or_default(),
-            depends: Self::split_deps(Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
-            recommends: Self::split_deps(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
-            suggests: Self::split_deps(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
-            enhances: Self::split_deps(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
-            pre_depends: Self::split_deps(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
-            breaks: Self::split_deps(Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
-            conflicts: Self::split_deps(Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
-            filename: Self::try_get(&map, "Filename").unwrap_or_default(),
-            size: Self::try_get(&map, "Size").unwrap_or_default(),
-            md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
-            sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
-            sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
-            sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
-        };        
+        Ok(
+            Self {
+                package: Self::try_get(&map, "Package")?,
+                version: Self::try_get(&map, "Version")?,
+                architecture: Self::try_get(&map, "Architecture")?,
+                maintainer: Self::try_get(&map, "Maintainer")?,
+                description: Self::try_get(&map, "Description")?,
+                priority: Self::try_get(&map, "Priority").unwrap_or_default(),
+                depends: None,
+                recommends: None,
+                suggests: None,
+                enhances: None,
+                pre_depends: None,
+                breaks: None,
+                conflicts: None,
+                filename: Self::try_get(&map, "Filename").unwrap_or_default(),
+                size: Self::try_get(&map, "Size").unwrap_or_default(),
+                md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
+                sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
+                sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
+                sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
+            }
+        )
+    }
 
-        Ok(result)
+    pub fn from_file(config: &Config, file: &str) -> Result<Self> {
+        let contents = fs::read_to_string(file)?;
+        Self::from(config, &contents)
+    }
+
+    pub fn from(config: &Config, contents: &str) -> Result<Self> {
+        let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
+
+        for line in contents.lines() {
+            let line = line.trim();
+            let values = line.splitn(2, ':').map(|line| line.to_owned()).collect::<Vec<_>>();
+            map.insert(
+                values.get(0).map(|v| v.to_owned()),
+                values.get(1).map(|v| v.to_owned())
+            );
+        }
+
+        Ok(
+            Self {
+                package: Self::try_get(&map, "Package")?,
+                version: Self::try_get(&map, "Version")?,
+                architecture: Self::try_get(&map, "Architecture")?,
+                maintainer: Self::try_get(&map, "Maintainer")?,
+                description: Self::try_get(&map, "Description")?,
+                // Should be like the others
+                // But, when reading /var/lib/dpkg/status it does not have those fields
+                priority: Self::try_get(&map, "Priority").unwrap_or_default(),
+                depends: Self::get_deps(config, Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
+                recommends: Self::get_deps(config, Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
+                suggests: Self::get_deps(config, Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
+                enhances: Self::get_deps(config, Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
+                pre_depends: Self::get_deps(config, Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
+                breaks: Self::get_deps(config, Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
+                conflicts: Self::get_deps(config, Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
+                filename: Self::try_get(&map, "Filename").unwrap_or_default(),
+                size: Self::try_get(&map, "Size").unwrap_or_default(),
+                md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
+                sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
+                sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
+                sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
+            }
+        )
     }
 
     // TODO: Maybe I need to make this easier to read
@@ -123,14 +162,17 @@ impl ControlFile {
         }
     }
 
-    fn split_deps(dependencies: Option<&String>) -> Option<Vec<String>> {
+    fn get_deps(config: &Config, dependencies: Option<&str>) -> Option<Vec<ControlFile>> {
         if let Some(val) = dependencies {
             if !val.is_empty() {
                 let val = val
                     .split(',')
-                    .map(|d| d.trim().to_owned())
+                    .filter(|pkg| cache::check_installed(config, pkg).is_none())
+                    .filter_map(|d| cache::cache_lookup(config, d.trim()).ok())
+                    .flatten()
+                    .map(|d| d.control)
                     .collect::<Vec<_>>();
-                Some(val)
+                if val.is_empty() { None } else { Some(val) }
             } else {
                 None
             }
@@ -154,10 +196,10 @@ pub struct DebPackage {
 }
 
 impl DebPackage {
-    pub fn new(file: &str, kind: PkgKind) -> Result<Self> {
+    pub fn new(config:&Config, file: &str, kind: PkgKind) -> Result<Self> {
         Ok(
             DebPackage {
-                control: ControlFile::new(file)?,
+                control: ControlFile::from_file(config, file)?,
 
                 kind,
             }
