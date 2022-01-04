@@ -1,7 +1,7 @@
 #![allow(unused)]
 use anyhow::{self, Result, bail};
 use crate::repos::{errors::ConfigError, config::Config};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::{PathBuf, Path}};
 use std::fs;
 
 use super::{cache, dependencies::get_dependencies};
@@ -24,6 +24,49 @@ pub enum PkgPriority {
     Standard,
     Optional,
     Extra, // Deprecated, but here for compatibility issues
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Info {
+    pub conffiles: Option<PathBuf>,
+    pub control: Option<PathBuf>,
+    pub md5sums: Option<PathBuf>,
+    pub preinst: Option<PathBuf>,
+    pub postinst: Option<PathBuf>,
+    pub prerm: Option<PathBuf>,
+    pub postrm: Option<PathBuf>,
+}
+
+impl Info {
+    pub fn load(from: &Path) -> Result<Self> {
+        let mut result = Self {
+            conffiles: None,
+            control: None,
+            md5sums: None,
+            preinst: None,
+            postinst: None,
+            prerm: None,
+            postrm: None,
+        };
+
+        for entry in fs::read_dir(from)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            match path.clone().into_os_string().into_string().unwrap().rsplit('/').next().unwrap() {
+                "conffiles" => result.conffiles = Some(path.clone()),
+                "control" => result.control = Some(path.clone()),
+                "md5sums" => result.md5sums = Some(path.clone()),
+                "preinst" => result.preinst = Some(path.clone()),
+                "postinst" => result.postinst = Some(path.clone()),
+                "prerm" => result.prerm = Some(path.clone()),
+                "postrm" => result.postrm = Some(path.clone()),
+                _ => ()
+            }
+        }
+
+        Ok(result)
+    }
 }
 
 ///
@@ -106,9 +149,18 @@ impl ControlFile {
         )
     }
 
-    pub fn from_file(config: &Config, file: &str) -> Result<Self> {
-        let contents = fs::read_to_string(file)?;
-        Self::from(config, &contents)
+    pub fn from_info(config: &Config, info: &Info) -> Result<Option<Self>> {
+        if let Some(control) = &info.control {
+            let mut result = Self::from(config, &fs::read_to_string(&control)?)?;
+            
+            if let Some(conffiles) = &info.conffiles {
+                result.conffiles = Some(fs::read_to_string(conffiles)?.lines().map(|line| line.trim().to_string()).collect::<Vec<_>>());
+            }
+
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn from(config: &Config, contents: &str) -> Result<Self> {        
@@ -181,8 +233,12 @@ impl ControlFile {
         }
     }
 
-    fn get_conffiles(conffiles: Option<&str>) -> Option<Vec<String>> {
-        None
+    fn set_conffiles(&mut self, conffiles: Vec<String>) {
+        if !conffiles.is_empty() {
+            self.conffiles = Some(conffiles);
+        } else {
+            self.conffiles = None;
+        }
     }
 
     pub fn set_filename(&mut self, filename: &str) {
@@ -200,11 +256,10 @@ pub struct DebPackage {
 }
 
 impl DebPackage {
-    pub fn new(config:&Config, file: &str, kind: PkgKind) -> Result<Self> {
+    pub fn new(config:&Config, info: &Info, kind: PkgKind) -> Result<Self> {
         Ok(
             DebPackage {
-                control: ControlFile::from_file(config, file)?,
-
+                control: ControlFile::from_info(config, info)?.unwrap(),
                 kind,
             }
         )
