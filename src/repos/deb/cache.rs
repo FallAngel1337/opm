@@ -66,7 +66,7 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 fn cache_inter(config: &Config, name: &str, exact: bool, deps: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
-	
+
 	let f = if deps {
 		ControlFile::from
 	} else {
@@ -212,14 +212,12 @@ Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.
 	}
 
 	if let Some(d) = pkg.breaks {
-		let mut breaks = String::new();
-		d.into_iter().for_each(|pkg| breaks.push_str(&pkg.package));
+		let breaks = d.join(", ");
 		data.push_str(&format!("\nBreaks: {}", breaks));
 	}
 	
 	if let Some(d) = pkg.conflicts {
-		let mut conflicts = String::new();
-		d.into_iter().for_each(|pkg| conflicts.push_str(&pkg.package));
+		let conflicts = d.join(", ");
 		data.push_str(&format!("\nConflicts: {}", conflicts));
 	}
 
