@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use crate::repos::config::Config;
-use super::package::DebPackage;
+use super::package::{DebPackage, ControlFile};
 use super::cache;
 
 
@@ -42,7 +42,7 @@ fn check_version(pkgv: &str, depv: &str) -> bool {
     }
 }
 
-pub fn get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>, Vec<String>)> {
+pub fn _get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>, Vec<String>)> {
     let ctrl = match cache::cache_lookup(config, parse_name(pkg)) {
         Ok(Some(pkg)) => pkg.control,
         _ => return None
@@ -107,6 +107,44 @@ pub fn get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>, 
 
     println!("Depends = {:#?}", depends);
     Some((depends, optional))
+}
+
+pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<ControlFile>> {
+    let mut dependencies = vec![];
+    if let Some(v) = pkgs {
+        if !v.is_empty() {
+            let version = std::cell::RefCell::new(None);
+            dependencies.append(
+                &mut v
+                .split(',')
+                .map(|name| {
+                    *version.borrow_mut() = get_version(name);
+                    parse_name(name)
+                })
+                .map(|name| name.split(" | "))
+                .flatten()
+                .filter(|name| cache::check_installed(config, name).is_none())
+                .filter_map(|name| cache::cache_lookup(config, name).ok())
+                .flatten()
+                .map(|d| {
+                    let control = d.control;
+                    let pkg_version = &control.version;
+                    if let Some(version) = *version.borrow() {
+                        if !check_version(pkg_version, version) {
+                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkg_version, control.package, control.package, version);
+                        }
+                    }
+                    control
+                })
+                .collect::<Vec<_>>()
+            );
+            if !dependencies.is_empty() { Some(dependencies) } else { None }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

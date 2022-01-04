@@ -131,13 +131,13 @@ impl ControlFile {
                 // Should be like the others
                 // But, when reading /var/lib/dpkg/status it does not have those fields
                 priority: Self::try_get(&map, "Priority").unwrap_or_default(),
-                depends: Self::get_deps(config, Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
-                recommends: Self::get_deps(config, Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
-                suggests: Self::get_deps(config, Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
-                enhances: Self::get_deps(config, Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
-                pre_depends: Self::get_deps(config, Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
-                breaks: Self::get_deps(config, Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
-                conflicts: Self::get_deps(config, Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
+                depends: get_dependencies(config, Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
+                recommends: get_dependencies(config, Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
+                suggests: get_dependencies(config, Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
+                enhances: get_dependencies(config, Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
+                pre_depends: get_dependencies(config, Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
+                breaks: get_dependencies(config, Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
+                conflicts: get_dependencies(config, Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
                 filename: Self::try_get(&map, "Filename").unwrap_or_default(),
                 size: Self::try_get(&map, "Size").unwrap_or_default(),
                 md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
@@ -159,25 +159,6 @@ impl ControlFile {
             }
         } else {
             bail!(ConfigError { msg: format!("Invalid debain's control file! Missing \"{}\" field", field) });
-        }
-    }
-
-    fn get_deps(config: &Config, dependencies: Option<&str>) -> Option<Vec<ControlFile>> {
-        if let Some(val) = dependencies {
-            if !val.is_empty() {
-                let val = val
-                    .split(',')
-                    .filter(|pkg| cache::check_installed(config, pkg).is_none())
-                    .filter_map(|d| cache::cache_lookup(config, d.trim()).ok())
-                    .flatten()
-                    .map(|d| d.control)
-                    .collect::<Vec<_>>();
-                if val.is_empty() { None } else { Some(val) }
-            } else {
-                None
-            }
-        } else {
-            None
         }
     }
 
