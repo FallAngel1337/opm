@@ -4,7 +4,7 @@ use crate::repos::{errors::ConfigError, config::Config};
 use std::{collections::HashMap, path::{PathBuf, Path}};
 use std::fs;
 
-use super::{cache, dependencies::get_dependencies};
+use super::{cache, dependencies::{get_dependencies, check_if_breaks}};
 
 
 ///
@@ -190,7 +190,7 @@ impl ControlFile {
                 suggests: Self::split_optional(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
                 enhances: Self::split_optional(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
                 pre_depends: Self::split_optional(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
-                breaks: Self::split_optional(Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
+                breaks: check_if_breaks(config, Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
                 conflicts: Self::split_optional(Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
                 conffiles: None,
                 filename: Self::try_get(&map, "Filename").unwrap_or_default(),
