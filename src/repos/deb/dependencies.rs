@@ -90,15 +90,15 @@ pub fn _get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>,
     }
     
     if let Some(deps) = &ctrl.recommends {
-        deps.iter().for_each(|d| optional.push(d.package.clone()))
+        optional.append(&mut deps.clone())
     }
 
     if let Some(deps)  = &ctrl.suggests {
-        deps.iter().for_each(|d| optional.push(d.package.clone()))
+        optional.append(&mut deps.clone())
     }
 
     if let Some(deps)  = &ctrl.enhances {
-        deps.iter().for_each(|d| optional.push(d.package.clone()))
+        optional.append(&mut deps.clone())
     }
 
     if let Some(deps)  = &ctrl.pre_depends {
@@ -123,6 +123,7 @@ pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<Contr
                 })
                 .map(|name| name.split(" | "))
                 .flatten()
+                .map(|name| name.trim())
                 .filter(|name| cache::check_installed(config, name).is_none())
                 .filter_map(|name| cache::cache_lookup(config, name).ok())
                 .flatten()
@@ -131,7 +132,7 @@ pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<Contr
                     let pkg_version = &control.version;
                     if let Some(version) = *version.borrow() {
                         if !check_version(pkg_version, version) {
-                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkg_version, control.package, version, control.package);
+                            eprintln!("Version {} ({}) is not satisfied! Need version {} ({})", pkg_version, control.package, version, control.package);
                         }
                     }
                     control
