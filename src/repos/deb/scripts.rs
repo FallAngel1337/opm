@@ -1,99 +1,74 @@
 use anyhow::{self, Result};
 use crate::repos::errors::InstallError;
-use std::path::Path;
 use std::process::Command;
+
+use super::package::Info;
 
 ///
 /// Pre/Post install/remove scripts execution
 /// TODO: Make this better to execute
-pub fn execute_install(p: &Path) -> Result<()>{
-    let p = Path::new(p);
-    
-    if !p.is_dir() {
-        anyhow::bail!(InstallError::Error("Package extration folder is not a directory".to_owned()));
-    } else {
-        for entry in std::fs::read_dir(p).unwrap() {
-
-            let path = entry
-                .as_ref()
-                .unwrap()
-                .path()
-                .into_os_string()
-                .into_string()
-                .unwrap();
-
-            let script = &path
-                .rsplit('/')
-                .next()
-                .unwrap()
-                .to_owned();
-
-            match script.as_ref() {
-                "preinst" => {
-                    if Command::new("sh").args(["-c", &path]).output().is_err() {
-                        eprintln!("Failed to install the package!\nRemoving it ...");
-                        execute_remove(p)?;
-                        anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
-                    }
-                },
-
-                "postinst" => {
-                    if Command::new("sh").args(["-c", &path]).output().is_err() {
-                        eprintln!("Failed to configure the package!");
-                        anyhow::bail!(InstallError::Error("Could not execute postinst the script".to_owned()))
-                    }
-                },
-
-                _ => ()
+pub fn execute_install(i: &Info) -> Result<()>{
+    if let Some(preinst) = &i.preinst {
+        print!("Running pre-install script ...");
+        let path = preinst.clone().into_os_string().into_string().unwrap();
+        match Command::new("sh").args(["-c", &path]).output() {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("Failed to install the package due {}\nRemoving it ...", e);
+                execute_remove(i)?;
+                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
             }
         }
-        
-        Ok(())
+        println!("Done");
     }
+    
+    if let Some(postinst) = &i.postinst {
+        print!("Running post-install script ...");
+        let path = postinst.clone().into_os_string().into_string().unwrap();
+        match Command::new("sh").args(["-c", &path]).output() {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("Failed to install the package due {}\nRemoving it ...", e);
+                execute_remove(i)?;
+                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
+            }
+        }
+        println!("Done");
+    }
+    
+    Ok(())
 }
 
 // TODO: Add a `purge` option
-pub fn execute_remove(p: &Path) -> Result<(), InstallError> {
-    if !p.is_dir() {
-        Err(InstallError::Error("Package extration folder is not a directory".to_owned()))
-    } else {
-        for entry in std::fs::read_dir(p).unwrap() {
-            let path = entry
-                .as_ref()
-                .unwrap()
-                .path()
-                .into_os_string()
-                .into_string()
-                .unwrap();
-
-            let script = &path
-                .rsplit('/')
-                .next()
-                .unwrap()
-                .to_owned();
-
-            match script.as_ref() {
-                "prerm" => {
-                    if Command::new("sh").args(["-c", &path]).output().is_err() {
-                        eprintln!("Failed to install the package!\nRemoving it ...");
-                        execute_remove(p)?;
-                        return Err(InstallError::Error("Could not execute preinst the script".to_owned()))
-                    }
-                },
-
-                "postrm" => {
-                    if Command::new("sh").args(["-c", &path]).output().is_err() {
-                        eprintln!("Failed to install the package!\nRemoving it ...");
-                        execute_remove(p)?;
-                        return Err(InstallError::Error("Could not execute postinst the script".to_owned()))
-                    }
-                },
-
-                _ => ()
+pub fn execute_remove(i: &Info) -> Result<()> {
+    if let Some(prerm) = &i.prerm {
+        print!("Running pre-remove script ...");
+        let path = prerm.clone().into_os_string().into_string().unwrap();
+        match Command::new("sh").args(["-c", &path]).output() {
+            Ok(_) => (),
+            Err(e) => {
+                println!();
+                eprintln!("Failed to remove the package due {}\nRemoving it ...", e);
+                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
             }
         }
-        
-        Ok(())
+        println!("Done");
     }
+    
+    if let Some(postrm) = &i.postrm {
+        print!("Running post-remove script ...");
+        let path = postrm.clone().into_os_string().into_string().unwrap();
+        match Command::new("sh").args(["-c", &path]).output() {
+            Ok(_) => (),
+            Err(e) => {
+                println!();
+                eprintln!("Failed to remove the package due {}\nRemoving it ...", e);
+                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
+            }
+        }
+        println!("Done");
+    }
+
+    Ok(())
 }
 
