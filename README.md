@@ -1,3 +1,10 @@
+</p>
+<p align="center">
+  </a>
+    <img alt="Logo" src="docs/images/logo.png">
+  </a>
+</p>
+
 # OPM (Oxidized Package Manager) 📦
 </p>
 <p align="center">
@@ -5,7 +12,7 @@
     <img alt="GitHub" src="https://img.shields.io/github/license/0xc0ffeec0de/opm">
     <img alt="GitHub Workflow Status (branch)" src="https://img.shields.io/github/workflow/status/0xc0ffeec0de/opm/Rust/master">
     <img alt="GitHub issues" src="https://img.shields.io/github/issues/0xc0ffeec0de/opm">
-    <img alt="GitHub commit activity (branch)" src="https://img.shields.io/github/commit-activity/w/0xc0ffeec0de/opm/master">
+    <img alt="GitHub release (latest SemVer)" src="https://img.shields.io/github/v/release/0xc0ffeec0de/opm">
   </a>
 </p>
 
