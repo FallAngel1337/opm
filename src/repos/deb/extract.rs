@@ -9,7 +9,9 @@ use std::io::{self, prelude::*};
 use std::str;
 
 use crate::repos::config::Config;
-use super::package::{DebPackage, PkgKind};
+use super::package::{DebPackage, PkgKind, Info};
+
+pub struct Package(pub DebPackage, pub Info);
 
 fn unpack(filename: &str, dst: &str) -> Result<()> {
     let file = File::open(&filename)?;
@@ -29,7 +31,7 @@ fn unpack(filename: &str, dst: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage> {
+pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<Package> {
     print!("Extracting {} ... ", pkg);
 
     let mut archive = Archive::new(File::open(path).expect("msg"));
@@ -69,10 +71,11 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<DebPackage> {
             .with_context(|| format!("Could not remove {}", filename))?;
     }
 
-    let control_file = &format!("{}/control", control_dst);
     println!("Done");
-
+    let info = super::package::Info::load(std::path::Path::new(&control_dst))?;
+    let pkg = DebPackage::new(config, &info, PkgKind::Binary)?;
+    
     Ok(
-        DebPackage::new(config, control_file, PkgKind::Binary).expect("msg")
+        Package(pkg, info)
     )
 }
