@@ -131,13 +131,14 @@ pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<Contr
                     let pkg_version = &control.version;
                     if let Some(version) = *version.borrow() {
                         if !check_version(pkg_version, version) {
-                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkg_version, control.package, control.package, version);
+                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkg_version, control.package, version, control.package);
                         }
                     }
                     control
                 })
                 .collect::<Vec<_>>()
             );
+            dependencies.dedup();
             if !dependencies.is_empty() { Some(dependencies) } else { None }
         } else {
             None
