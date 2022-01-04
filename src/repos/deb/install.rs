@@ -26,7 +26,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             anyhow::bail!(InstallError::AlreadyInstalled);
         }
 
-        scripts::execute_install(&config.tmp)?;
+        scripts::execute_install(&info)?;
     } else {
         if let Some(pkg) = cache::check_installed(config, name) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -68,7 +68,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
                 println!("Installing {} ...", pkg_name);
                 let path = format!("{}/{}", config.tmp, pkg_name);
-                scripts::execute_install(&config.info)?;
+                scripts::execute_install(&info)?;
                 finish(Path::new(&path))?;
                 cache::add_package(config, pkg)?;
             }
