@@ -38,12 +38,12 @@ pub struct ControlFile {
     pub maintainer: String,
     pub description: String,
     pub depends: Option<Vec<ControlFile>>,
-    pub recommends: Option<Vec<ControlFile>>,
-    pub suggests: Option<Vec<ControlFile>>,
-    pub enhances: Option<Vec<ControlFile>>,
-    pub pre_depends: Option<Vec<ControlFile>>,
-    pub breaks: Option<Vec<ControlFile>>,
-    pub conflicts: Option<Vec<ControlFile>>,
+    pub recommends: Option<Vec<String>>,
+    pub suggests: Option<Vec<String>>,
+    pub enhances: Option<Vec<String>>,
+    pub pre_depends: Option<Vec<String>>,
+    pub breaks: Option<Vec<String>>,
+    pub conflicts: Option<Vec<String>>,
     pub filename: String,
     pub size: String,
     pub md5sum: String,
@@ -109,7 +109,7 @@ impl ControlFile {
         Self::from(config, &contents)
     }
 
-    pub fn from(config: &Config, contents: &str) -> Result<Self> {
+    pub fn from(config: &Config, contents: &str) -> Result<Self> {        
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
         for line in contents.lines() {
@@ -132,12 +132,12 @@ impl ControlFile {
                 // But, when reading /var/lib/dpkg/status it does not have those fields
                 priority: Self::try_get(&map, "Priority").unwrap_or_default(),
                 depends: get_dependencies(config, Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
-                recommends: get_dependencies(config, Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
-                suggests: get_dependencies(config, Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
-                enhances: get_dependencies(config, Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
-                pre_depends: get_dependencies(config, Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
-                breaks: get_dependencies(config, Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
-                conflicts: get_dependencies(config, Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
+                recommends: Self::split_optional(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
+                suggests: Self::split_optional(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
+                enhances: Self::split_optional(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
+                pre_depends: Self::split_optional(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
+                breaks: Self::split_optional(Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
+                conflicts: Self::split_optional(Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
                 filename: Self::try_get(&map, "Filename").unwrap_or_default(),
                 size: Self::try_get(&map, "Size").unwrap_or_default(),
                 md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
@@ -162,6 +162,21 @@ impl ControlFile {
         }
     }
 
+    fn split_optional(dependencies: Option<&str>) -> Option<Vec<String>> {
+        if let Some(val) = dependencies {
+            if !val.is_empty() {
+                let val = val
+                    .split(',')
+                    .map(|d| d.trim().to_owned())
+                    .collect::<Vec<_>>();
+                Some(val)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
     pub fn set_filename(&mut self, filename: &str) {
         self.filename = filename.to_owned();
     }
