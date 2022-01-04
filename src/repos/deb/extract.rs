@@ -8,7 +8,7 @@ use std::fs::{self, File};
 use std::io::{self, prelude::*};
 use std::str;
 
-use crate::repos::config::Config;
+use crate::repos::{config::Config, errors::InstallError};
 use super::package::{DebPackage, PkgKind, Info};
 
 pub struct Package(pub DebPackage, pub Info);
@@ -74,6 +74,10 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<Package> {
     println!("Done");
     let info = super::package::Info::load(std::path::Path::new(&control_dst))?;
     let pkg = DebPackage::new(config, &info, PkgKind::Binary)?;
+
+    if pkg.control.breaks.is_some() {
+        anyhow::bail!(InstallError::Breaks(pkg.control.package))
+    }
     
     Ok(
         Package(pkg, info)
