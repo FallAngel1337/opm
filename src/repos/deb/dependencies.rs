@@ -149,6 +149,37 @@ pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<Contr
     }
 }
 
+pub fn check_if_breaks(config: &Config, pkgs: Option<&str>) -> Option<Vec<String>> {
+    let mut breaks = vec![];
+    if let Some(v) = pkgs {
+        if !v.is_empty() {
+            let version = std::cell::RefCell::new(None);
+            breaks.append(
+                &mut v
+                .split(',')
+                .map(|name| {
+                    *version.borrow_mut() = get_version(name);
+                    parse_name(name)
+                })
+                .map(|name| name.split(" | "))
+                .flatten()
+                .map(|name| name.trim())
+                .filter(|name| cache::check_installed(config, name).is_some())
+                .filter_map(|name| cache::cache_lookup(config, name).ok())
+                .flatten()
+                .map(|d| d.control.package)
+                .collect::<Vec<_>>()
+            );
+            breaks.dedup();
+            if !breaks.is_empty() { Some(breaks) } else { None }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
