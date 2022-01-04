@@ -14,11 +14,12 @@ use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 pub async fn install(config: &Config, name: &str) -> Result<()> {
-    crate::repos::lock::lock()?;
+    // crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg_name = name.rsplit(".deb").next().unwrap();
         let pkg = extract::extract(config, name, pkg_name)?;
+        let (pkg, info) = (pkg.0, pkg.1);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -61,7 +62,8 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                     .into_string().unwrap();
                     
                 let pkg = extract::extract(config, &path, &pkg_name)?;
-                
+                let (pkg, info) = (pkg.0, pkg.1);
+
                 println!("Checking the signatures ...");
 
                 println!("Installing {} ...", pkg_name);

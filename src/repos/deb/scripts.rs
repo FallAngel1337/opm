@@ -6,7 +6,7 @@ use std::process::Command;
 ///
 /// Pre/Post install/remove scripts execution
 /// TODO: Make this better to execute
-pub fn execute_install(p: &str) -> Result<()>{
+pub fn execute_install(p: &Path) -> Result<()>{
     let p = Path::new(p);
     
     if !p.is_dir() {
