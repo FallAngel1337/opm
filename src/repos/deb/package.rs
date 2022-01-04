@@ -44,6 +44,7 @@ pub struct ControlFile {
     pub pre_depends: Option<Vec<String>>,
     pub breaks: Option<Vec<String>>,
     pub conflicts: Option<Vec<String>>,
+    pub conffiles: Option<Vec<String>>,
     pub filename: String,
     pub size: String,
     pub md5sum: String,
@@ -94,6 +95,7 @@ impl ControlFile {
                 pre_depends: None,
                 breaks: None,
                 conflicts: None,
+                conffiles: None,
                 filename: Self::try_get(&map, "Filename").unwrap_or_default(),
                 size: Self::try_get(&map, "Size").unwrap_or_default(),
                 md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
@@ -138,6 +140,7 @@ impl ControlFile {
                 pre_depends: Self::split_optional(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
                 breaks: Self::split_optional(Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
                 conflicts: Self::split_optional(Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
+                conffiles: None,
                 filename: Self::try_get(&map, "Filename").unwrap_or_default(),
                 size: Self::try_get(&map, "Size").unwrap_or_default(),
                 md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
@@ -177,6 +180,11 @@ impl ControlFile {
             None
         }
     }
+
+    fn get_conffiles(conffiles: Option<&str>) -> Option<Vec<String>> {
+        None
+    }
+
     pub fn set_filename(&mut self, filename: &str) {
         self.filename = filename.to_owned();
     }
