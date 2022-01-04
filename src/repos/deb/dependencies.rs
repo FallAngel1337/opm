@@ -226,6 +226,6 @@ mod test {
     #[ignore]
     fn get_dependencies_test() {
         let config = crate::repos::setup().unwrap();
-        assert!(get_dependencies(&config, "accountsservice").is_some());
+        assert!(get_dependencies(&config, Some("accountsservice")).is_some());
     }
 }
