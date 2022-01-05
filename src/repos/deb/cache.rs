@@ -1,7 +1,7 @@
 use anyhow::{self, Result, Context};
 use crate::repos::{config::Config, errors::InstallError};
 use crate::repos::errors::CacheError;
-use std::{fs, io::Write};
+use std::{fs, io::prelude::*};
 
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
@@ -230,6 +230,23 @@ Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.
 
 	if let Err(e) = writeln!(file, "{}", data) {
 		eprintln!("Couldn't write to db: {}", e);
+	}
+
+	Ok(())
+}
+
+pub fn rm_package(config: &Config, name: &str) -> Result<()> {
+	let db = if config.use_pre_existing_db {
+		super::database::DEBIAN_DATABASE
+	} else {
+		&config.db
+	};
+
+	let data = fs::read_to_string(&db)?;
+	let mut db = fs::File::create(&db)?;
+
+	if let Some(index) = data.find(&format!("Package: {}", name)) {
+		db.write_all(data[..index].as_ref())?;
 	}
 
 	Ok(())
