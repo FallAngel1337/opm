@@ -26,7 +26,8 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             anyhow::bail!(InstallError::AlreadyInstalled);
         }
 
-        scripts::execute_install(&info)?;
+        scripts::execute_install_pre(&info)?;
+        scripts::execute_install_pos(&info)?;
     } else {
         if let Some(pkg) = cache::check_installed(config, name) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -68,7 +69,8 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
                 println!("Installing {} ...", pkg_name);
                 let path = format!("{}/{}", config.tmp, pkg_name);
-                scripts::execute_install(&info)?;
+                scripts::execute_install_pre(&info)?;
+                scripts::execute_install_pos(&info)?;
                 finish(Path::new(&path))?;
                 cache::add_package(config, pkg)?;
             }
@@ -81,22 +83,15 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 }
 
 fn finish(p: &Path) -> Result<()> {
-    let options = fs_extra::dir::CopyOptions::new();
+    let mut options = fs_extra::dir::CopyOptions::new();
+    options.overwrite = true;
 
     for entry in std::fs::read_dir(&p)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
-            // fs_extra::dir::create_all(&path, false).unwrap();
-            match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
-                Ok(_) => (),
-                Err(e) => match e.kind {
-                    fs_extra::error::ErrorKind::AlreadyExists => (),
-                    fs_extra::error::ErrorKind::NotFound => (),
-                    _ => panic!("Some error occurred :: {:?} - {}", path, e)
-		        }
-            };
+            fs_extra::dir::copy(&path, std::path::Path::new("/"), &options).unwrap();
             fs_extra::dir::remove(&path).unwrap();
         }
     }
