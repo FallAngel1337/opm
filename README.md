@@ -40,8 +40,7 @@ You'll need to have [rust and cargo](https://www.rust-lang.org/tools/install) in
 ```
 $ git clone git@github.com:0xc0ffeec0de/opm.git
 $ cd opm/
-$ RUSTC_FLAGS="-C target-cpu=native" cargo build --release
-$ PKG_FMT=deb target/release/opm --help
+$ cargo build --release
 ```
 If you have [docker](https://www.docker.com/) installed
 ```
@@ -49,6 +48,15 @@ $ docker build -t opm .
 $ docker container run -dit --name opt_test opm
 $ docker container exec -it opm_test bash
 ```
+
+#### Post-Installation:
+After installing (either from releases or from source).
+
+Run: `export PKG_FMT=<fmt>`
+
+This will configure opm to work with the specified package format. (For now just `deb` is supported)
+
+You can chage that in the configuration file stored at `$HOME/.opm/config.json`.
 
 ## Supported Packages:
   - [X] deb
@@ -58,7 +66,7 @@ $ docker container exec -it opm_test bash
 ## Usage
 ```
 $ opm --help
-Oxidized Package Manager v0.1
+Oxidized Package Manager v1.0-beta
 FallAngel <fallangel@protonmail.com>
 A package manager fully written in Rust
 
