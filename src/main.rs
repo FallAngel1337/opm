@@ -10,7 +10,7 @@ fn main() {
 	});
 
     let matches = App::new("Oxidized Package Manager")
-				.version("v0.5")
+				.version("v1.0-beta")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A package manager fully written in Rust")
 				.arg(Arg::with_name("list")
@@ -21,18 +21,15 @@ fn main() {
 				)
 				.subcommands( vec![
 					SubCommand::with_name("install")
-						.about("install a package")
+						.about("Install a package")
 						.arg(Arg::with_name("package")
 						.takes_value(true)
 						.index(1)
-						.required(true))
-						.help("Install a package by the name\nUsage: opm install <package>"),
+						.required(true)),
 					SubCommand::with_name("update")
-						.about("update opm's packages cache")
-						.help("Update's opm cache\nUsage: opm update"),
+						.about("Update opm's packages cache"),
 					SubCommand::with_name("remove")
-						.about("remove a package")
-						.help("Remove a package by the name\nUsage: opm remove <package> ")
+						.about("Remove a package")
 						.arg(Arg::with_name("package")
 						.takes_value(true)
 						.index(1)
@@ -41,17 +38,16 @@ fn main() {
 							.required(false)
 							.takes_value(false)
 							.long("purge")
+							.short("p")
 							.help("Remove every file related to the package")),
 					SubCommand::with_name("search")
-						.about("search for a package")
-						.help("Search for a package in the cache")
+						.about("Search for a package in the cache")
 						.arg(Arg::with_name("package")
 							.takes_value(true)
 							.index(1)
 							.required(true)),
 					SubCommand::with_name("clear")
 						.about("Clear OPM's cache")
-						.help("Clear OPM's cache")
 				])
 				.get_matches();
 
