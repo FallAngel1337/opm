@@ -1,5 +1,4 @@
 use clap::{Arg, App, SubCommand};
-use futures::TryFutureExt;
 use opm::repos;
 use std::process;
 
@@ -78,14 +77,18 @@ fn main() {
 
     if let Some(rm) = matches.subcommand_matches("remove") {
         let pkg = rm.value_of("package").unwrap();
-		repos::remove(&config, pkg).unwrap_or_else(|err| {
-			eprintln!("Cold not remove {} :: {}", pkg, err);
-			process::exit(1);
-		});
 		if rm.is_present("purge") {
 			println!("Purgin 'em all HAHAHA");
+			repos::remove(&config, pkg, true).unwrap_or_else(|err| {
+				eprintln!("Could not purge {} :: {}", pkg, err);
+				process::exit(1);
+			});
+		} else {
+			repos::remove(&config, pkg, false).unwrap_or_else(|err| {
+				eprintln!("Could not remove {} :: {}", pkg, err);
+				process::exit(1);
+			});
 		}
-		process::exit(1);
     };
 
     if let Some(package) = matches.subcommand_matches("search") {
