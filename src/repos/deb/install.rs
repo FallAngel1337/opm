@@ -91,7 +91,16 @@ fn finish(p: &Path) -> Result<()> {
         let path = entry.path();
 
         if path.is_dir() {
-            fs_extra::dir::copy(&path, std::path::Path::new("/"), &options).unwrap();
+            match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
+                Ok(_) => (),
+                Err(e) => match e.kind {
+                    // FIXME: Ignoring NotFoundError due possible symlink resolution failure
+                    fs_extra::error::ErrorKind::NotFound => {
+                        eprintln!("[ WARNING ] Possible symlink resolution failure, ignoring ...");
+                    }
+                    _ => ()
+                }
+            }
             fs_extra::dir::remove(&path).unwrap();
         }
     }
