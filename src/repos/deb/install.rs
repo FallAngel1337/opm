@@ -16,7 +16,7 @@ use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 pub async fn install(config: &Config, name: &str) -> Result<()> {
-    // crate::repos::lock::lock()?;
+    crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name)?;
@@ -48,32 +48,6 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 new_packages.append(dependencies);
             }
 
-            /*
-            Reading package lists... Done
-            Building dependency tree
-            Reading state information... Done
-            The following additional packages will be installed:
-            X Y
-            Suggested packages:
-            A
-            The following NEW packages will be installed:
-            X Y
-            0 upgraded, 0 newly installed, 0 to remove and 9 not upgraded.
-            Need to get <size kB|MB> of archives.
-            After this operation, <size kB|MB> of additional disk space will be used.
-            Do you want to continue? [Y/n] y
-            Get:1 <url> <arc> X Version [<size> kB|MB]
-            Get:2 <url> <arc> Y Version [<size> kB|MB]
-            Fetched <size> kB|MB in <time (secs/mins/hrs/...)> (<dspeedavg kB/s|MB/s>)
-            Preparing to unpack X.deb ...
-            Unpacking X:<arch> (Version) ...
-            Preparing to unpack Y.deb
-            Unpacking Y:<arch> (Version) ...
-            Setting up X:<arch> (Version) ...
-            Setting up Y:<arch> (Version) ...
-            <GREEN_TICK> X was installed successfully!
-            <GREEN_TICK> Y was installed successfully!
-            */
             println!("Installing {} NEW package", new_packages.len());
             let mut total = 0;
             new_packages.iter().for_each(|pkg| {
@@ -131,12 +105,12 @@ fn finish(p: &Path, name: &str) -> Result<()> {
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
     
-    match fs_extra::dir::copy(&p, std::path::Path::new("/tmp/fake_root"), &options) {
+    match fs_extra::dir::copy(&p, std::path::Path::new("/"), &options) {
         Ok(_) => (),
         Err(e) => if let fs_extra::error::ErrorKind::NotFound = e.kind { 
             anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
         } else {
-            panic!("=> {}", e);
+            panic!("{}", e);
         }
     }
     
