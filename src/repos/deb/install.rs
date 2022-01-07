@@ -19,8 +19,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
     // crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
-        let pkg_name = name.rsplit(".deb").next().unwrap();
-        let pkg = extract::extract(config, name, pkg_name)?;
+        let pkg = extract::extract(config, name)?;
         let (pkg, info) = (pkg.0, pkg.1);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
@@ -101,21 +100,19 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             
             let start = Instant::now();
             for data in future::join_all(tasks).await {
-                let data = data?;
-                let (path, pkg_name) = data;
+                let path = data?;
 
                 let path = path
                     .into_os_string()
                     .into_string().unwrap();
                 
-                let pkg = extract::extract(config, &path, &pkg_name)?;
-                let (_pkg, info) = (pkg.0, pkg.1);
+                let pkg = extract::extract(config, &path)?;
+                let (pkg, info) = (pkg.0, pkg.1);
 
-                println!("Installing {} ...", pkg_name);
-                let path = format!("{}/{}", config.tmp, pkg_name);
+                println!("Installing {} ...", pkg.control.package);    
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
-                finish(Path::new(&path), &pkg_name)?;
+                finish(Path::new(&config.tmp), &pkg.control.package)?;
                 // cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
@@ -133,18 +130,13 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 fn finish(p: &Path, name: &str) -> Result<()> {
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
-
-    for entry in std::fs::read_dir(&p)?
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-    {
-        if entry.is_dir() {
-            match fs_extra::dir::copy(&entry, std::path::Path::new("/tmp/fake_root"), &options) {
-                Ok(_) => (),
-                Err(e) => if let fs_extra::error::ErrorKind::NotFound = e.kind { 
-                    anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
-                }
-            }
+    
+    match fs_extra::dir::copy(&p, std::path::Path::new("/tmp/fake_root"), &options) {
+        Ok(_) => (),
+        Err(e) => if let fs_extra::error::ErrorKind::NotFound = e.kind { 
+            anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
+        } else {
+            panic!("=> {}", e);
         }
     }
     
