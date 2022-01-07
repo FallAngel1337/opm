@@ -7,6 +7,8 @@ pub enum InstallError {
     InvalidPackage { err: Error },
     NetworkingError { err: Error },
     AlreadyInstalled,
+    Interrupted,
+    BrokenPackage(String),
     Breaks(String),
     NotFoundError(String),
     Error(String)
@@ -47,6 +49,8 @@ impl Display for InstallError {
             InstallError::InvalidPackage { err } => write!(f, "Invalid Package :: \"{}\"", err),
             InstallError::NetworkingError { err } => write!(f, "Networking Error :: \"{}\"", err),
             InstallError::AlreadyInstalled => write!(f, "Package is already installed"),
+            InstallError::Interrupted => write!(f, "Installation got interrupted by the user"),
+            InstallError::BrokenPackage(msg) => write!(f, "Perhaps {} is broken", msg),
             InstallError::Breaks(pkg) => write!(f, "Package {} can break others", pkg),
             InstallError::NotFoundError(pkg) => write!(f, "Package {} was not found", pkg),
             InstallError::Error(msg) => write!(f, "Error during installation :: {}", msg)
