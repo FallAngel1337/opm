@@ -92,7 +92,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             let answer = answer.to_ascii_lowercase().trim().chars().next().unwrap();
             if answer != 'y' {
                 eprintln!("Exiting installation process...");
-                std::process::exit(1); // TODO: bail a custom error here
+                anyhow::bail!(InstallError::Interrupted);
             }
 
             for control in new_packages.iter() {
@@ -111,13 +111,11 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 let pkg = extract::extract(config, &path, &pkg_name)?;
                 let (_pkg, info) = (pkg.0, pkg.1);
 
-                println!("Checking the signatures ...");
-
                 println!("Installing {} ...", pkg_name);
                 let path = format!("{}/{}", config.tmp, pkg_name);
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
-                finish(Path::new(&path))?;
+                finish(Path::new(&path), &pkg_name)?;
                 // cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
@@ -132,7 +130,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
     Ok(())
 }
 
-fn finish(p: &Path) -> Result<()> {
+fn finish(p: &Path, name: &str) -> Result<()> {
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
 
@@ -141,7 +139,12 @@ fn finish(p: &Path) -> Result<()> {
         .map(|entry| entry.path())
     {
         if entry.is_dir() {
-            fs_extra::dir::copy(&entry, std::path::Path::new("/tmp/fake_root"), &options)?;
+            match fs_extra::dir::copy(&entry, std::path::Path::new("/tmp/fake_root"), &options) {
+                Ok(_) => (),
+                Err(e) => if let fs_extra::error::ErrorKind::NotFound = e.kind { 
+                    anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
+                }
+            }
         }
     }
     
