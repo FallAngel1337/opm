@@ -6,7 +6,7 @@ use crate::repos::config::Config;
 use super::{package::DebPackage, signatures};
 use reqwest;
 
-pub async fn download(config: &Config, pkg: DebPackage) -> Result<(PathBuf, String)> {
+pub async fn download(config: &Config, pkg: DebPackage) -> Result<PathBuf> {
     let control = pkg.control.clone();
     let url = format!("http://{}", control.filename);    
     let response = reqwest::get(&url).await?;
@@ -28,5 +28,5 @@ pub async fn download(config: &Config, pkg: DebPackage) -> Result<(PathBuf, Stri
     let mut pkg = File::create(&fname)?;
     io::copy(&mut content, &mut pkg)?;
 
-    Ok((PathBuf::from(&fname), control.package))
+    Ok(PathBuf::from(&fname))
 }
