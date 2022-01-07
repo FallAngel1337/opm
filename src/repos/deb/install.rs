@@ -74,6 +74,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 finish(Path::new(&path))?;
                 cache::add_package(config, pkg)?;
             }
+
         } else {
             anyhow::bail!(InstallError::NotFoundError(name.to_string()));
         }
@@ -86,24 +87,15 @@ fn finish(p: &Path) -> Result<()> {
     let mut options = fs_extra::dir::CopyOptions::new();
     options.overwrite = true;
 
-    for entry in std::fs::read_dir(&p)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_dir() {
-            match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
-                Ok(_) => (),
-                Err(e) => match e.kind {
-                    // FIXME: Ignoring NotFoundError due possible symlink resolution failure
-                    fs_extra::error::ErrorKind::NotFound => {
-                        eprintln!("[ WARNING ] Possible symlink resolution failure, ignoring ...");
-                    }
-                    _ => ()
-                }
-            }
-            fs_extra::dir::remove(&path).unwrap();
+    for entry in std::fs::read_dir(&p)?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+    {
+        if entry.is_dir() {
+            fs_extra::dir::copy(&entry, std::path::Path::new("/"), &options)?;
         }
     }
-     
+    
+    fs_extra::dir::remove(&p)?;
     Ok(())
 }
