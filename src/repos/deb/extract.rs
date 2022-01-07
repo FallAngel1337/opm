@@ -31,9 +31,7 @@ fn unpack(filename: &str, dst: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<Package> {
-    print!("Extracting {} ... ", pkg);
-
+pub fn extract(config: &Config, path: &str) -> Result<Package> {
     let mut archive = Archive::new(File::open(path).expect("msg"));
     let mut bytes: Vec<u8> = Vec::new();
 
@@ -42,14 +40,6 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<Package> {
     
     file.read_to_end(&mut bytes)
         .with_context(|| format!("Could not read the file {}", path))?;
-
-    let package_dst = format!("{}/{}", config.tmp, pkg);
-    let control_dst = format!("{}/{}", config.info, pkg);
-
-    std::fs::create_dir_all(&package_dst)
-        .with_context(|| format!("Could not create {} folder", package_dst))?;
-    std::fs::create_dir_all(&control_dst)
-        .with_context(|| format!("Could not create {} folder", control_dst))?;
 
     while let Some(entry_result) = archive.next_entry() {
         let mut entry = entry_result?;
@@ -62,8 +52,8 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<Package> {
             .with_context(|| "Could not copy the contents of the file")?;
 
         match filename.as_ref() {
-            "data.tar.xz"|"data.tar.gz" => unpack(&filename, &package_dst)?,
-            "control.tar.xz"|"control.tar.gz" => unpack(&filename, &control_dst)?,
+            "data.tar.xz"|"data.tar.gz" => unpack(&filename, &config.tmp)?,
+            "control.tar.xz"|"control.tar.gz" => unpack(&filename, &config.info)?,
             _ => ()
         }
 
@@ -72,7 +62,7 @@ pub fn extract(config: &Config, path: &str, pkg: &str) -> Result<Package> {
     }
 
     println!("Done");
-    let info = super::package::Info::load(std::path::Path::new(&control_dst))?;
+    let info = super::package::Info::load(std::path::Path::new(&config.info))?;
     let pkg = DebPackage::new(config, &info, PkgKind::Binary)?;
 
     if pkg.control.breaks.is_some() {
