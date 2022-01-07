@@ -87,7 +87,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
                 finish(Path::new(&config.tmp), &pkg.control.package)?;
-                // cache::add_package(config, pkg)?;
+                cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
             println!("Installed {} in {}s", name, duration.as_secs());
