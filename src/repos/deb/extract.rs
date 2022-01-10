@@ -4,14 +4,15 @@ use tar::Archive as tarar;
 use xz2::read::XzDecoder;
 use flate2::read::GzDecoder;
 
-use std::fs::{self, File};
+use std::{fs::{self, File}};
 use std::io::{self, prelude::*};
 use std::str;
 
 use crate::repos::{config::Config, errors::InstallError};
 use super::package::{DebPackage, PkgKind, Info};
 
-pub struct Package(pub DebPackage, pub Info);
+pub struct Data { pub info_path: String, pub control_path: String }
+pub struct Package(pub DebPackage, pub Info, pub Data);
 
 fn unpack(filename: &str, dst: &str) -> Result<()> {
     let file = File::open(&filename)?;
@@ -31,7 +32,7 @@ fn unpack(filename: &str, dst: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn extract(config: &Config, path: &str) -> Result<Package> {
+pub fn extract(config: &Config, path: &str, name: &str) -> Result<Package> {
     let mut archive = Archive::new(File::open(path).expect("msg"));
     let mut bytes: Vec<u8> = Vec::new();
 
@@ -40,6 +41,14 @@ pub fn extract(config: &Config, path: &str) -> Result<Package> {
     
     file.read_to_end(&mut bytes)
         .with_context(|| format!("Could not read the file {}", path))?;
+
+    let info_dest = format!("{}/{}", config.info, name);
+    let ctrl_dest = format!("{}/{}", config.tmp, name);
+
+    match (fs::create_dir_all(&info_dest), fs::create_dir_all(&ctrl_dest)) {
+        (Ok(()), Ok(())) => (),
+        _ => panic!("Could not create the directories")
+    }
 
     while let Some(entry_result) = archive.next_entry() {
         let mut entry = entry_result?;
@@ -52,8 +61,8 @@ pub fn extract(config: &Config, path: &str) -> Result<Package> {
             .with_context(|| "Could not copy the contents of the file")?;
 
         match filename.as_ref() {
-            "data.tar.xz"|"data.tar.gz" => unpack(&filename, &config.tmp)?,
-            "control.tar.xz"|"control.tar.gz" => unpack(&filename, &config.info)?,
+            "data.tar.xz"|"data.tar.gz" => unpack(&filename, &ctrl_dest)?,
+            "control.tar.xz"|"control.tar.gz" => unpack(&filename, &info_dest)?,
             _ => ()
         }
 
@@ -62,7 +71,7 @@ pub fn extract(config: &Config, path: &str) -> Result<Package> {
     }
 
     println!("Done");
-    let info = super::package::Info::load(std::path::Path::new(&config.info))?;
+    let info = super::package::Info::load(std::path::Path::new(&info_dest))?;
     let pkg = DebPackage::new(config, &info, PkgKind::Binary)?;
 
     if pkg.control.breaks.is_some() {
@@ -70,6 +79,6 @@ pub fn extract(config: &Config, path: &str) -> Result<Package> {
     }
     
     Ok(
-        Package(pkg, info)
+        Package(pkg, info, Data { info_path: info_dest, control_path: ctrl_dest })
     )
 }
