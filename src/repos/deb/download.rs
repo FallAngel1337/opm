@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bytesize::ByteSize;
+use indicatif::HumanBytes;
 use std::{path::PathBuf, fs::File, io};
 
 use crate::repos::config::Config;
@@ -15,7 +15,7 @@ pub async fn download(config: &Config, pkg: DebPackage) -> Result<PathBuf> {
     let mut content: &[u8] = content.as_ref();
 
     println!("Get: {} {} {} {} [{}]", url, control.architecture,
-    control.package, control.version, ByteSize(content.len() as u64));
+    control.package, control.version, HumanBytes(content.len() as u64));
 
     match signatures::verify_sig(&pkg, content) {
         Ok(()) => (),
