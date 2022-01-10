@@ -24,7 +24,6 @@ $ opm install /path/to/the/<package_name>.deb
 ```
 
 ### Package Removing
-**NOTE:** Still under development
 A package can be removed only by the name it was installed before
 ```
 $ opm remove <package_name>
