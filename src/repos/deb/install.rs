@@ -1,3 +1,4 @@
+use indicatif::{HumanDuration, HumanBytes, ProgressBar};
 use anyhow::{self, Result};
 use std::{path::Path, io::Write};
 use std::time::Instant;
@@ -8,7 +9,6 @@ use std::time::Instant;
 
 use crate::repos::{errors::InstallError, deb::package::{DebPackage, PkgKind}};
 use crate::repos::config::Config;
-use bytesize::ByteSize;
 use super::{extract, download};
 use super::{cache, scripts};
 use futures::future;
@@ -16,7 +16,7 @@ use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 pub async fn install(config: &Config, name: &str) -> Result<()> {
-    crate::repos::lock::lock()?;
+    // crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name)?;
@@ -55,7 +55,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 total += pkg.size.parse::<u64>().unwrap();
             });
 
-            println!("After this operation, {} of additional disk space will be used.", ByteSize(total));            
+            println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));            
             print!("Do you want to continue? [Y/n] ");
             let mut answer = String::new();
             
@@ -87,10 +87,10 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
                 finish(Path::new(&config.tmp), &pkg.control.package)?;
-                cache::add_package(config, pkg)?;
+                // cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
-            println!("Installed {} in {}s", name, duration.as_secs());
+            println!("Installed {} in {}s", name, HumanDuration(duration));
 
 
         } else {
@@ -102,19 +102,24 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 }
 
 fn finish(p: &Path, name: &str) -> Result<()> {
-    let mut options = fs_extra::dir::CopyOptions::new();
-    options.overwrite = true;
+    use fs_extra::error::ErrorKind;
+    let options = fs_extra::dir::CopyOptions::new();
     
-    match fs_extra::dir::copy(&p, std::path::Path::new("/"), &options) {
-        Ok(_) => (),
-        Err(e) => if let fs_extra::error::ErrorKind::NotFound = e.kind { 
-            anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
-        } else {
-            panic!("{}", e);
+    for path in std::fs::read_dir(p)?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+    {
+        match fs_extra::dir::copy(&path, std::path::Path::new("/tmp/fake_root"), &options) {
+            Ok(_) => (),
+            Err(e) => match e.kind { 
+                ErrorKind::NotFound => anyhow::bail!(InstallError::BrokenPackage(name.to_owned())),
+                ErrorKind::InvalidFolder | ErrorKind::AlreadyExists => continue,
+                _ => panic!("{}", e)
+            }
         }
     }
-    
-    fs_extra::dir::remove(&p)?;
+
+    fs_extra::dir::create(&p, true)?;
     Ok(())
 }
 
