@@ -7,20 +7,16 @@ use crate::repos::config::Config;
 use super::{package::DebPackage, signatures};
 use reqwest;
 
+// https://gist.github.com/giuliano-oliveira/4d11d6b3bb003dba3a1b53f43d81b30d
 pub async fn download(config: &Config, pkg: DebPackage, pb: ProgressBar) -> Result<PathBuf> {
-    // https://gist.github.com/giuliano-oliveira/4d11d6b3bb003dba3a1b53f43d81b30d
     let control = pkg.control.clone();
     let url = format!("http://{}", control.filename);    
     let response = reqwest::get(&url).await?;
     let size = response.content_length().unwrap_or_default();
 
-    // let content = response.bytes().await?;
-    // let mut content: &[u8] = content.as_ref();
-
     println!("Get: {} {} {} {} [{}]", url, control.architecture,
     control.package, control.version, HumanBytes(size));
 
-    // let pb = ProgressBar::new(control.size.parse::<u64>()?);
     pb.set_style(ProgressStyle::default_bar()
     .template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
     .progress_chars("#>-"));
