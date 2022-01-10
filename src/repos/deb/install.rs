@@ -1,4 +1,4 @@
-use indicatif::{HumanDuration, HumanBytes, MultiProgress,ProgressBar};
+use indicatif::{HumanDuration, HumanBytes, MultiProgress,ProgressBar, ProgressStyle};
 use anyhow::{self, Result};
 use std::{path::Path, io::Write};
 use std::time::Instant;
@@ -71,7 +71,12 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
             let mp = MultiProgress::new();
             for control in new_packages.iter() {
-                tasks.push(download::download(config, DebPackage { control: control.clone(), kind: PkgKind::Binary }, mp.add(ProgressBar::new(control.size.parse::<u64>()?))));
+                let bar = mp.add(ProgressBar::new(control.size.parse::<u64>()?));
+                bar.set_style(ProgressStyle::default_bar()
+                    .template(" [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
+                    .progress_chars("#>-"));
+
+                tasks.push(download::download(config, DebPackage { control: control.clone(), kind: PkgKind::Binary }, bar));
             }
             let handle = tokio::task::spawn_blocking(move || mp.join().unwrap());
             

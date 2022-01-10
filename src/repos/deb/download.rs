@@ -1,5 +1,5 @@
 use anyhow::Result;
-use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
+use indicatif::ProgressBar;
 use futures_util::StreamExt;
 use std::{path::PathBuf, fs::File, io::Write};
 
@@ -14,12 +14,9 @@ pub async fn download(config: &Config, pkg: DebPackage, pb: ProgressBar) -> Resu
     let response = reqwest::get(&url).await?;
     let size = response.content_length().unwrap_or_default();
 
-    println!("Get: {} {} {} {} [{}]", url, control.architecture,
-    control.package, control.version, HumanBytes(size));
+    // println!("Get: {} {} {} {} [{}]", url, control.architecture,
+    // control.package, control.version, HumanBytes(size));
 
-    pb.set_style(ProgressStyle::default_bar()
-    .template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
-    .progress_chars("#>-"));
     let name = control.filename.split('/').last().unwrap().to_string();
     let mut content = Vec::with_capacity(size as usize);
     let fname = format!("{}/{}", config.tmp, name);
