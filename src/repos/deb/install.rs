@@ -1,4 +1,4 @@
-use indicatif::{HumanDuration, HumanBytes, ProgressBar};
+use indicatif::{HumanDuration, HumanBytes, MultiProgress,ProgressBar};
 use anyhow::{self, Result};
 use std::{path::Path, io::Write};
 use std::time::Instant;
@@ -19,7 +19,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
     // crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
-        let pkg = extract::extract(config, name)?;
+        let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
         let (pkg, info) = (pkg.0, pkg.1);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
@@ -51,11 +51,12 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             println!("Installing {} NEW package", new_packages.len());
             let mut total = 0;
             new_packages.iter().for_each(|pkg| {
-                println!(" {}", pkg.package);
+                print!(" {}", pkg.package);
                 total += pkg.size.parse::<u64>().unwrap();
             });
+            println!();
 
-            println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));            
+            println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));
             print!("Do you want to continue? [Y/n] ");
             let mut answer = String::new();
             
@@ -68,42 +69,51 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 anyhow::bail!(InstallError::Interrupted);
             }
 
+            let mp = MultiProgress::new();
             for control in new_packages.iter() {
-                tasks.push(download::download(config, DebPackage { control: control.clone(), kind: PkgKind::Binary }));
+                tasks.push(download::download(config, DebPackage { control: control.clone(), kind: PkgKind::Binary }, mp.add(ProgressBar::new(control.size.parse::<u64>()?))));
             }
+            let handle = tokio::task::spawn_blocking(move || mp.join().unwrap());
             
             let start = Instant::now();
-            for data in future::join_all(tasks).await {
-                let path = data?;
+            for data in future::join_all(tasks).await
+                .into_iter()
+                .filter_map(|r| r.ok())
+                .zip(new_packages.into_iter().map(|ctrl| ctrl.package)) 
+            {
+                let (path, name) = data;
 
                 let path = path
                     .into_os_string()
                     .into_string().unwrap();
                 
-                let pkg = extract::extract(config, &path)?;
-                let (pkg, info) = (pkg.0, pkg.1);
+                let pkg = extract::extract(config, &path, &name)?;
+                let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
 
                 println!("Installing {} ...", pkg.control.package);    
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
-                finish(Path::new(&config.tmp), &pkg.control.package)?;
+                finish(Path::new(&data.control_path), &pkg.control.package)?;
                 // cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
             println!("Installed {} in {}s", name, HumanDuration(duration));
 
+            handle.await?;
 
         } else {
             anyhow::bail!(InstallError::NotFoundError(name.to_string()));
         }
     }
 
+
     Ok(())
 }
 
 fn finish(p: &Path, name: &str) -> Result<()> {
     use fs_extra::error::ErrorKind;
-    let options = fs_extra::dir::CopyOptions::new();
+    let mut options = fs_extra::dir::CopyOptions::new();
+    options.overwrite = true;
     
     for path in std::fs::read_dir(p)?
         .filter_map(|entry| entry.ok())
@@ -119,7 +129,6 @@ fn finish(p: &Path, name: &str) -> Result<()> {
         }
     }
 
-    fs_extra::dir::create(&p, true)?;
     Ok(())
 }
 
