@@ -1,4 +1,4 @@
-use clap::{Arg, App, SubCommand};
+use clap::{Arg, App, SubCommand, AppSettings};
 use opm::repos;
 use std::process;
 
@@ -10,6 +10,7 @@ fn main() {
 	});
 
     let matches = App::new("Oxidized Package Manager")
+				.setting(AppSettings::ArgRequiredElseHelp)
 				.version("v1.0-beta")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A package manager fully written in Rust")
