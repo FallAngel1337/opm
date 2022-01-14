@@ -16,7 +16,7 @@ impl DebianSource {
         let mut v: Vec<Self> = Vec::new();
 
         for d in contents.lines() {
-            if !d.contains('#') && d.starts_with("deb") {
+            if !d.contains('#') && d.starts_with("deb") && !d.contains("cdrom") {
                 let split = d.split(' ').collect::<Vec<&str>>().iter()
                     .map(|x| x.to_string()).collect::<Vec<String>>();
                 v.push(
