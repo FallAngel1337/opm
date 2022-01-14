@@ -126,6 +126,7 @@ pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<Contr
                 .map(|name| name.trim())
                 .filter(|name| cache::check_installed(config, name).is_none())
                 .filter_map(|name| cache::cache_lookup(config, name).ok())
+                .filter(|pkg| pkg.is_some())
                 .flatten()
                 .map(|d| {
                     let control = d.control;
