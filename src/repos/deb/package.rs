@@ -72,7 +72,7 @@ impl Info {
 ///
 /// Debian's control file (mandatory fields)
 ///
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControlFile {
     pub package: String,
     pub version: String,

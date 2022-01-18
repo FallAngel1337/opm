@@ -1,8 +1,7 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, cell::RefCell};
 use crate::repos::config::Config;
 use super::package::{DebPackage, ControlFile};
 use super::cache;
-
 
 fn parse_name(name: &str) -> &str {
     let end = name.find('(');
@@ -111,35 +110,35 @@ pub fn _get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>,
 
 pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<ControlFile>> {
     let mut dependencies = vec![];
-    if let Some(v) = pkgs {
-        if !v.is_empty() {
-            let version = std::cell::RefCell::new(None);
-            dependencies.append(
-                &mut v
-                .split(',')
+    if let Some(pkgs) = pkgs {
+        if !pkgs.is_empty() {
+            println!("name = {:?}", pkgs);
+            let version = RefCell::new(None);
+            for pkg in pkgs.split(',')
                 .map(|name| {
                     *version.borrow_mut() = get_version(name);
-                    parse_name(name)
+                    parse_name(name).trim().split(" | ")
                 })
-                .map(|name| name.split(" | "))
                 .flatten()
-                .map(|name| name.trim())
                 .filter(|name| cache::check_installed(config, name).is_none())
-                .filter_map(|name| cache::cache_lookup(config, name).ok())
-                .filter(|pkg| pkg.is_some())
-                .flatten()
-                .map(|d| {
-                    let control = d.control;
-                    let pkg_version = &control.version;
-                    if let Some(version) = *version.borrow() {
-                        if !check_version(pkg_version, version) {
-                            eprintln!("Version {} ({}) is not satisfied! Need version {} ({})", pkg_version, control.package, version, control.package);
+                {
+                    if let Some(pkg) = cache::cache_lookup_deps(config, pkg).unwrap() {
+                        let name = pkg.control.package.clone();
+                        // println!("pkg = {:#?}", pkg.control);
+                        // cache::add_package(config, pkg.clone()).unwrap(); // This will slowdown the installation ... 
+                        if pkg.control.depends.is_none() {
+                            println!("FINAL = {:#?}", pkg.control);
+                            dependencies.push(pkg.control);
+                        } else {
+                            match get_dependencies(config, Some(&name)) {
+                                Some(mut vec) => dependencies.append(&mut vec),
+                                None => continue
+                            }
                         }
+                    } else {
+                        panic!("was not found");
                     }
-                    control
-                })
-                .collect::<Vec<_>>()
-            );
+                }
             dependencies.dedup();
             if !dependencies.is_empty() { Some(dependencies) } else { None }
         } else {
