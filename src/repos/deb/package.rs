@@ -1,11 +1,7 @@
-#![allow(unused)]
 use anyhow::{self, Result, bail};
 use crate::repos::{errors::ConfigError, config::Config};
 use std::{collections::HashMap, path::{PathBuf, Path}};
 use std::fs;
-
-use super::cache;
-
 
 ///
 /// Kind of the package
@@ -18,6 +14,7 @@ pub enum PkgKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum PkgPriority {
     Required,
     Important,
@@ -25,6 +22,21 @@ pub enum PkgPriority {
     Optional,
     Extra, // Deprecated, but here for compatibility issues
 }
+
+#[allow(dead_code)]
+impl PkgPriority {
+    fn get_priority(p: &str) -> Self {
+        match p {
+            "required" => PkgPriority::Required,
+            "important" => PkgPriority::Important,
+            "standard" => PkgPriority::Standard,
+            "optional" => PkgPriority::Optional,
+            "extra" => PkgPriority::Extra,
+            _ => PkgPriority::Optional
+        }
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Info {
@@ -96,32 +108,17 @@ pub struct ControlFile {
     pub sha512: String
 }
 
-impl PkgPriority {
-    fn get_priority(p: &str) -> Self {
-        match p {
-            "required" => PkgPriority::Required,
-            "important" => PkgPriority::Important,
-            "standard" => PkgPriority::Standard,
-            "optional" => PkgPriority::Optional,
-            "extra" => PkgPriority::Extra,
-            _ => PkgPriority::Optional
-        }
-    }
-}
-
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(config: &Config, contents: &str) -> Result<Self> {        
-        let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
+    pub fn new(_config: &Config, contents: &str) -> Result<Self> {        
+        let mut map: HashMap<String, String> = HashMap::new();
 
-        for line in contents.lines() {
-            let line = line.trim();
+        contents.lines().map(|line| line.trim()).for_each(|line| {
             let values = line.splitn(2, ':').map(|line| line.to_owned()).collect::<Vec<_>>();
-            map.insert(
-                values.get(0).map(|v| v.to_owned()),
-                values.get(1).map(|v| v.to_owned())
-            );
-        }
+            if values.len() == 2 {
+                map.insert(values[0].clone(), values[1].clone());
+            }
+        });
 
         Ok(
             Self {
@@ -166,14 +163,10 @@ impl ControlFile {
     }
 
     // TODO: Maybe I need to make this easier to read
-    fn try_get(hashmap: &HashMap<Option<String>, Option<String>>, field: &str) -> Result<String> {
-        let value = hashmap.get(&Some(field.to_owned()));
+    fn try_get(hashmap: &HashMap<String, String>, field: &str) -> Result<String> {
+        let value = hashmap.get(field);
         if let Some(v) = value {
-            if let Some(v) = v {
-                Ok (v.trim().to_owned())
-            } else {
-                bail!(ConfigError { msg: format!("Unknown error trying to get \"{}\" field", field) });
-            }
+            Ok (v.trim().to_owned())
         } else {
             bail!(ConfigError { msg: format!("Invalid debain's control file! Missing \"{}\" field", field) });
         }
@@ -192,14 +185,6 @@ impl ControlFile {
             }
         } else {
             None
-        }
-    }
-
-    fn set_conffiles(&mut self, conffiles: Vec<String>) {
-        if !conffiles.is_empty() {
-            self.conffiles = Some(conffiles);
-        } else {
-            self.conffiles = None;
         }
     }
 
