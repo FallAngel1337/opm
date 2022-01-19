@@ -51,7 +51,6 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
             .flat_map(|name| parse_name(name).trim().split(" | "))
             .filter(|name| cache::check_installed(config, name).is_none())
             {
-                println!("{} is not installed", name);
                 if let Some(deb) = cache::cache_lookup(config, name)? {
                     match (deb.control.breaks.clone(), deb.control.conflicts.clone()) {
                         (Some(b), Some(c)) => {
@@ -65,23 +64,29 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
 
                     if let Some(version) = get_version(&deb.control.version) {
                         if !check_version(version, &pkg.version) {
-                            eprintln!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package);
+                            anyhow::bail!(InstallError::Error(format!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package)));
+                        }
+                    }
+                    println!("=> {:#?}", name);
+
+                    
+                    if depgraph.dependencies_of(&pkg).is_err() {
+                        println!("OK");
+                        depgraph.register_dependency(pkg.clone(), deb.control.clone());
+    
+                        if deb.control.depends.is_some() {
+                            get_dependencies(config, deb.control.clone(), deb.control.depends, depgraph)?;
                         }
                     }
 
-                    depgraph.register_dependency(pkg.clone(), deb.control.clone());
-                    if deb.control.depends.is_some() {
-                        println!("Recursion ON");
-                        get_dependencies(config, deb.control.clone(), deb.control.depends, depgraph)?;
-                    }
                 } else {
-                    anyhow::bail!(InstallError::Error("No packaage was found ...".to_owned()));
+                    anyhow::bail!(InstallError::Error("No package was found ...".to_owned()));
                 }
             }
         }
         Ok(())
     } else {
-        anyhow::bail!(InstallError::Error("Failed to get_the dependencies ...".to_owned()));
+        anyhow::bail!(InstallError::Error("Failed to get the dependencies ...".to_owned()));
     }
 }
 
