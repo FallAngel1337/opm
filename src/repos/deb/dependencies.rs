@@ -67,11 +67,8 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
                             anyhow::bail!(InstallError::Error(format!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package)));
                         }
                     }
-                    println!("=> {:#?}", name);
-
                     
-                    if depgraph.dependencies_of(&pkg).is_err() {
-                        println!("OK");
+                    if depgraph.dependencies_of(&deb.control).is_err() {
                         depgraph.register_dependency(pkg.clone(), deb.control.clone());
     
                         if deb.control.depends.is_some() {
@@ -92,9 +89,9 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
 
 fn check_if_breaks(config: &Config, pkgs: &[String]) -> Result<()> {
     if pkgs.iter()
-    .flat_map(|name| parse_name(name).trim().split(" | "))
-    .filter(|name| cache::check_installed(config, name).is_some())
-    .count() > 0 {
+        .flat_map(|name| parse_name(name).trim().split(" | "))
+        .filter(|name| cache::check_installed(config, name).is_some())
+        .count() > 0 {
         anyhow::bail!(InstallError::Breaks("The package you're trying to install will break/conflict with others".to_owned()));
     } else {
         Ok(())
