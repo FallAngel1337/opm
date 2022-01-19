@@ -44,28 +44,22 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             let mut depgraph = DepGraph::new();
 
             let mut tasks = vec![];
-            let mut new_packages = vec![pkg.control.clone()];
 
             if let Some(depends) = pkg.control.clone().depends {
                 println!("Building dependency tree ...");
                 get_dependencies(config, pkg.control.clone(), Some(depends), &mut depgraph)?;
             }
 
-            for node in depgraph.dependencies_of(&pkg.control).unwrap().filter_map(|node| node.ok()) {
-                println!("NODE: {:#?}", node);
-                new_packages.push(node.to_owned());
-            }
+            let pkgs = depgraph.dependencies_of(&pkg.control).unwrap()
+                .filter_map(|node| node.ok()).cloned()
+                .collect::<Vec<_>>();
+            println!("Installing {} NEW package", pkgs.len());
 
-            
-
-            println!("Found {:?}", name);
-
-            println!("Installing {} NEW package", new_packages.len());
             let mut total = 0;
-            new_packages.iter().for_each(|pkg| {
+            for pkg in pkgs.iter() {
                 print!(" {}", pkg.package);
                 total += pkg.size.parse::<u64>().unwrap();
-            });
+            }
             println!();
 
             println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));
@@ -82,13 +76,13 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             }
 
             let mp = MultiProgress::new();
-            for control in new_packages.iter() {
-                let bar = mp.add(ProgressBar::new(control.size.parse::<u64>()?));
+            for pkg in pkgs.clone().into_iter() {
+                let bar = mp.add(ProgressBar::new(pkg.size.parse::<u64>()?));
                 bar.set_style(ProgressStyle::default_bar()
                     .template(" [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
                     .progress_chars("#>-"));
 
-                tasks.push(download::download(config, DebPackage { control: control.clone(), kind: PkgKind::Binary }, bar));
+                tasks.push(download::download(config, DebPackage { control: pkg, kind: PkgKind::Binary }, bar));
             }
             let handle = tokio::task::spawn_blocking(move || mp.join().unwrap());
             
@@ -96,7 +90,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             for data in future::join_all(tasks).await
                 .into_iter()
                 .filter_map(|r| r.ok())
-                .zip(new_packages.into_iter().map(|ctrl| ctrl.package)) 
+                .zip(pkgs.into_iter().map(|ctrl| ctrl.package)) 
             {
                 let (path, name) = data;
 
