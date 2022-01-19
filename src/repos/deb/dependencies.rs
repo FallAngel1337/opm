@@ -1,6 +1,9 @@
-use std::{cmp::Ordering, cell::RefCell};
-use crate::repos::config::Config;
-use super::package::{DebPackage, ControlFile};
+use std::cmp::Ordering;
+use anyhow::Result;
+use solvent::DepGraph;
+
+use crate::repos::{config::Config, errors::InstallError};
+use super::package::ControlFile;
 use super::cache;
 
 fn parse_name(name: &str) -> &str {
@@ -41,142 +44,55 @@ fn check_version(pkgv: &str, depv: &str) -> bool {
     }
 }
 
-pub fn _get_dependencies(config: &Config, pkg: &str) -> Option<(Vec<DebPackage>, Vec<String>)> {
-    let ctrl = match cache::cache_lookup(config, parse_name(pkg)) {
-        Ok(Some(pkg)) => pkg.control,
-        _ => return None
-    };
-
-    let (mut depends, mut optional) = (Vec::new(), Vec::new());
-
-    if let Some(deps) = &ctrl.depends {
-        for pkg in deps {
-            let depv = get_version(&pkg.package);
-            let pkg = parse_name(&pkg.package);
-
-            if pkg.contains('|') {
-                println!("PIPED {}", pkg);
-                let installed = pkg.split(" | ")
-                    .filter_map(|pkg| cache::check_installed(config, pkg))
-                    .count();
-
-                if installed == 0 {
-                    // NOTE: If none is installed, install the first one
-                    let mut pkg = pkg.split(" | ")
-                    .filter_map(|pkg| cache::cache_lookup(config, pkg).ok())
-                    .flatten()
-                    .collect::<Vec<_>>();
-
-                    if !pkg.is_empty() {
-                        depends.append(&mut pkg);
+pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<String>>, depgraph: &mut DepGraph<ControlFile>) -> Result<()> {
+    if let Some(deps) = deps {
+        if !deps.is_empty() {
+            for name in deps.iter()
+            .flat_map(|name| parse_name(name).trim().split(" | "))
+            .filter(|name| cache::check_installed(config, name).is_none())
+            {
+                println!("{} is not installed", name);
+                if let Some(deb) = cache::cache_lookup(config, name)? {
+                    match (deb.control.breaks.clone(), deb.control.conflicts.clone()) {
+                        (Some(b), Some(c)) => {
+                            check_if_breaks(config, &b)?;
+                            check_if_breaks(config, &c)?;
+                        },
+                        (Some(b), None) => check_if_breaks(config, &b)?,
+                        (None, Some(c)) => check_if_breaks(config, &c)?,
+                        (None, None) => (),
                     }
-                }
-            } else if cache::check_installed(config, pkg).is_none() {
-                if let Some(pkg) = cache::cache_lookup(config, pkg).unwrap() {
-                    let pkgv = &pkg.control.version;
-                    if let Some(depv) = depv {
-                        if !check_version(pkgv, depv) {
-                            eprintln!("Version {} of {} package is not satisfied! Need version {} of {}", pkgv, pkg.control.package, pkg.control.package, depv);
+
+                    if let Some(version) = get_version(&deb.control.version) {
+                        if !check_version(version, &pkg.version) {
+                            eprintln!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package);
                         }
                     }
-                    depends.push(pkg);
+
+                    depgraph.register_dependency(pkg.clone(), deb.control.clone());
+                    if deb.control.depends.is_some() {
+                        println!("Recursion ON");
+                        get_dependencies(config, deb.control.clone(), deb.control.depends, depgraph)?;
+                    }
                 } else {
-                    return None;
+                    anyhow::bail!(InstallError::Error("No packaage was found ...".to_owned()));
                 }
             }
         }
-        depends.dedup();
-    }
-    
-    if let Some(deps) = &ctrl.recommends {
-        optional.append(&mut deps.clone())
-    }
-
-    if let Some(deps)  = &ctrl.suggests {
-        optional.append(&mut deps.clone())
-    }
-
-    if let Some(deps)  = &ctrl.enhances {
-        optional.append(&mut deps.clone())
-    }
-
-    if let Some(deps)  = &ctrl.pre_depends {
-        println!("Pre-Dependent Packages: {:?}", deps);
-    }
-
-    println!("Depends = {:#?}", depends);
-    Some((depends, optional))
-}
-
-pub fn get_dependencies(config: &Config, pkgs: Option<&str>) -> Option<Vec<ControlFile>> {
-    let mut dependencies = vec![];
-    if let Some(pkgs) = pkgs {
-        if !pkgs.is_empty() {
-            println!("name = {:?}", pkgs);
-            let version = RefCell::new(None);
-            for pkg in pkgs.split(',')
-                .map(|name| {
-                    *version.borrow_mut() = get_version(name);
-                    parse_name(name).trim().split(" | ")
-                })
-                .flatten()
-                .filter(|name| cache::check_installed(config, name).is_none())
-                {
-                    if let Some(pkg) = cache::cache_lookup_deps(config, pkg).unwrap() {
-                        let name = pkg.control.package.clone();
-                        // println!("pkg = {:#?}", pkg.control);
-                        // cache::add_package(config, pkg.clone()).unwrap(); // This will slowdown the installation ... 
-                        if pkg.control.depends.is_none() {
-                            println!("FINAL = {:#?}", pkg.control);
-                            dependencies.push(pkg.control);
-                        } else {
-                            match get_dependencies(config, Some(&name)) {
-                                Some(mut vec) => dependencies.append(&mut vec),
-                                None => continue
-                            }
-                        }
-                    } else {
-                        panic!("was not found");
-                    }
-                }
-            dependencies.dedup();
-            if !dependencies.is_empty() { Some(dependencies) } else { None }
-        } else {
-            None
-        }
+        Ok(())
     } else {
-        None
+        anyhow::bail!(InstallError::Error("Failed to get_the dependencies ...".to_owned()));
     }
 }
 
-pub fn check_if_breaks(config: &Config, pkgs: Option<&str>) -> Option<Vec<String>> {
-    let mut breaks = vec![];
-    if let Some(v) = pkgs {
-        if !v.is_empty() {
-            let version = std::cell::RefCell::new(None);
-            breaks.append(
-                &mut v
-                .split(',')
-                .map(|name| {
-                    *version.borrow_mut() = get_version(name);
-                    parse_name(name)
-                })
-                .map(|name| name.split(" | "))
-                .flatten()
-                .map(|name| name.trim())
-                .filter(|name| cache::check_installed(config, name).is_some())
-                .filter_map(|name| cache::cache_lookup(config, name).ok())
-                .flatten()
-                .map(|d| d.control.package)
-                .collect::<Vec<_>>()
-            );
-            breaks.dedup();
-            if !breaks.is_empty() { Some(breaks) } else { None }
-        } else {
-            None
-        }
+fn check_if_breaks(config: &Config, pkgs: &[String]) -> Result<()> {
+    if pkgs.iter()
+    .flat_map(|name| parse_name(name).trim().split(" | "))
+    .filter(|name| cache::check_installed(config, name).is_some())
+    .count() > 0 {
+        anyhow::bail!(InstallError::Breaks("The package you're trying to install will break/conflict with others".to_owned()));
     } else {
-        None
+        Ok(())
     }
 }
 
