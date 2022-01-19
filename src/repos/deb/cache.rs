@@ -63,15 +63,9 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 	control
 }
 
-fn cache_inter(config: &Config, name: &str, exact: bool, deps: bool) -> Result<CacheResult> {
+fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
-
-	let f = if deps {
-		ControlFile::from
-	} else {
-		ControlFile::new
-	};
 
 	for entry in fs::read_dir(cache.cache)? {
 		let entry = entry.unwrap();
@@ -93,7 +87,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool, deps: bool) -> Result<C
 		let mut control = control
 		.split("\n\n")
 		.filter(|pkg| pkg.contains(&format!("Package: {}", name)))
-		.map(|contents| f(config, contents))
+		.map(|contents| ControlFile::new(config, contents))
 		.filter_map(|pkg| pkg.ok());
 
 		let entry = entry.path()
@@ -164,7 +158,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool, deps: bool) -> Result<C
 #[inline]
 pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage>>> {
 	Ok (
-		cache_inter(config, name, false, false)?.pkgs
+		cache_inter(config, name, false)?.pkgs
 	)
 }
 
@@ -174,14 +168,7 @@ pub fn cache_search(config: &Config, name: &str) -> Result<Option<Vec<DebPackage
 #[inline]
 pub fn cache_lookup(config: &Config, name: &str) -> Result<Option<DebPackage>> {
 	Ok (
-		cache_inter(config, name, true, false)?.pkg
-	)
-}
-
-#[inline]
-pub fn cache_lookup_deps(config: &Config, name: &str) -> Result<Option<DebPackage>> {
-	Ok (
-		cache_inter(config, name, true, true)?.pkg
+		cache_inter(config, name, true)?.pkg
 	)
 }
 
@@ -207,7 +194,7 @@ Description: {}", pkg.package, pkg.version, pkg.priority, pkg.architecture, pkg.
 
 	if let Some(d) = pkg.depends {
 		let mut depends = String::new();
-		d.into_iter().for_each(|pkg| depends.push_str(&pkg.package));
+		d.into_iter().for_each(|pkg| depends.push_str(&pkg));
 		data.push_str(&format!("\nDepends: {}", depends));
 	}
 
