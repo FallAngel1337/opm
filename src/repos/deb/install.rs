@@ -1,5 +1,6 @@
 use indicatif::{HumanDuration, HumanBytes, MultiProgress,ProgressBar, ProgressStyle};
 use anyhow::{self, Result};
+use solvent::DepGraph;
 use std::{path::Path, io::Write};
 use std::time::Instant;
 
@@ -7,7 +8,7 @@ use std::time::Instant;
 /// Debian package install
 ///
 
-use crate::repos::{errors::InstallError, deb::package::{DebPackage, PkgKind}};
+use crate::repos::{errors::InstallError, deb::{package::{DebPackage, PkgKind}, dependencies::get_dependencies}};
 use crate::repos::config::Config;
 use super::{extract, download};
 use super::{cache, scripts};
@@ -15,6 +16,7 @@ use futures::future;
 use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
+// TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str) -> Result<()> {
     // crate::repos::lock::lock()?;
 
@@ -37,16 +39,26 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
         println!("Installing {} for debian ...", name);
         println!("Looking up for dependencies ...");
-        if let Some(mut pkg) = cache::cache_lookup_deps(config, name)? {
+        if let Some(pkg) = cache::cache_lookup(config, name)? {
             println!("Done");
+            let mut depgraph = DepGraph::new();
+
             let mut tasks = vec![];
             let mut new_packages = vec![pkg.control.clone()];
 
-            println!("Found {:?}", pkg.control.package);
-
-            if let Some(dependencies) = &mut pkg.control.depends {
-                new_packages.append(dependencies);
+            if let Some(depends) = pkg.control.clone().depends {
+                println!("Building dependency tree ...");
+                get_dependencies(config, pkg.control.clone(), Some(depends), &mut depgraph)?;
             }
+
+            for node in depgraph.dependencies_of(&pkg.control).unwrap().filter_map(|node| node.ok()) {
+                println!("NODE: {:#?}", node);
+                new_packages.push(node.to_owned());
+            }
+
+            
+
+            println!("Found {:?}", name);
 
             println!("Installing {} NEW package", new_packages.len());
             let mut total = 0;
