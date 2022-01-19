@@ -4,7 +4,7 @@ use crate::repos::{errors::ConfigError, config::Config};
 use std::{collections::HashMap, path::{PathBuf, Path}};
 use std::fs;
 
-use super::{cache, dependencies::{get_dependencies, check_if_breaks}};
+use super::cache;
 
 
 ///
@@ -80,7 +80,7 @@ pub struct ControlFile {
     pub architecture: String,
     pub maintainer: String,
     pub description: String,
-    pub depends: Option<Vec<ControlFile>>,
+    pub depends: Option<Vec<String>>,
     pub recommends: Option<Vec<String>>,
     pub suggests: Option<Vec<String>>,
     pub enhances: Option<Vec<String>>,
@@ -111,59 +111,7 @@ impl PkgPriority {
 
 // TODO: Improve this in the future
 impl ControlFile {
-    pub fn new(config: &Config, contents: &str) -> Result<Self> {
-        let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
-
-        for line in contents.lines() {
-            let line = line.trim();
-            let values = line.splitn(2, ':').map(|line| line.to_owned()).collect::<Vec<_>>();
-            map.insert(
-                values.get(0).map(|v| v.to_owned()),
-                values.get(1).map(|v| v.to_owned())
-            );
-        }
-
-        Ok(
-            Self {
-                package: Self::try_get(&map, "Package")?,
-                version: Self::try_get(&map, "Version")?,
-                architecture: Self::try_get(&map, "Architecture")?,
-                maintainer: Self::try_get(&map, "Maintainer")?,
-                description: Self::try_get(&map, "Description")?,
-                priority: Self::try_get(&map, "Priority").unwrap_or_default(),
-                depends: None,
-                recommends: None,
-                suggests: None,
-                enhances: None,
-                pre_depends: None,
-                breaks: None,
-                conflicts: None,
-                conffiles: None,
-                filename: Self::try_get(&map, "Filename").unwrap_or_default(),
-                size: Self::try_get(&map, "Size").unwrap_or_default(),
-                md5sum: Self::try_get(&map, "MD5sum").unwrap_or_default(),
-                sha1: Self::try_get(&map, "SHA1").unwrap_or_default(),
-                sha256: Self::try_get(&map, "SHA256").unwrap_or_default(),
-                sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
-            }
-        )
-    }
-
-    pub fn from_info(config: &Config, info: &Info) -> Result<Option<Self>> {
-        if let Some(control) = &info.control {
-            let mut result = Self::from(config, &fs::read_to_string(&control)?)?;
-            
-            if let Some(conffiles) = &info.conffiles {
-                result.conffiles = Some(fs::read_to_string(conffiles)?.lines().map(|line| line.trim().to_string()).collect::<Vec<_>>());
-            }
-
-            Ok(Some(result))
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn from(config: &Config, contents: &str) -> Result<Self> {        
+    pub fn new(config: &Config, contents: &str) -> Result<Self> {        
         let mut map: HashMap<Option<String>, Option<String>> = HashMap::new();
 
         for line in contents.lines() {
@@ -185,12 +133,12 @@ impl ControlFile {
                 // Should be like the others
                 // But, when reading /var/lib/dpkg/status it does not have those fields
                 priority: Self::try_get(&map, "Priority").unwrap_or_default(),
-                depends: get_dependencies(config, Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
+                depends: Self::split_optional(Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
                 recommends: Self::split_optional(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
                 suggests: Self::split_optional(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
                 enhances: Self::split_optional(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
                 pre_depends: Self::split_optional(Some(&Self::try_get(&map, "Pre-Depends").unwrap_or_default())),
-                breaks: check_if_breaks(config, Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
+                breaks: Self::split_optional(Some(&Self::try_get(&map, "Breaks").unwrap_or_default())),
                 conflicts: Self::split_optional(Some(&Self::try_get(&map, "Conflicts").unwrap_or_default())),
                 conffiles: None,
                 filename: Self::try_get(&map, "Filename").unwrap_or_default(),
@@ -201,6 +149,20 @@ impl ControlFile {
                 sha512: Self::try_get(&map, "SHA512").unwrap_or_default(),
             }
         )
+    }
+
+    pub fn from_info(config: &Config, info: &Info) -> Result<Option<Self>> {
+        if let Some(control) = &info.control {
+            let mut result = Self::new(config, &fs::read_to_string(&control)?)?;
+            
+            if let Some(conffiles) = &info.conffiles {
+                result.conffiles = Some(fs::read_to_string(conffiles)?.lines().map(|line| line.trim().to_string()).collect::<Vec<_>>());
+            }
+
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
     }
 
     // TODO: Maybe I need to make this easier to read
@@ -293,7 +255,7 @@ Homepage: https://www.freedesktop.org/wiki/Software/AccountsService/
 Description: query and manipulate user account information
 Task: standard
 Description-md5: 8aeed0a03c7cd494f0c4b8d977483d7e";
-		ControlFile::from(&config, data).unwrap();
+		ControlFile::new(&config, data).unwrap();
 	}
 
 }
