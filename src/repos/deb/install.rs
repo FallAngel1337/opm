@@ -18,7 +18,7 @@ use fs_extra;
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
-    // crate::repos::lock::lock()?;
+    crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
@@ -104,7 +104,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
                 scripts::execute_install_pos(&info)?;
 
                 finish(Path::new(&data.control_path))?;
-                // cache::add_package(config, pkg)?;
+                cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
             println!("Installed {} in {}", name, HumanDuration(duration));
