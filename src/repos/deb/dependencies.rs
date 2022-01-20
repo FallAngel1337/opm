@@ -45,7 +45,6 @@ fn check_version(pkgv: &str, depv: &str) -> bool {
 }
 
 pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<String>>, depgraph: &mut DepGraph<Option<ControlFile>>, force: bool) -> Result<()> {
-    println!("{} depends on {:?}", pkg.package, deps);
     if let Some(deps) = deps {
         if !deps.is_empty() {
             for name in deps.iter()
@@ -72,8 +71,6 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
                     }
                     
                     if depgraph.dependencies_of(&Some(deb.control.clone())).is_err() {
-                        println!("NOT ON GRAPH => {:?}", deb.control.package);  
-                        // depgraph.dependencies_of(&pkg).is_err();
                         depgraph.register_dependency(Some(pkg.clone()), Some(deb.control.clone()));
     
                         if deb.control.depends.is_some() {
