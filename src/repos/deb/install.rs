@@ -17,8 +17,8 @@ use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
-pub async fn install(config: &Config, name: &str) -> Result<()> {
-    crate::repos::lock::lock()?;
+pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
+    // crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
@@ -39,20 +39,22 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
 
         println!("Installing {} for debian ...", name);
         println!("Looking up for dependencies ...");
+
         if let Some(pkg) = cache::cache_lookup(config, name)? {
             println!("Done");
             let mut depgraph = DepGraph::new();
-
             let mut tasks = vec![];
 
-            if let Some(depends) = pkg.control.clone().depends {
+            if let Some(_depends) = pkg.control.clone().depends {
                 println!("Building dependency tree ...");
-                get_dependencies(config, pkg.control.clone(), Some(depends), &mut depgraph)?;
             }
+            get_dependencies(config, pkg.control.clone(), pkg.control.clone().depends, &mut depgraph, force)?;
 
-            let pkgs = depgraph.dependencies_of(&pkg.control).unwrap()
-                .filter_map(|node| node.ok()).cloned()
+            let pkgs = depgraph.dependencies_of(&Some(pkg.control)).unwrap()
+                .filter_map(|node| node.ok())
+                .flatten().cloned()
                 .collect::<Vec<_>>();
+
             println!("Installing {} NEW package", pkgs.len());
 
             let mut total = 0;
@@ -65,11 +67,10 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
             println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));
             print!("Do you want to continue? [Y/n] ");
             let mut answer = String::new();
-            
             std::io::stdout().flush()?;
             std::io::stdin().read_line(&mut answer)?;
-            
             let answer = answer.to_ascii_lowercase().trim().chars().next().unwrap();
+
             if answer != 'y' {
                 eprintln!("Exiting installation process...");
                 anyhow::bail!(InstallError::Interrupted);
@@ -105,7 +106,7 @@ pub async fn install(config: &Config, name: &str) -> Result<()> {
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
                 finish(Path::new(&data.control_path), &pkg.control.package)?;
-                cache::add_package(config, pkg)?;
+                // cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
             println!("Installed {} in {}s", name, HumanDuration(duration));
@@ -130,7 +131,7 @@ fn finish(p: &Path, name: &str) -> Result<()> {
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
-        match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
+        match fs_extra::dir::copy(&path, std::path::Path::new("/tmp/fake_root"), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
                 ErrorKind::NotFound => anyhow::bail!(InstallError::BrokenPackage(name.to_owned())),
