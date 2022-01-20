@@ -4,7 +4,6 @@ use sha2::{Sha256, Sha512, Digest};
 use sha1::Sha1;
 use super::package::DebPackage;
 
-// TODO: Made this code less... worst
 pub fn verify_sig<T: AsRef<[u8]>>(pkg: &DebPackage, data: T) -> Result<()> {
     let control = &pkg.control;
     

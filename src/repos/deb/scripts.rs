@@ -6,7 +6,7 @@ use super::package::Info;
 
 ///
 /// Pre/Post install/remove scripts execution
-/// TODO: Make this better to execute
+///
 pub fn execute_install_pre(i: &Info) -> Result<()>{
     if let Some(preinst) = &i.preinst {
         print!("Running pre-install script ...");
