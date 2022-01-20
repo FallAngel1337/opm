@@ -7,11 +7,11 @@ use super::utils::PackageFormat;
 use super::config::Config;
 
 #[tokio::main]
-pub async fn install(config: &mut Config, name: &str) -> Result<()> {
+pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()> {
     match PackageFormat::from(&config.fmt) {
         PackageFormat::Deb => {
             use super::deb;
-            deb::install(config, name).await?; 
+            deb::install(config, name, force).await?; 
         }
         PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");
