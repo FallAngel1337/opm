@@ -26,7 +26,13 @@ fn main() {
 						.arg(Arg::with_name("package")
 						.takes_value(true)
 						.index(1)
-						.required(true)),
+						.required(true))
+						.arg(Arg::with_name("force")
+							.short("f")
+							.long("force")
+							.takes_value(false)
+							.help("Force the installation of pacakages that may can break others")
+					),
 					SubCommand::with_name("update")
 						.about("Update opm's packages cache"),
 					SubCommand::with_name("remove")
@@ -59,7 +65,8 @@ fn main() {
 	};
 
     if let Some(package) = matches.subcommand_matches("install") {
-        repos::install(&mut config, package.value_of("package").unwrap()).unwrap_or_else(|err| {
+		let force = !matches!(matches.occurrences_of("force"), 0);
+        repos::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
             eprintln!("Got an error during installation :: {}", err);
             process::exit(1);
         });
