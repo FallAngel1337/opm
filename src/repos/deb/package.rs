@@ -162,10 +162,8 @@ impl ControlFile {
         }
     }
 
-    // TODO: Maybe I need to make this easier to read
     fn try_get(hashmap: &HashMap<String, String>, field: &str) -> Result<String> {
-        let value = hashmap.get(field);
-        if let Some(v) = value {
+        if let Some(v) = hashmap.get(field) {
             Ok (v.trim().to_owned())
         } else {
             bail!(ConfigError { msg: format!("Invalid debain's control file! Missing \"{}\" field", field) });
