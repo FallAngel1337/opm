@@ -18,7 +18,7 @@ use fs_extra;
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
-    // crate::repos::lock::lock()?;
+    crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
@@ -45,9 +45,6 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
             let mut depgraph = DepGraph::new();
             let mut tasks = vec![];
 
-            if let Some(_depends) = pkg.control.clone().depends {
-                println!("Building dependency tree ...");
-            }
             get_dependencies(config, pkg.control.clone(), pkg.control.clone().depends, &mut depgraph, force)?;
 
             let pkgs = depgraph.dependencies_of(&Some(pkg.control)).unwrap()
@@ -106,7 +103,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
                 finish(Path::new(&data.control_path), &pkg.control.package)?;
-                // cache::add_package(config, pkg)?;
+                cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
             println!("Installed {} in {}s", name, HumanDuration(duration));
@@ -131,12 +128,13 @@ fn finish(p: &Path, name: &str) -> Result<()> {
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
-        match fs_extra::dir::copy(&path, std::path::Path::new("/tmp/fake_root"), &options) {
+        match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
                 ErrorKind::NotFound => anyhow::bail!(InstallError::BrokenPackage(name.to_owned())),
                 ErrorKind::InvalidFolder | ErrorKind::AlreadyExists => continue,
-                _ => panic!("{}", e)
+                // _ => eprintln!("{} -> {:?}", e, path)
+                _ => panic!("{} -> {:?}", e, path)
             }
         }
     }

@@ -19,7 +19,7 @@ pub async fn download(config: &Config, pkg: DebPackage, pb: ProgressBar) -> Resu
 
     let name = control.filename.split('/').last().unwrap().to_string();
     let mut content = Vec::with_capacity(size as usize);
-    let fname = format!("{}/{}", config.tmp, name);
+    let fname = format!("{}/{}", config.archive, name);
 
     let (mut stream, mut downloaded) = (response.bytes_stream(), 0_u64);
 
