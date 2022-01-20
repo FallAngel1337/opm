@@ -12,6 +12,7 @@ pub struct Config {
 	pub db: String,
 	pub rls: String,
 	pub tmp: String,
+	pub archive: String,
 	pub fmt: String,
 
 	pub use_pre_existing_cache: bool,
@@ -29,6 +30,7 @@ impl Config {
 				cache: format!("{}/cache/pkg", root),
 				rls: format!("{}/cache/rls", root),
 				tmp: format!("{}/tmp", root),
+				archive: format!("{}/archive", root),
 				info: format!("{}/info", root),
 				db: format!("{}/db", root),
 				fmt: fmt.to_owned(),
@@ -67,6 +69,14 @@ impl Config {
 		}
 
 		match fs::create_dir_all(&self.tmp) {
+			Ok(_) => (),
+			Err(e) => match e.kind() {
+			ErrorKind::AlreadyExists => (),
+				_ => panic!("Some error occurred {}", e)
+			}
+		}
+
+		match fs::create_dir_all(&self.archive) {
 			Ok(_) => (),
 			Err(e) => match e.kind() {
 			ErrorKind::AlreadyExists => (),

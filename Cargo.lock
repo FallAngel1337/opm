@@ -732,6 +732,7 @@ dependencies = [
  "serde_json",
  "sha-1",
  "sha2",
+ "solvent",
  "tar",
  "tokio",
  "xz2",
@@ -1059,6 +1060,12 @@ dependencies = [
  "libc",
  "winapi",
 ]
+
+[[package]]
+name = "solvent"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14a50198e546f29eb0a4f977763c8277ec2184b801923c3be71eeaec05471f16"
 
 [[package]]
 name = "strsim"
