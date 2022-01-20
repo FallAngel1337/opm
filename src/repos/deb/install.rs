@@ -18,7 +18,7 @@ use fs_extra;
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
-    crate::repos::lock::lock()?;
+    // crate::repos::lock::lock()?;
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
@@ -102,11 +102,11 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
                 println!("Installing {} ...", pkg.control.package);    
                 scripts::execute_install_pre(&info)?;
                 scripts::execute_install_pos(&info)?;
-                finish(Path::new(&data.control_path), &pkg.control.package)?;
-                cache::add_package(config, pkg)?;
+                finish(Path::new(&data.control_path))?;
+                // cache::add_package(config, pkg)?;
             }
             let duration = start.elapsed();
-            println!("Installed {} in {}s", name, HumanDuration(duration));
+            println!("Installed {} in {}", name, HumanDuration(duration));
             fs_extra::dir::create(&config.tmp, true)?;
 
             handle.await?;
@@ -120,7 +120,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
     Ok(())
 }
 
-fn finish(p: &Path, name: &str) -> Result<()> {
+fn finish(p: &Path) -> Result<()> {
     use fs_extra::error::ErrorKind;
     let options = fs_extra::dir::CopyOptions::new();
     
@@ -128,14 +128,10 @@ fn finish(p: &Path, name: &str) -> Result<()> {
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
-        match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
+        match fs_extra::dir::copy(&path, std::path::Path::new("/tmp/fake_root"), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
-                ErrorKind::NotFound => {
-                    eprintln!("{} -> {:?}", e, path);
-                    anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
-                },
-                ErrorKind::InvalidFolder | ErrorKind::AlreadyExists => continue,
+                ErrorKind::InvalidFolder | ErrorKind::AlreadyExists | ErrorKind::NotFound => continue,
                 _ => panic!("{} -> {:?}", e, path)
             }
         }
