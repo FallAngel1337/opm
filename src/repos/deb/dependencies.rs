@@ -82,6 +82,8 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
                     anyhow::bail!(InstallError::Error("No package was found ...".to_owned()));
                 }
             }
+        } else {
+            depgraph.register_dependency(Some(pkg), None);    
         }
         Ok(())
     } else {
