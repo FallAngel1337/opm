@@ -45,8 +45,8 @@ pub fn extract(config: &Config, path: &str, name: &str) -> Result<Package> {
     let info_dest = format!("{}/{}", config.info, name);
     let data_dest = config.tmp.to_string();
 
-    match (fs::create_dir_all(&info_dest), fs::create_dir_all(&data_dest)) {
-        (Ok(()), Ok(())) => (),
+    match fs::create_dir_all(&info_dest) {
+        Ok(()) => (),
         _ => panic!("Could not create the directories")
     }
 

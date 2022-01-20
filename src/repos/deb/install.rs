@@ -107,6 +107,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
             }
             let duration = start.elapsed();
             println!("Installed {} in {}s", name, HumanDuration(duration));
+            fs_extra::dir::create(&config.tmp, true)?;
 
             handle.await?;
 
@@ -121,8 +122,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
 
 fn finish(p: &Path, name: &str) -> Result<()> {
     use fs_extra::error::ErrorKind;
-    let mut options = fs_extra::dir::CopyOptions::new();
-    options.overwrite = true;
+    let options = fs_extra::dir::CopyOptions::new();
     
     for path in std::fs::read_dir(p)?
         .filter_map(|entry| entry.ok())
@@ -131,9 +131,11 @@ fn finish(p: &Path, name: &str) -> Result<()> {
         match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
-                ErrorKind::NotFound => anyhow::bail!(InstallError::BrokenPackage(name.to_owned())),
+                ErrorKind::NotFound => {
+                    eprintln!("{} -> {:?}", e, path);
+                    anyhow::bail!(InstallError::BrokenPackage(name.to_owned()))
+                },
                 ErrorKind::InvalidFolder | ErrorKind::AlreadyExists => continue,
-                // _ => eprintln!("{} -> {:?}", e, path)
                 _ => panic!("{} -> {:?}", e, path)
             }
         }
