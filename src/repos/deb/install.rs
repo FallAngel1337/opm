@@ -16,14 +16,9 @@ use futures::future;
 use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
-<<<<<<< HEAD
-pub async fn install(config: &Config, name: &str) -> Result<()> {
-    crate::repos::lock::lock()?;
-=======
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
     // crate::repos::lock::lock()?;
->>>>>>> dev
 
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
@@ -145,4 +140,3 @@ fn finish(p: &Path) -> Result<()> {
 
     Ok(())
 }
-
