@@ -12,7 +12,7 @@ fn main() {
 
     let matches = App::new("Oxidized Package Manager")
 				.setting(AppSettings::ArgRequiredElseHelp)
-				.version("v1.0-beta")
+				.version("v1.5-beta")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A package manager fully written in Rust")
 				.arg(Arg::with_name("list")
