@@ -6,11 +6,10 @@ fn get_answer() -> Result<String> {
     let mut answer = String::new();
     io::stdout().flush()?;
     io::stdin().read_line(&mut answer)?;
-    // Ok(answer.to_ascii_lowercase().trim().chars().next().unwrap())
     Ok(answer)
 }
 
-pub fn setup() -> Result<Config> {
+pub fn setup(pkg_fmt: Option<&str>) -> Result<Config> {
     #[allow(deprecated)]
     let home = std::env::home_dir()
         .unwrap()
@@ -20,31 +19,32 @@ pub fn setup() -> Result<Config> {
         
     let opm_dir = format!("{}/.opm/", home);
     let config_file = format!("{}/config.toml", opm_dir);
-    let config;
 
-    if !Path::new(&config_file).exists() {
+    if let Some(pkg_fmt) = pkg_fmt {
+        Ok(Config::new(pkg_fmt)?)
+    } else if !Path::new(&config_file).exists() {
         println!("Entering setup mode ...");
-        match PackageFormat::get_format()? {
+        let config = match PackageFormat::get_format()? {
             PackageFormat::Deb => {
                 print!("Are you on a Debian-based distro? [y/n] ");
                 if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
-                    config = Config::new("deb")?
+                    Config::new("deb")?
                 } else {
                     print!("Insert the package format: ");
-                    config = Config::new(get_answer()?.trim())?
+                    Config::new(get_answer()?.trim())?
                 }
             },
             PackageFormat::Rpm => {
                 print!("Are you on a RHEL-based distro? [y/n] ");
                 if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
-                    config = Config::new("rpm")?
+                    Config::new("rpm")?
                 } else {
                     print!("Insert the package format: ");
-                    config = Config::new(get_answer()?.trim())?
+                    Config::new(get_answer()?.trim())?
                 }
             }
             PackageFormat::Other => panic!("Unrecognized package"),
-        }
+        };
         
         if !Path::new(&opm_dir).exists() {
             config.setup()?;
@@ -54,12 +54,11 @@ pub fn setup() -> Result<Config> {
         let config_file = format!("{}config.toml", opm_dir);
         println!("Saving config file to {}", config_file);
         config.save(&config_file);
-        
-    } else {
-        config = Config::from(&config_file);
-    }
 
-    Ok(config)
+        Ok(config)
+    } else {
+        Ok(Config::from(&config_file))
+    }
 }
 
 #[allow(deprecated)]
