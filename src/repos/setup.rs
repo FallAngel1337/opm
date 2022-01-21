@@ -1,33 +1,60 @@
 use anyhow::Result;
-use std::{path::Path, io::ErrorKind};
+use std::{path::Path, io::{self, ErrorKind, Write}};
 use super::{config::Config, utils::PackageFormat};
 
-#[allow(deprecated)]
+fn get_answer() -> Result<String> {
+    let mut answer = String::new();
+    io::stdout().flush()?;
+    io::stdin().read_line(&mut answer)?;
+    // Ok(answer.to_ascii_lowercase().trim().chars().next().unwrap())
+    Ok(answer)
+}
+
 pub fn setup() -> Result<Config> {
-    let home = std::env::home_dir().unwrap()
-    .into_os_string().into_string().unwrap();
+    #[allow(deprecated)]
+    let home = std::env::home_dir()
+        .unwrap()
+        .into_os_string()
+        .into_string()
+        .unwrap();
+        
     let root = format!("{}/.opm/", home);
     let config_file = format!("{}/config.json", root);
-    let config ;
+    let config;
 
     if Path::new(&config_file).exists() {
         config = Config::from(&config_file);
-    } else if let Some(fmt) = PackageFormat::get_format() {
-        match fmt {
-            PackageFormat::Deb => config = Config::new("deb")?,
-            PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
+    } else {
+        println!("Entering setup mode ...");
+        match PackageFormat::get_format()? {
+            PackageFormat::Deb => {
+                print!("Are you on a Debian-based distro? [y/n] ");
+                if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
+                    config = Config::new("deb")?
+                } else {
+                    print!("Insert the package format: ");
+                    config = Config::new(get_answer()?.trim())?
+                }
+            },
+            PackageFormat::Rpm => {
+                print!("Are you on a RHEL-based distro? [y/n] ");
+                if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
+                    config = Config::new("rpm")?
+                } else {
+                    print!("Insert the package format: ");
+                    config = Config::new(get_answer()?.trim())?
+                }
+            }
             PackageFormat::Other => panic!("Unrecognized package"),
         }
-    } else {
-        eprintln!("Consider define `PKG_FMT` environment variable!");
-        std::process::exit(1);
-    }
-    
-    if !Path::new(&config.root).exists() {
+        
         config.setup()?;
+        println!("Done");
+        let config_file = format!("{}config.json", root);
+        println!("Saving config file to {}", config_file);
+        config.save(&config_file);
     }
 
-    config.save(&format!("{}/config.json", root));
     Ok(config)
 }
 
