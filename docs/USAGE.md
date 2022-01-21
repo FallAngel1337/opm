@@ -31,13 +31,11 @@ $ opm remove <package_name>
 ```
 
 ### Package Search
-You can search for a package by it's name
+You can use a regex to search for a package
 ```
-$ opm search <package_name>
+$ opm search <expression>
 ```
-This will bring you a list with names that `contains` the name you've searched for.
-
-E.g.: `tmux` can bring `python3-tmux`
+E.g.: `$ opm search "^lib.*name"`
 
 ### Package Listing
 All installed packages can be listed by using the `--list/-l` option
