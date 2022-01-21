@@ -4,11 +4,11 @@ use crate::repos::errors::CacheError;
 use std::{fs, io::prelude::*};
 use regex::Regex;
 
-use super::{
-	package::{ControlFile, DebPackage, PkgKind}
-};
+use super::package::{ControlFile, DebPackage, PkgKind};
 
 const DEBIAN_CACHE: &str = "/var/lib/apt/lists/";
+
+#[derive(Debug)]
 struct Cache<'a> {
 	cache: &'a str
 }
@@ -51,7 +51,7 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 	} else {
 		&config.db
 	};
-
+	
 	let control = fs::read_to_string(db).unwrap();
 
 	let control = control
@@ -67,7 +67,6 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
-	let re = Regex::new(name)?;
 
 	for entry in fs::read_dir(cache.cache)? {
 		let entry = entry.unwrap();
@@ -88,10 +87,8 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 
 		let mut control = control
 		.split("\n\n")
-		// .filter(|pkg| pkg.contains(name))
 		.map(|contents| ControlFile::new(config, contents))
-		.filter_map(|pkg| pkg.ok())
-		.filter(|pkg| re.is_match(&pkg.package));
+		.filter_map(|pkg| pkg.ok());
 
 		let entry = entry.path()
 		.into_os_string()
@@ -126,10 +123,10 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 				)
 			}
 		} else {
-			let mut pkgs = vec![];
+			let re = Regex::new(name)?;
 
-			pkgs.append(
-				&mut control
+			let pkgs = control
+				.filter(|pkg| re.is_match(&pkg.package))
 				.map(|mut pkg| {
 					let url = format!("{}/{}", url, &pkg.filename);
 					pkg.set_filename(&url);
@@ -138,8 +135,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 						kind: PkgKind::Binary
 					}
 				})
-				.collect::<Vec<_>>()
-			);
+				.collect::<Vec<_>>();
 
 			if !pkgs.is_empty() {
 				return Ok(
