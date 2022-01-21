@@ -6,14 +6,13 @@ use std::fs;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-	pub root: String,
-	pub cache: String,
-	pub info: String,
-	pub db: String,
-	pub rls: String,
-	pub tmp: String,
-	pub archive: String,
 	pub pkg_fmt: String,
+	pub cache: String,
+	pub rls: String,
+	pub archive: String,
+	pub info: String,
+	pub tmp: String,
+	pub db: String,
 
 	pub use_pre_existing_cache: bool,
 	pub use_pre_existing_db: bool
@@ -24,30 +23,30 @@ impl Config {
 	pub fn new(pkg_fmt: &str) -> Result<Self> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
-		let root = format!("{}/.opm/{}", home, pkg_fmt);
+		let dir = format!("{}/.opm/{}", home, pkg_fmt);
+		
 		Ok(
 			Self {
-				cache: format!("{}/cache/pkg", root),
-				rls: format!("{}/cache/rls", root),
-				tmp: format!("{}/tmp", root),
-				archive: format!("{}/archive", root),
-				info: format!("{}/info", root),
-				db: format!("{}/db", root),
+				cache: format!("{}/cache/pkg", dir),
+				rls: format!("{}/cache/rls", dir),
+				tmp: format!("{}/tmp", dir),
+				archive: format!("{}/archive", dir),
+				info: format!("{}/info", dir),
+				db: format!("{}/db", dir),
 				pkg_fmt: pkg_fmt.to_owned(),
 				use_pre_existing_cache: false,
 				use_pre_existing_db: false,
-				root
 			}
 		)
 	}
 
 	pub fn from(file: &str) -> Self {
 		let contents = fs::read_to_string(file).unwrap();
-		serde_json::from_str(&contents).unwrap()
+		toml::from_str(&contents).unwrap()
 	}
 
 	pub fn save(&self, to: &str) {
-		let contents = serde_json::to_string(self).unwrap();
+		let contents = toml::to_string(self).unwrap();
 		fs::write(to, contents).unwrap();
 	}
 

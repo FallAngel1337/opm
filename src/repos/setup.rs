@@ -18,13 +18,11 @@ pub fn setup() -> Result<Config> {
         .into_string()
         .unwrap();
         
-    let root = format!("{}/.opm/", home);
-    let config_file = format!("{}/config.json", root);
+    let opm_dir = format!("{}/.opm/", home);
+    let config_file = format!("{}/config.toml", opm_dir);
     let config;
 
-    if Path::new(&config_file).exists() {
-        config = Config::from(&config_file);
-    } else {
+    if !Path::new(&config_file).exists() {
         println!("Entering setup mode ...");
         match PackageFormat::get_format()? {
             PackageFormat::Deb => {
@@ -48,11 +46,17 @@ pub fn setup() -> Result<Config> {
             PackageFormat::Other => panic!("Unrecognized package"),
         }
         
-        config.setup()?;
+        if !Path::new(&opm_dir).exists() {
+            config.setup()?;
+        }
+
         println!("Done");
-        let config_file = format!("{}config.json", root);
+        let config_file = format!("{}config.toml", opm_dir);
         println!("Saving config file to {}", config_file);
         config.save(&config_file);
+        
+    } else {
+        config = Config::from(&config_file);
     }
 
     Ok(config)
