@@ -13,7 +13,7 @@ pub struct Config {
 	pub rls: String,
 	pub tmp: String,
 	pub archive: String,
-	pub fmt: String,
+	pub pkg_fmt: String,
 
 	pub use_pre_existing_cache: bool,
 	pub use_pre_existing_db: bool
@@ -21,10 +21,10 @@ pub struct Config {
 
 #[allow(deprecated)]
 impl Config {
-	pub fn new(fmt: &str) -> Result<Self> {
+	pub fn new(pkg_fmt: &str) -> Result<Self> {
 		let home = env::home_dir().unwrap()
 			.into_os_string().into_string().unwrap();
-		let root = format!("{}/.opm/{}", home, fmt);
+		let root = format!("{}/.opm/{}", home, pkg_fmt);
 		Ok(
 			Self {
 				cache: format!("{}/cache/pkg", root),
@@ -33,7 +33,7 @@ impl Config {
 				archive: format!("{}/archive", root),
 				info: format!("{}/info", root),
 				db: format!("{}/db", root),
-				fmt: fmt.to_owned(),
+				pkg_fmt: pkg_fmt.to_owned(),
 				use_pre_existing_cache: false,
 				use_pre_existing_db: false,
 				root
@@ -95,11 +95,11 @@ impl Config {
 		match fs::File::create(&self.db) {
 			Ok(_) => {
 				use super::utils::PackageFormat;
-				match PackageFormat::from(&self.fmt) {
+				match PackageFormat::from(&self.pkg_fmt) {
 					PackageFormat::Deb => {
 						use super::deb::database::DEBIAN_DATABASE;
 						fs::copy(DEBIAN_DATABASE, &self.db)?;
-					}
+					},
 					PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
 					PackageFormat::Other => panic!("Unrecognized package"),
 				}

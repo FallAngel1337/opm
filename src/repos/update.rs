@@ -8,7 +8,7 @@ use super::config::Config;
 
 #[tokio::main]
 pub async fn update(config: &mut Config) -> Result<()> {
-    match PackageFormat::from(&config.fmt) {
+    match PackageFormat::from(&config.pkg_fmt) {
         PackageFormat::Deb => {
             use super::deb;
             let repos = deb::sources::DebianSource::new()?;
@@ -26,7 +26,7 @@ pub async fn update(config: &mut Config) -> Result<()> {
 }
 
 pub fn clear(config: &Config) -> Result<()> {
-    match PackageFormat::from(&config.fmt) {
+    match PackageFormat::from(&config.pkg_fmt) {
         PackageFormat::Deb => {
             use super::deb;
             deb::clear(config)?;

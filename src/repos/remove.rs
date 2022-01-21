@@ -2,7 +2,7 @@ use anyhow::Result;
 use super::{config::Config, utils::PackageFormat};
 
 pub fn remove(config: &Config, name: &str, purge: bool) -> Result<()> {
-    match PackageFormat::from(&config.fmt) {
+    match PackageFormat::from(&config.pkg_fmt) {
         PackageFormat::Deb => {
             use super::deb;
             deb::remove(config, name, purge)?;

@@ -3,7 +3,7 @@ use super::utils::PackageFormat;
 use super::config::Config;
  
 pub fn list_installed(config: &Config) {
-	match PackageFormat::from(&config.fmt) {
+	match PackageFormat::from(&config.pkg_fmt) {
 		PackageFormat::Deb => {
 			use super::deb;
 			let dump = deb::db_dump(config);
@@ -26,7 +26,7 @@ pub fn list_installed(config: &Config) {
 
 
 pub fn search(config: &mut Config, name: &str) -> Result<()> {
-	match PackageFormat::from(&config.fmt) {
+	match PackageFormat::from(&config.pkg_fmt) {
 		PackageFormat::Deb => {
 			use super::deb;
 			let result = deb::cache::cache_search(config, name)?;

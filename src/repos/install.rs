@@ -8,7 +8,7 @@ use super::config::Config;
 
 #[tokio::main]
 pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()> {
-    match PackageFormat::from(&config.fmt) {
+    match PackageFormat::from(&config.pkg_fmt) {
         PackageFormat::Deb => {
             use super::deb;
             deb::install(config, name, force).await?; 
