@@ -3,11 +3,12 @@ use opm::repos;
 use std::process;
 
 fn main() {
-	let mut config = repos::setup().unwrap_or_else(|err| {
+	let mut config = repos::setup(None).unwrap_or_else(|err| {
 		eprintln!("Could not setup the package manager due {}", err);
 		repos::roll_back();
 		process::exit(1);
 	});
+
 
     let matches = App::new("Oxidized Package Manager")
 				.setting(AppSettings::ArgRequiredElseHelp)
@@ -24,15 +25,20 @@ fn main() {
 					SubCommand::with_name("install")
 						.about("Install a package")
 						.arg(Arg::with_name("package")
-						.takes_value(true)
-						.index(1)
-						.required(true))
+							.takes_value(true)
+							.index(1)
+							.required(true))
 						.arg(Arg::with_name("force")
 							.short("f")
 							.long("force")
 							.takes_value(false)
-							.help("Force the installation of pacakages that may can break others")
-					),
+							.help("Force the installation of pacakages that may can break others"))
+						.arg(Arg::with_name("format")
+							.short("w")
+							.long("format")
+							.takes_value(true)
+							// .index(2)
+							.help("Use a different package format")),
 					SubCommand::with_name("update")
 						.about("Update opm's packages cache"),
 					SubCommand::with_name("remove")
@@ -66,6 +72,13 @@ fn main() {
 
     if let Some(package) = matches.subcommand_matches("install") {
 		let force = !matches!(matches.occurrences_of("force"), 0);
+
+		config = repos::setup(package.value_of("format")).unwrap_or_else(|err| {
+			eprintln!("Could not setup the package manager due {}", err);
+			repos::roll_back();
+			process::exit(1);
+		});
+
         repos::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
             eprintln!("Got an error during installation :: {}", err);
             process::exit(1);
