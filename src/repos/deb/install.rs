@@ -18,8 +18,6 @@ use fs_extra;
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
-    crate::repos::lock::lock()?;
-
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
         let (pkg, info) = (pkg.0, pkg.1);

@@ -8,6 +8,8 @@ use super::config::Config;
 
 #[tokio::main]
 pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()> {
+    crate::repos::lock::lock()?;
+
     match PackageFormat::from(&config.pkg_fmt) {
         PackageFormat::Deb => {
             use super::deb;
