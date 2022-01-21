@@ -2,6 +2,7 @@ use anyhow::{self, Result, Context};
 use crate::repos::{config::Config, errors::InstallError};
 use crate::repos::errors::CacheError;
 use std::{fs, io::prelude::*};
+use regex::Regex;
 
 use super::{
 	package::{ControlFile, DebPackage, PkgKind}
@@ -66,6 +67,7 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
+	let re = Regex::new(name)?;
 
 	for entry in fs::read_dir(cache.cache)? {
 		let entry = entry.unwrap();
@@ -86,9 +88,10 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 
 		let mut control = control
 		.split("\n\n")
-		.filter(|pkg| pkg.contains(&format!("Package: {}", name)))
+		// .filter(|pkg| pkg.contains(name))
 		.map(|contents| ControlFile::new(config, contents))
-		.filter_map(|pkg| pkg.ok());
+		.filter_map(|pkg| pkg.ok())
+		.filter(|pkg| re.is_match(&pkg.package));
 
 		let entry = entry.path()
 		.into_os_string()
@@ -246,7 +249,7 @@ mod test {
 
 	#[test]
 	fn get_cache_test() {
-		let config = repos::setup().unwrap();
+		let config = repos::setup(None).unwrap();
 		dbg!("[get_cache_test]", &config);
 		Cache::get_cache(&config).unwrap();
 	}
@@ -254,7 +257,7 @@ mod test {
 	#[test]
 	#[ignore]
 	fn cache_search_test() {
-		let config = repos::setup().unwrap();
+		let config = repos::setup(None).unwrap();
 		let pkg = cache_search(&config, "invalidPackage0101").unwrap();
 		// dbg!("PKG = {:?}", &pkg);
 		dbg!("[cache_search_test]", &config);
@@ -264,7 +267,7 @@ mod test {
 	#[test]
 	#[ignore]
 	fn db_dump_test() {
-		let config = repos::setup().unwrap();
+		let config = repos::setup(None).unwrap();
 		// THIS MAY NOT BE GOOD, IF YOU HAVE AN EMPTY DATABASED IT'LL FAIL
 		dbg!("[db_dump_test]", &config);
 		assert!(db_dump(&config).len() > 0);
@@ -274,7 +277,7 @@ mod test {
 	#[test]
 	#[ignore]
 	fn cache_lookup_test() {
-		let config = repos::setup().unwrap();
+		let config = repos::setup(None).unwrap();
 		dbg!("[cache_lookup_test]", &config);
 		let pkg = cache_lookup(&config, "invalidPackage0101").unwrap();
 		assert!(pkg.is_none());
