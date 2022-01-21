@@ -57,8 +57,7 @@ $ docker container exec -it opm_test bash
 
 ## Usage
 ```
-$ opm --help
-Oxidized Package Manager v1.0-beta
+Oxidized Package Manager v1.5-beta
 FallAngel <fallangel@protonmail.com>
 A package manager fully written in Rust
 
@@ -73,10 +72,10 @@ FLAGS:
 SUBCOMMANDS:
     clear      Clear OPM's cache
     help       Prints this message or the help of the given subcommand(s)
-    install    install a package
-    remove     remove a package
-    search     search for a package
-    update     update opm's packages cache
+    install    Install a package
+    remove     Remove a package
+    search     Search for a package in the cache
+    update     Update opm's packages cache
 ```
 
 For more details about the usage, check the [docs](docs/USAGE.md)
