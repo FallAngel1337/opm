@@ -94,26 +94,11 @@ impl Config {
 				} else {
 					fs::File::create(&self.db)?;
 				}
-				// match &self.pkg_fmt {
-				// 	PackageFormat::Deb => {
-				// 		use super::deb::database::DEBIAN_DATABASE;
-				// 		if let Err(err) = fs::copy(DEBIAN_DATABASE, &self.db) {
-				// 			if err.kind() != std::io::ErrorKind::NotFound {
-				// 				anyhow::bail!(err);
-				// 			} else {
-				// 				fs::File::create(&self.db)?;
-				// 			}
-				// 		}
-				// 	},
-				// 	PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
-				// 	PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
-				// 	PackageFormat::Unknown => panic!("Unrecognized package"),
-				// }
 			},
 			Err(e) => match e.kind() {
 			ErrorKind::AlreadyExists => (),
 				_ => panic!("Some error occurred {}", e)
-			}
+			},
 		}
 
 		Ok(())

@@ -1,6 +1,7 @@
-use indicatif::{HumanBytes, MultiProgress,ProgressBar, ProgressStyle};
+use indicatif::{HumanBytes, MultiProgress,ProgressBar, ProgressStyle, HumanDuration};
 use anyhow::{self, Result};
 use solvent::DepGraph;
+use tokio::time::Instant;
 use std::{path::Path, io::Write};
 
 ///
@@ -19,7 +20,7 @@ use async_recursion::async_recursion;
 #[async_recursion]
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
     if name.ends_with(".deb") {
-        let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
+        let pkg = extract::extract(config, name, name.rsplit('/').next().unwrap().split(".deb").next().unwrap())?;
         let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
@@ -86,6 +87,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
             }
             let handle = tokio::task::spawn_blocking(move || mp.join().unwrap());
 
+            let start = Instant::now();
             for data in future::join_all(tasks).await
                 .into_iter()
                 .filter_map(|r| r.ok())
@@ -94,6 +96,8 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
                 let (path, _name) = data;
                 install(config, path.to_str().unwrap(), force).await?;
             }
+            let duration = start.elapsed();
+            println!("Installed {} in {}", name, HumanDuration(duration));
             fs_extra::dir::create(&config.tmp, true)?;
             handle.await?;
         } else {
@@ -112,7 +116,7 @@ fn finish(p: &Path) -> Result<()> {
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
-        match fs_extra::dir::copy(&path, std::path::Path::new("/"), &options) {
+        match fs_extra::dir::copy(&path, std::path::Path::new("/tmp/fake_root"), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
                 ErrorKind::InvalidFolder | ErrorKind::AlreadyExists | ErrorKind::NotFound => continue,

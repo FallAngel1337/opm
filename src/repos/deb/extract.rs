@@ -41,7 +41,7 @@ pub fn extract(config: &Config, path: &str, name: &str) -> Result<Package> {
     
     file.read_to_end(&mut bytes)
         .with_context(|| format!("Could not read the file {}", path))?;
-
+    
     let info_dest = format!("{}/{}", config.info, name);
     let data_dest = config.tmp.to_string();
 

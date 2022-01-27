@@ -11,7 +11,7 @@ fn main() {
 
     let matches = App::new("Oxidized Package Manager")
 				.setting(AppSettings::ArgRequiredElseHelp)
-				.version("v1.5-beta")
+				.version("v1.5.1-beta")
 				.author("FallAngel <fallangel@protonmail.com>")
 				.about("A package manager fully written in Rust")
 				.arg(Arg::with_name("list")
@@ -31,13 +31,7 @@ fn main() {
 							.short("f")
 							.long("force")
 							.takes_value(false)
-							.help("Force the installation of pacakages that may can break others"))
-						.arg(Arg::with_name("format")
-							.short("w")
-							.long("format")
-							.takes_value(true)
-							// .index(2)
-							.help("Use a different package format")),
+							.help("Force the installation of pacakages that may can break others")),
 					SubCommand::with_name("update")
 						.about("Update opm's packages cache"),
 					SubCommand::with_name("remove")
@@ -71,12 +65,6 @@ fn main() {
 
     if let Some(package) = matches.subcommand_matches("install") {
 		let force = !matches!(matches.occurrences_of("force"), 0);
-
-		config = opm::setup().unwrap_or_else(|err| {
-			eprintln!("ConfigError :: {}", err);
-			opm::roll_back();
-			process::exit(1);
-		});
 
         opm::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
             eprintln!("InstallError :: {}", err);

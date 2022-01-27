@@ -4,15 +4,11 @@
 /// 
 
 use anyhow::Result;
-use indicatif::HumanDuration;
 use super::packages::PackageFormat;
-use std::time::Instant;
 use super::config::Config;
 
 #[tokio::main]
 pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()> {
-    let start = Instant::now();
-
     match config.os_info.default_package_format {
         PackageFormat::Deb => {
             use super::deb;
@@ -28,8 +24,6 @@ pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()>
             println!("Actually we do not have support for you distro!");
         },
     }
-    let duration = start.elapsed();
-    println!("Installed {} in {}", name, HumanDuration(duration));
 
     Ok(())
 }

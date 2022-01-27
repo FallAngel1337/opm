@@ -1,15 +1,7 @@
 use anyhow::Result;
-use std::io::{self, ErrorKind, Write};
-use crate::repos::errors::ConfigError;
+use std::io::ErrorKind;
 
 use super::{config::Config, os_fingerprint::OsInfo};
-
-fn get_answer() -> Result<String> {
-    let mut answer = String::new();
-    io::stdout().flush()?;
-    io::stdin().read_line(&mut answer)?;
-    Ok(answer)
-}
 
 pub fn setup() -> Result<Config> {
     let os_info = OsInfo::new()?;
@@ -20,20 +12,14 @@ pub fn setup() -> Result<Config> {
     } else {
         let curr_conf = Config::new(&os_info)?;
         
+        println!("The following config file can be changed later at {:?}\n{:#?}", config_file, curr_conf);
+        
         if !os_info.install_dir.exists() {
             curr_conf.setup()?;
+            curr_conf.save(&config_file);
         }
 
-        println!("Got default configuration:\n{:#?}", curr_conf);
-        print!("Want to keep those? [y/n] ");
-
-        if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
-            curr_conf.save(&config_file);
-            Ok(curr_conf)
-        } else {
-            curr_conf.save(&config_file);
-            anyhow::bail!(ConfigError::ChangeConfig(config_file.to_str().unwrap().to_owned()))
-        }
+        Ok(curr_conf)
     }
 }
 

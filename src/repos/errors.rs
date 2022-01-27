@@ -40,7 +40,6 @@ pub enum SignatureError {
 
 #[derive(Debug)]
 pub enum ConfigError {
-    ChangeConfig  ( String ),
     UnexError     { msg: String, err: Option<Error> },
 }
 
@@ -96,7 +95,6 @@ impl Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConfigError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
-            ConfigError::ChangeConfig ( config ) => write!(f, "Go to {:?} and change the values manually", config),
         }
     }
 }
