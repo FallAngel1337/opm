@@ -93,7 +93,7 @@ impl Config {
 
 		match fs::File::create(&self.db) {
 			Ok(_) => {
-				use super::utils::PackageFormat;
+				use super::os_fingerprint::PackageFormat;
 				match PackageFormat::from(&self.pkg_fmt) {
 					PackageFormat::Deb => {
 						use super::deb::database::DEBIAN_DATABASE;

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{path::Path, io::{self, ErrorKind, Write}};
-use super::{config::Config, utils::PackageFormat};
+use super::{config::Config, os_fingerprint::PackageFormat};
 
 fn get_answer() -> Result<String> {
     let mut answer = String::new();
@@ -27,12 +27,14 @@ pub fn setup(pkg_fmt: Option<&str>) -> Result<Config> {
         let config = match PackageFormat::get_format()? {
             PackageFormat::Deb => {
                 print!("Are you on a Debian-based distro? [y/n] ");
-                if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
-                    Config::new("deb")?
+                let fmt = if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
+                    "deb"
                 } else {
                     print!("Insert the package format: ");
-                    Config::new(get_answer()?.trim())?
-                }
+                    get_answer()?.trim()
+                };
+
+                Config::new(fmt)?
             },
             PackageFormat::Rpm => {
                 print!("Are you on a RHEL-based distro? [y/n] ");

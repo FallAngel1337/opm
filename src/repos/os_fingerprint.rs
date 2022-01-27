@@ -1,6 +1,16 @@
-use core::panic;
-
 use anyhow::Result;
+
+///
+/// Package Formats
+/// 
+
+const DEB: &str = "deb";
+const RPM: &str = "rpm";
+const PKG: &str = "pkg";
+
+///
+/// Distro fingerprint files
+/// 
 
 const DEBIAN: &str = "/etc/issue";      // Check if have "Debian GNU/Linux"
 const ARCH: &str = "/etc/arch-release"; // Check if exists

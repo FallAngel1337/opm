@@ -1,5 +1,5 @@
 use anyhow::Result;
-use super::{config::Config, utils::PackageFormat};
+use super::{config::Config, os_fingerprint::PackageFormat};
 
 pub fn remove(config: &Config, name: &str, purge: bool) -> Result<()> {
     match PackageFormat::from(&config.pkg_fmt) {

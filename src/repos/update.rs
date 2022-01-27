@@ -3,7 +3,7 @@
 /// 
 
 use anyhow::Result;
-use super::utils::PackageFormat;
+use super::os_fingerprint::PackageFormat;
 use super::config::Config;
 
 #[tokio::main]

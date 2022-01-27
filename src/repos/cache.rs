@@ -1,5 +1,5 @@
 use anyhow::Result;
-use super::utils::PackageFormat;
+use super::os_fingerprint::PackageFormat;
 use super::config::Config;
  
 pub fn list_installed(config: &Config) {

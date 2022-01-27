@@ -6,11 +6,10 @@ mod install;
 mod update;
 mod cache;
 mod setup;
-mod lock;
 mod remove;
 
 pub mod config;
-pub mod utils;
+pub mod os_fingerprint;
 pub mod errors;
 
 pub use install::install;
