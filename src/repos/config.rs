@@ -27,7 +27,7 @@ impl Config {
 				cache: dir.join("cache/pkg").to_str().unwrap().to_owned(),
 				rls: dir.join("cache/rls").to_str().unwrap().to_owned(),
 				tmp: dir.join("tmp").to_str().unwrap().to_owned(),
-				archive: dir.join("archibe").to_str().unwrap().to_owned(),
+				archive: dir.join("archive").to_str().unwrap().to_owned(),
 				info: dir.join("info").to_str().unwrap().to_owned(),
 				db: dir.join("db").to_str().unwrap().to_owned(),
 				use_pre_existing_cache: false,
