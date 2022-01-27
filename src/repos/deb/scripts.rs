@@ -17,7 +17,7 @@ pub fn execute_install_pre(i: &Info) -> Result<()>{
                 eprintln!("Failed to install the package due {}\nRemoving it ...", e);
                 execute_remove_pre(i)?;
                 execute_remove_pos(i)?;
-                anyhow::bail!(ScriptsError::PreInstError);
+                anyhow::bail!(ScriptsError::PreInst);
             }
         }
         println!("Done");
@@ -36,7 +36,7 @@ pub fn execute_install_pos(i: &Info) -> Result<()>{
                 eprintln!("Failed to install the package due {}\nRemoving it ...", e);
                 execute_remove_pre(i)?;
                 execute_remove_pos(i)?;
-                anyhow::bail!(ScriptsError::PostInstError);
+                anyhow::bail!(ScriptsError::PostInst);
             }
         }
         println!("Done");
@@ -54,7 +54,7 @@ pub fn execute_remove_pre(i: &Info) -> Result<()> {
             Err(e) => {
                 println!();
                 eprintln!("Failed to remove the package due {}\nRemoving it ...", e);
-                anyhow::bail!(ScriptsError::PreRmError);
+                anyhow::bail!(ScriptsError::PreRm);
             }
         }
         println!("Done");
@@ -72,7 +72,7 @@ pub fn execute_remove_pos(i: &Info) -> Result<()> {
             Err(e) => {
                 println!();
                 eprintln!("Failed to remove the package due {}\nRemoving it ...", e);
-                anyhow::bail!(ScriptsError::PostRmError);
+                anyhow::bail!(ScriptsError::PostRm);
             }
         }
         println!("Done");
