@@ -1,8 +1,7 @@
-use indicatif::{HumanDuration, HumanBytes, MultiProgress,ProgressBar, ProgressStyle};
+use indicatif::{HumanBytes, MultiProgress,ProgressBar, ProgressStyle};
 use anyhow::{self, Result};
 use solvent::DepGraph;
 use std::{path::Path, io::Write};
-use std::time::Instant;
 
 ///
 /// Debian package install
@@ -13,21 +12,27 @@ use crate::repos::config::Config;
 use super::{extract, download};
 use super::{cache, scripts};
 use futures::future;
+use async_recursion::async_recursion;
 
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
+#[async_recursion]
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.split(".deb").next().unwrap())?;
-        let (pkg, info) = (pkg.0, pkg.1);
+        let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
             anyhow::bail!(InstallError::AlreadyInstalled(pkg.control.package));
         }
 
+        println!("Installing {} ...", pkg.control.package);
         scripts::execute_install_pre(&info)?;
         scripts::execute_install_pos(&info)?;
+
+        finish(Path::new(&data.control_path)).unwrap();
+        cache::add_package(config, pkg)?;
     } else {
         if let Some(pkg) = cache::check_installed(config, name) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -80,35 +85,17 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
                 tasks.push(download::download(config, DebPackage { control: pkg, kind: PkgKind::Binary }, bar));
             }
             let handle = tokio::task::spawn_blocking(move || mp.join().unwrap());
-            
-            let start = Instant::now();
+
             for data in future::join_all(tasks).await
                 .into_iter()
                 .filter_map(|r| r.ok())
                 .zip(pkgs.into_iter().map(|ctrl| ctrl.package)) 
             {
-                let (path, name) = data;
-
-                let path = path
-                    .into_os_string()
-                    .into_string().unwrap();
-                
-                let pkg = extract::extract(config, &path, &name)?;
-                let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
-
-                println!("Installing {} ...", pkg.control.package);    
-                scripts::execute_install_pre(&info)?;
-                scripts::execute_install_pos(&info)?;
-
-                finish(Path::new(&data.control_path))?;
-                cache::add_package(config, pkg)?;
+                let (path, _name) = data;
+                install(config, path.to_str().unwrap(), force).await?;
             }
-            let duration = start.elapsed();
-            println!("Installed {} in {}", name, HumanDuration(duration));
             fs_extra::dir::create(&config.tmp, true)?;
-
             handle.await?;
-
         } else {
             anyhow::bail!(CacheError::NotFoundError { pkg: name.to_owned(), cache: config.cache.clone() });
         }
@@ -120,7 +107,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
 fn finish(p: &Path) -> Result<()> {
     use fs_extra::error::ErrorKind;
     let options = fs_extra::dir::CopyOptions::new();
-    
+
     for path in std::fs::read_dir(p)?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())

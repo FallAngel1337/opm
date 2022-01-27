@@ -216,7 +216,7 @@ mod test {
 	use super::*;
     #[test]
     fn package_from_test() {
-        let config = crate::repos::setup(None).unwrap();
+        let config = crate::repos::setup().unwrap();
         let data = r"Package: accountsservice
 Architecture: amd64
 Version: 0.6.55-0ubuntu11
