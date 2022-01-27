@@ -1,11 +1,10 @@
 use clap::{Arg, App, SubCommand, AppSettings};
-use opm::repos;
 use std::process;
 
 fn main() {
-	let mut config = repos::setup().unwrap_or_else(|err| {
+	let mut config = opm::setup().unwrap_or_else(|err| {
 		eprintln!("Could not setup the package manager due {}", err);
-		repos::roll_back();
+		opm::roll_back();
 		process::exit(1);
 	});
 
@@ -66,27 +65,27 @@ fn main() {
 
 	match matches.occurrences_of("list") {
 		0 => (),
-		1 => repos::list_installed(&config),
+		1 => opm::list_installed(&config),
 		_ => println!("Invalid argument")
 	};
 
     if let Some(package) = matches.subcommand_matches("install") {
 		let force = !matches!(matches.occurrences_of("force"), 0);
 
-		config = repos::setup().unwrap_or_else(|err| {
+		config = opm::setup().unwrap_or_else(|err| {
 			eprintln!("ConfigError :: {}", err);
-			repos::roll_back();
+			opm::roll_back();
 			process::exit(1);
 		});
 
-        repos::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
+        opm::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
             eprintln!("InstallError :: {}", err);
             process::exit(1);
         });
     }
 
     if matches.subcommand_matches("update").is_some() {
-        repos::update(&mut config).unwrap_or_else(|err| {
+        opm::update(&mut config).unwrap_or_else(|err| {
 			eprintln!("UpdateError :: {}", err);
 			process::exit(1);
 		})
@@ -96,12 +95,12 @@ fn main() {
         let pkg = rm.value_of("package").unwrap();
 		if rm.is_present("purge") {
 			println!("Purgin 'em all HAHAHA");
-			repos::remove(&config, pkg, true).unwrap_or_else(|err| {
+			opm::remove(&config, pkg, true).unwrap_or_else(|err| {
 				eprintln!("Could not purge {} :: {}", pkg, err);
 				process::exit(1);
 			});
 		} else {
-			repos::remove(&config, pkg, false).unwrap_or_else(|err| {
+			opm::remove(&config, pkg, false).unwrap_or_else(|err| {
 				eprintln!("Could not remove {} :: {}", pkg, err);
 				process::exit(1);
 			});
@@ -111,14 +110,14 @@ fn main() {
     if let Some(package) = matches.subcommand_matches("search") {
 		let pkg =  package.value_of("package").unwrap();
 		println!("Searching for {} ...", package.value_of("package").unwrap());
-		repos::search(&mut config, pkg).unwrap_or_else(|err| {
+		opm::search(&mut config, pkg).unwrap_or_else(|err| {
 			eprintln!("Failed to search for {} due {}", pkg, err);
 			process::exit(1);
 		});
     };
 
     if matches.subcommand_matches("clear").is_some() {
-		repos::clear(&config).unwrap_or_else(|err| {
+		opm::clear(&config).unwrap_or_else(|err| {
 			eprintln!("Failed to clear cache due {}", err);
 			process::exit(1);
 		});
