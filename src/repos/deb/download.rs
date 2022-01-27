@@ -5,7 +5,6 @@ use std::{path::PathBuf, fs::File, io::Write};
 
 use crate::repos::config::Config;
 use super::{package::DebPackage, signatures};
-use reqwest;
 
 // https://gist.github.com/giuliano-oliveira/4d11d6b3bb003dba3a1b53f43d81b30d
 pub async fn download(config: &Config, pkg: DebPackage, pb: ProgressBar) -> Result<PathBuf> {

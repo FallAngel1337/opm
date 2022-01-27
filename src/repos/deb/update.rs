@@ -8,7 +8,6 @@ use std::{
     path::Path,
     str
 };
-use reqwest;
 use futures::{future, StreamExt};
 use super::sources::DebianSource;
 use crate::repos::config::Config;

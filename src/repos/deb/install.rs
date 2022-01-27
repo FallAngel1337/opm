@@ -13,7 +13,6 @@ use crate::repos::config::Config;
 use super::{extract, download};
 use super::{cache, scripts};
 use futures::future;
-use fs_extra;
 
 // TODO: Check for newer versions of the package if installed
 // TODO: Get rid of most of those `clone()` calls
