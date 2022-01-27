@@ -2,10 +2,13 @@
 mod deb;
 
 // General modules
-pub mod install;
-pub mod update;
-pub mod cache;
-pub mod remove;
+mod commands;
+
+pub use commands::install::install;
+pub use commands::search::{search, list_installed};
+pub use commands::remove::remove;
+pub use commands::update::{clear, update};
+pub use setup::{setup, roll_back};
 pub mod os_fingerprint;
 
 pub mod config;
