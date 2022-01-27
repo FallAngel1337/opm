@@ -16,8 +16,17 @@ pub enum InstallError {
 
 #[derive(Debug)]
 pub enum RemoveError {
-    UnexError        { msg: String, err: Option<Error> },
     NotFoundError    ( String ),
+    UnexError        { msg: String, err: Option<Error> },
+}
+
+#[derive(Debug)]
+pub enum ScriptsError {
+    PreInstError,
+    PostInstError,
+    PreRmError,
+    PostRmError,
+    UnexError { msg: String, err: Option<Error> },
 }
 
 #[derive(Debug)]
@@ -98,6 +107,18 @@ impl Display for CacheError {
             CacheError::NotFoundError { pkg, cache } => write!(f, "{:?} was not found at {:?}", pkg, cache),
             CacheError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
             CacheError::NoCache ( cache ) => write!(f, "No cache file was found at {:?}", cache),
+        }
+    }
+}
+
+impl Display for ScriptsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ScriptsError::PreInstError => write!(f, "Could not execute PREINST the script"),
+            ScriptsError::PostInstError => write!(f, "Could not execute POSTINST the script"),
+            ScriptsError::PreRmError => write!(f, "Could not execute PRERM the script"),
+            ScriptsError::PostRmError => write!(f, "Could not execute POSTRM the script"),
+            ScriptsError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
         }
     }
 }
