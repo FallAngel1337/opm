@@ -37,7 +37,7 @@ pub fn verify_sig<T: AsRef<[u8]>>(pkg: &DebPackage, data: T) -> Result<()> {
         sha512.update(&data);
         let sha512 = format!("{:x}", sha512.finalize());
         if *control.sha512 != sha512 {
-            anyhow::bail!(SignatureError::SHA256 { rs: control.md5sum.to_string(), ex: sha512 })
+            anyhow::bail!(SignatureError::SHA512 { rs: control.md5sum.to_string(), ex: sha512 })
         }
     }
 
