@@ -18,7 +18,6 @@ const UNIX_INSTALL_DIR: &str = "/opt/opm/";
 // const WIN_INSTALL_DIR: &str = "C:\\OPM";
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "OS")]
 pub enum OS {
     Windows,
     Linux(Distro),
@@ -27,7 +26,6 @@ pub enum OS {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "Distro")]
 pub enum Distro {
     Arch,
     Debian, // Basically all debian-based
