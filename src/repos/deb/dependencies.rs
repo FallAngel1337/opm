@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use anyhow::Result;
 use solvent::DepGraph;
 
-use crate::repos::{config::Config, errors::InstallError};
+use crate::repos::{config::Config, errors::{InstallError, CacheError}};
 use super::package::ControlFile;
 use super::cache;
 
@@ -66,7 +66,8 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
                     
                     if let Some(version) = get_version(&deb.control.version) {
                         if !check_version(version, &pkg.version) {
-                            anyhow::bail!(InstallError::Error(format!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package)));
+                            // format!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package))
+                            anyhow::bail!(InstallError::WrongVersion { pkg: deb.control.package, reqv: pkg.version, curv: deb.control.version });
                         }
                     }
                     
@@ -79,7 +80,7 @@ pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<Stri
                     }
 
                 } else {
-                    anyhow::bail!(InstallError::Error("No package was found ...".to_owned()));
+                    anyhow::bail!(CacheError::NotFoundError { pkg: pkg.package, cache: config.cache.clone() });
                 }
             }
         } else {

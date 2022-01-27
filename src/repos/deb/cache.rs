@@ -1,6 +1,8 @@
 use anyhow::{self, Result, Context};
-use crate::repos::{config::Config, errors::InstallError};
-use crate::repos::errors::CacheError;
+use crate::repos::{
+	config::Config,
+	errors::CacheError,
+};
 use std::{fs, io::prelude::*};
 use regex::Regex;
 
@@ -23,7 +25,7 @@ impl<'a> Cache<'a> {
 	fn get_cache(config: &'a Config) -> Result<Self> {
 		if config.use_pre_existing_cache {
 			if !std::path::Path::new(DEBIAN_CACHE).exists() {
-				anyhow::bail!(CacheError { msg: format!("{} was not found", DEBIAN_CACHE) });
+				anyhow::bail!(CacheError::NoCache(DEBIAN_CACHE.to_owned()))
 			}
 			
 			Ok(
@@ -33,7 +35,7 @@ impl<'a> Cache<'a> {
 			)
 		} else {
 			if !std::path::Path::new(&config.cache).exists() {
-				anyhow::bail!(CacheError { msg: format!("{} was not found", config.cache) });
+				anyhow::bail!(CacheError::NoCache(config.cache.to_owned()))
 			}
 
 			Ok(
@@ -148,7 +150,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 		}
 	}
 
-	anyhow::bail!(InstallError::NotFoundError(name.to_string()));
+	anyhow::bail!(CacheError::NotFoundError { pkg: name.to_string(), cache: config.cache.clone() });
 }
 
 ///

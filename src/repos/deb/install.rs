@@ -8,7 +8,7 @@ use std::time::Instant;
 /// Debian package install
 ///
 
-use crate::repos::{errors::InstallError, deb::{package::{DebPackage, PkgKind}, dependencies::get_dependencies}};
+use crate::repos::{errors::{InstallError, CacheError}, deb::{package::{DebPackage, PkgKind}, dependencies::get_dependencies}};
 use crate::repos::config::Config;
 use super::{extract, download};
 use super::{cache, scripts};
@@ -24,7 +24,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
-            anyhow::bail!(InstallError::AlreadyInstalled);
+            anyhow::bail!(InstallError::AlreadyInstalled(pkg.control.package));
         }
 
         scripts::execute_install_pre(&info)?;
@@ -32,7 +32,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
     } else {
         if let Some(pkg) = cache::check_installed(config, name) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
-            anyhow::bail!(InstallError::AlreadyInstalled);
+            anyhow::bail!(InstallError::AlreadyInstalled(pkg.control.package));
         }
 
         println!("Installing {} for debian ...", name);
@@ -68,7 +68,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
 
             if answer != 'y' {
                 eprintln!("Exiting installation process...");
-                anyhow::bail!(InstallError::Interrupted);
+                anyhow::bail!(InstallError::UserInterrupt);
             }
 
             let mp = MultiProgress::new();
@@ -111,10 +111,9 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
             handle.await?;
 
         } else {
-            anyhow::bail!(InstallError::NotFoundError(name.to_string()));
+            anyhow::bail!(CacheError::NotFoundError { pkg: name.to_owned(), cache: config.cache.clone() });
         }
     }
-
 
     Ok(())
 }

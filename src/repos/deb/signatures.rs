@@ -10,7 +10,7 @@ pub fn verify_sig<T: AsRef<[u8]>>(pkg: &DebPackage, data: T) -> Result<()> {
     if !control.md5sum.is_empty() {
         let md5 = format!("{:x}", md5::compute(&data));
         if control.md5sum != md5 {
-            anyhow::bail!(SignatureError::MD5(control.md5sum.to_string(), md5))
+            anyhow::bail!(SignatureError::MD5 { rs: control.md5sum.to_string(), ex: md5 });
         }
     }
     
@@ -19,7 +19,7 @@ pub fn verify_sig<T: AsRef<[u8]>>(pkg: &DebPackage, data: T) -> Result<()> {
         sha1.update(&data);
         let sha1 = format!("{:x}", sha1.finalize());
         if *control.sha1 != sha1 {
-            anyhow::bail!(SignatureError::SHA1(control.sha1.to_string(), sha1))
+            anyhow::bail!(SignatureError::SHA1 { rs: control.md5sum.to_string(), ex: sha1 });
         }
     }
     
@@ -28,7 +28,7 @@ pub fn verify_sig<T: AsRef<[u8]>>(pkg: &DebPackage, data: T) -> Result<()> {
         sha256.update(&data);
         let sha256 = format!("{:x}", sha256.finalize());
         if *control.sha256 != sha256 {
-            anyhow::bail!(SignatureError::SHA256(control.sha256.to_string(), sha256))
+            anyhow::bail!(SignatureError::SHA256 { rs: control.md5sum.to_string(), ex: sha256 })
         }
     }
 
@@ -37,7 +37,7 @@ pub fn verify_sig<T: AsRef<[u8]>>(pkg: &DebPackage, data: T) -> Result<()> {
         sha512.update(&data);
         let sha512 = format!("{:x}", sha512.finalize());
         if *control.sha512 != sha512 {
-            anyhow::bail!(SignatureError::SHA512(control.sha512.to_string(), sha512))
+            anyhow::bail!(SignatureError::SHA256 { rs: control.md5sum.to_string(), ex: sha512 })
         }
     }
 

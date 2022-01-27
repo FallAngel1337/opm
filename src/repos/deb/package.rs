@@ -166,7 +166,7 @@ impl ControlFile {
         if let Some(v) = hashmap.get(field) {
             Ok (v.trim().to_owned())
         } else {
-            bail!(ConfigError { msg: format!("Invalid debain's control file! Missing \"{}\" field", field) });
+            bail!(ConfigError::UnexError { msg: format!("Invalid debain's control file! Missing \"{}\" field", field), err: None });
         }
     }
 
@@ -216,7 +216,7 @@ mod test {
 	use super::*;
     #[test]
     fn package_from_test() {
-        let config = crate::repos::setup().unwrap();
+        let config = crate::repos::setup(None).unwrap();
         let data = r"Package: accountsservice
 Architecture: amd64
 Version: 0.6.55-0ubuntu11

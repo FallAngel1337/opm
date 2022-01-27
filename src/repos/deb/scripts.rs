@@ -1,5 +1,5 @@
 use anyhow::{self, Result};
-use crate::repos::errors::InstallError;
+use crate::repos::errors::ScriptsError;
 use std::process::Command;
 
 use super::package::Info;
@@ -17,7 +17,7 @@ pub fn execute_install_pre(i: &Info) -> Result<()>{
                 eprintln!("Failed to install the package due {}\nRemoving it ...", e);
                 execute_remove_pre(i)?;
                 execute_remove_pos(i)?;
-                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
+                anyhow::bail!(ScriptsError::PreInstError);
             }
         }
         println!("Done");
@@ -36,7 +36,7 @@ pub fn execute_install_pos(i: &Info) -> Result<()>{
                 eprintln!("Failed to install the package due {}\nRemoving it ...", e);
                 execute_remove_pre(i)?;
                 execute_remove_pos(i)?;
-                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
+                anyhow::bail!(ScriptsError::PostInstError);
             }
         }
         println!("Done");
@@ -54,7 +54,7 @@ pub fn execute_remove_pre(i: &Info) -> Result<()> {
             Err(e) => {
                 println!();
                 eprintln!("Failed to remove the package due {}\nRemoving it ...", e);
-                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
+                anyhow::bail!(ScriptsError::PreRmError);
             }
         }
         println!("Done");
@@ -72,7 +72,7 @@ pub fn execute_remove_pos(i: &Info) -> Result<()> {
             Err(e) => {
                 println!();
                 eprintln!("Failed to remove the package due {}\nRemoving it ...", e);
-                anyhow::bail!(InstallError::Error("Could not execute preinst the script".to_owned()))
+                anyhow::bail!(ScriptsError::PostRmError);
             }
         }
         println!("Done");

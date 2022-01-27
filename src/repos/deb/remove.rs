@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::{path::Path, fs};
 use super::cache;
-use crate::repos::{errors::InstallError, config::Config, deb::{package::Info, scripts}};
+use crate::repos::{errors::RemoveError, config::Config, deb::{package::Info, scripts}};
 
 pub fn remove(config: &Config, name: &str, purge: bool) -> Result<()> {
     if cache::check_installed(config, name).is_some() {
@@ -41,10 +41,10 @@ pub fn remove(config: &Config, name: &str, purge: bool) -> Result<()> {
 
             Ok(())
         } else {
-            anyhow::bail!(InstallError::Error("Could not find the files to remove".to_string()));
+            anyhow::bail!(RemoveError::NotFoundError(name.to_owned()));
         }
             
     } else {
-        anyhow::bail!(InstallError::NotFoundError(name.to_string()));
+        anyhow::bail!(RemoveError::NotFoundError(name.to_owned()));
     }
 }
