@@ -8,11 +8,16 @@ pub enum InstallError {
     WrongVersion     { pkg: String, reqv: String, curv: String },
     UnexError        { msg: String, err: Option<Error> },
     AlreadyInstalled ( String ),
-    NotFoundError    ( String ),
     Breaks           ( String ),
     NetworkingError  { err: Error },
     UnexInterrupt    { err: Error },
     UserInterrupt,
+}
+
+#[derive(Debug)]
+pub enum RemoveError {
+    UnexError        { msg: String, err: Option<Error> },
+    NotFoundError    ( String ),
 }
 
 #[derive(Debug)]
@@ -49,12 +54,20 @@ impl Display for InstallError {
             InstallError::BrokenPackage { pkg, err } => write!(f, "Perhaps {:?} is broken due some missing files :: error {:?}", pkg, err),
             InstallError::AlreadyInstalled ( pkg ) => write!(f, "{:?} is already installed", pkg),
             InstallError::UnexError { msg, err }  => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
-            InstallError::NotFoundError ( pkg ) => write!(f, "Package {:?} was not found in cache", pkg),
             InstallError::Breaks ( pkg ) => write!(f, "Package {:?} can break others", pkg),
             InstallError::WrongVersion { pkg, reqv, curv } => write!(f, "Package \"{}({})\" does not satisfy \"{}({})\"", pkg, curv, pkg, reqv),
             InstallError::NetworkingError { err } => write!(f, "Networking Error :: {:?}", err),
             InstallError::UserInterrupt => write!(f, "Installation was interrupted by the user"),
             InstallError::UnexInterrupt { err } => write!(f, "Installation was unexpected interrupted :: error {:?}", err),
+        }
+    }
+}
+
+impl Display for RemoveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RemoveError::NotFoundError ( pkg ) => write!(f, "Could not remove {:?} due files were not found", pkg),
+            RemoveError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
         }
     }
 }
