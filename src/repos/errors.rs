@@ -23,15 +23,15 @@ pub enum SignatureError {
 }
 
 #[derive(Debug)]
-pub struct ConfigError {
-    pub msg: String,
-    pub err: Option<Error>,
+pub enum ConfigError {
+    SetupError    ( Error ),
+    UnexError     { msg: String, err: Option<Error> },
 }
 
 #[derive(Debug)]
-pub struct CacheError {
-    pub msg: String,
-    pub err: Option<Error>,
+pub enum CacheError {
+    NotFoundError { pkg: String, cache: String },
+    UnexError     { msg: String, err: Option<Error> },
 }
 
 impl std::error::Error for InstallError {
@@ -69,12 +69,18 @@ impl Display for SignatureError {
 
 impl Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ConfigError {:?} :: {:?}", self.msg, self.err)
+        match self {
+            ConfigError::SetupError ( err ) => write!(f, "Failed to complete setup :: error {:?}", err),
+            ConfigError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
+        }
     }
 }
 
 impl Display for CacheError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "CacheError {:?} :: {:?}", self.msg, self.err)
+        match self {
+            CacheError::NotFoundError { pkg, cache } => write!(f, "{:?} was not found at {:?}", pkg, cache),
+            CacheError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
+        }
     }
 }
