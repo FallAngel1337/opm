@@ -5,6 +5,7 @@ use std::fmt::{self, Display};
 pub enum InstallError {
     InvalidPackage   { pkg: String, err: Option<Error> },
     BrokenPackage    { pkg: String, err: Option<Error> },
+    WrongVersion     { pkg: String, reqv: String, curv: String },
     UnexError        { msg: String, err: Option<Error> },
     AlreadyInstalled ( String ),
     NotFoundError    ( String ),
@@ -32,6 +33,7 @@ pub enum ConfigError {
 pub enum CacheError {
     NotFoundError { pkg: String, cache: String },
     UnexError     { msg: String, err: Option<Error> },
+    NoCache       ( String ),
 }
 
 impl std::error::Error for InstallError {
@@ -49,6 +51,7 @@ impl Display for InstallError {
             InstallError::UnexError { msg, err }  => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
             InstallError::NotFoundError ( pkg ) => write!(f, "Package {:?} was not found in cache", pkg),
             InstallError::Breaks ( pkg ) => write!(f, "Package {:?} can break others", pkg),
+            InstallError::WrongVersion { pkg, reqv, curv } => write!(f, "Package \"{}({})\" does not satisfy \"{}({})\"", pkg, curv, pkg, reqv),
             InstallError::NetworkingError { err } => write!(f, "Networking Error :: {:?}", err),
             InstallError::UserInterrupt => write!(f, "Installation was interrupted by the user"),
             InstallError::UnexInterrupt { err } => write!(f, "Installation was unexpected interrupted :: error {:?}", err),
@@ -81,6 +84,7 @@ impl Display for CacheError {
         match self {
             CacheError::NotFoundError { pkg, cache } => write!(f, "{:?} was not found at {:?}", pkg, cache),
             CacheError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
+            CacheError::NoCache ( cache ) => write!(f, "No cache file was found at {:?}", cache),
         }
     }
 }
