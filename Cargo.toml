@@ -17,7 +17,7 @@ deb-version = "0.1.1"
 fs_extra = "1.2.0"
 flate2 = "1.0.22"
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.5"
+serde_json = "1.0.78"
 anyhow = "1.0"
 futures = "0.3"
 bytes = "1"
@@ -26,7 +26,6 @@ sha-1 = "0.10.0"
 md5 = "0.7.0"
 indicatif = "0.16.2"
 solvent = "0.8.3"
-# directories = "4.0.1"
 
 [dependencies.clap]
 version = "2.33.3"

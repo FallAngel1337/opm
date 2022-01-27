@@ -1,41 +1,46 @@
 use anyhow::Result;
+use std::path::PathBuf;
 
-///
-/// Package Formats
-/// 
-
-const DEB: &str = "deb";
-const RPM: &str = "rpm";
-const PKG: &str = "pkg";
+use super::packages::PackageFormat;
 
 ///
 /// Distro fingerprint files
-/// 
+///
 
 const DEBIAN: &str = "/etc/issue";      // Check if have "Debian GNU/Linux"
 const ARCH: &str = "/etc/arch-release"; // Check if exists
 
-#[derive(Debug)]
-enum OS {
+///
+/// Default Installation dir
+///
+
+const UNIX_INSTALL_DIR: &str = "/opt/opm/";
+// const WIN_INSTALL_DIR: &str = "C:\\OPM";
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "OS")]
+pub enum OS {
     Windows,
     Linux(Distro),
     Mac,
     Unknown,
 }
 
-#[derive(Debug)]
-enum Distro {
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "Distro")]
+pub enum Distro {
     Arch,
     Debian, // Basically all debian-based
     Rhel,
     Unknown,
 }
 
-#[derive(Debug)]
-pub enum PackageFormat {
-    Deb,
-    Rpm,
-    Other,
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct OsInfo {
+    pub os: OS,
+    pub previous_db: Option<PathBuf>,
+    pub default_package_format: PackageFormat,
+    pub install_dir: PathBuf,
 }
 
 impl OS {
@@ -60,37 +65,73 @@ impl Distro {
         match ((Path::new(ARCH)).exists(), (data.contains("Debian") || data.contains("Ubuntu"))) {
             (true, false) => Ok(Arch),
             (false, true) => Ok(Debian),
-            (false, false) => Ok(Rhel), // Find a way of detecting this
+            (false, false) => Ok(Rhel), // TODO: Find a way of detecting this
             _ => Ok(Unknown)
         }
     }
 }
 
-impl PackageFormat {
-    pub fn get_format() -> Result<Self> {
-        use OS::{Linux, Windows, Mac, Unknown};
-        match OS::get_os()? {
-            Linux(distro) => {
-                use Distro::{Arch, Debian, Rhel, Unknown};
+impl OsInfo {
+    pub fn new() -> Result<Self> {
+        let os = OS::get_os()?;
+        let previous_db = Self::get_db(&os);
+        let default_package_format = Self::get_default_package_format(&os)?;
+        let install_dir = Self::get_install_dir(&os).join(default_package_format.to_string());
+
+        Ok(
+            Self {
+                os,
+                previous_db,
+                default_package_format,
+                install_dir
+            }
+        )
+    }
+
+    //TODO: Remove all the panics
+    fn get_db(os: &OS) -> Option<PathBuf> {
+        match os {
+            OS::Linux(distro) => {
                 match distro {
-                    Arch => panic!("Using Arch ..."),
-                    Debian => Ok(Self::Deb),
-                    Rhel => Ok(Self::Rpm),
-                    Unknown => Ok(Self::Other),
+                    Distro::Arch => panic!("Using Arch ..."),
+                    Distro::Debian => {
+                        use super::deb::database::DEBIAN_DATABASE;
+                        Self::check_exists(DEBIAN_DATABASE)
+                    },
+                    Distro::Rhel => panic!("Using RHEL ..."),
+                    Distro::Unknown => panic!("Using UNKNOWN ..."),
                 }
             },
-            Windows => panic!("Using windows"),
-            Mac => panic!("Using Mac"),
-            Unknown => panic!("Could not detect your OS"),
+            OS::Windows => panic!("Using windows"),
+            OS::Mac => panic!("Using Mac"),
+            OS::Unknown => panic!("Could not detect your OS"),
         }
     }
 
-    pub fn from(fmt: &str) -> Self {
-        match fmt {
-            "deb" => PackageFormat::Deb,
-            "rpm" => PackageFormat::Rpm,
-            "oth" => PackageFormat::Other,
-            _ => panic!("Invalid format") // TODO: Raise a custom error
+    fn get_default_package_format(os: &OS) -> Result<PackageFormat> {
+        PackageFormat::get_format(os)
+    }
+
+    fn get_install_dir(os: &OS) -> PathBuf {
+        match os {
+            OS::Linux(distro) => {
+                match distro {
+                    Distro::Arch | Distro::Debian | Distro::Rhel => PathBuf::from(UNIX_INSTALL_DIR),
+                    Distro::Unknown => panic!("Using UNKNOWN ..."),
+                }
+            },
+            OS::Windows => panic!("Using windows"),
+            OS::Mac => panic!("Using Mac"),
+            OS::Unknown => panic!("Could not detect your OS"),
+        }
+    }
+
+    fn check_exists(path: &str) -> Option<PathBuf> {
+        let db = PathBuf::from(path);
+        if db.exists() {
+            Some(db)
+        } else {
+            None
         }
     }
 }

@@ -3,12 +3,12 @@
 /// 
 
 use anyhow::Result;
-use super::os_fingerprint::PackageFormat;
+use super::packages::PackageFormat;
 use super::config::Config;
 
 #[tokio::main]
 pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()> {
-    match PackageFormat::from(&config.pkg_fmt) {
+    match config.os_info.default_package_format {
         PackageFormat::Deb => {
             use super::deb;
             deb::install(config, name, force).await?; 
@@ -16,7 +16,10 @@ pub async fn install(config: &mut Config, name: &str, force: bool) -> Result<()>
         PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");
         }
-        PackageFormat::Other => {
+        PackageFormat::Pkg => {
+            println!("It's a Arch(-based) distro");
+        }
+        PackageFormat::Unknown => {
             println!("Actually we do not have support for you distro!");
         }
     }

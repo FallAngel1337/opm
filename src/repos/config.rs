@@ -1,12 +1,12 @@
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
 use std::io::ErrorKind;
-use std::env;
 use std::fs;
 
-#[derive(Debug, Serialize, Deserialize)]
+use super::os_fingerprint::OsInfo;
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Config {
-	pub pkg_fmt: String,
+	pub os_info: OsInfo,
 	pub cache: String,
 	pub rls: String,
 	pub archive: String,
@@ -18,35 +18,31 @@ pub struct Config {
 	pub use_pre_existing_db: bool
 }
 
-#[allow(deprecated)]
 impl Config {
-	pub fn new(pkg_fmt: &str) -> Result<Self> {
-		let home = env::home_dir().unwrap()
-			.into_os_string().into_string().unwrap();
-		let dir = format!("{}/.opm/{}", home, pkg_fmt);
-		
+	pub fn new(os_info: &OsInfo) -> Result<Self> {
+		let dir = os_info.install_dir.clone();
 		Ok(
 			Self {
-				cache: format!("{}/cache/pkg", dir),
-				rls: format!("{}/cache/rls", dir),
-				tmp: format!("{}/tmp", dir),
-				archive: format!("{}/archive", dir),
-				info: format!("{}/info", dir),
-				db: format!("{}/db", dir),
-				pkg_fmt: pkg_fmt.to_owned(),
+				os_info: os_info.clone(),
+				cache: dir.join("cache/pkg").to_str().unwrap().to_owned(),
+				rls: dir.join("cache/rls").to_str().unwrap().to_owned(),
+				tmp: dir.join("tmp").to_str().unwrap().to_owned(),
+				archive: dir.join("archibe").to_str().unwrap().to_owned(),
+				info: dir.join("info").to_str().unwrap().to_owned(),
+				db: dir.join("db").to_str().unwrap().to_owned(),
 				use_pre_existing_cache: false,
 				use_pre_existing_db: false,
 			}
 		)
 	}
 
-	pub fn from(file: &str) -> Self {
+	pub fn from<P: AsRef<std::path::Path>>(file: P) -> Self {
 		let contents = fs::read_to_string(file).unwrap();
-		toml::from_str(&contents).unwrap()
+		serde_json::from_str(&contents).unwrap()
 	}
 
-	pub fn save(&self, to: &str) {
-		let contents = toml::to_string(self).unwrap();
+	pub fn save<P: AsRef<std::path::Path>>(&self, to: P) {
+		let contents = serde_json::to_string(self).unwrap();
 		fs::write(to, contents).unwrap();
 	}
 
@@ -93,21 +89,26 @@ impl Config {
 
 		match fs::File::create(&self.db) {
 			Ok(_) => {
-				use super::os_fingerprint::PackageFormat;
-				match PackageFormat::from(&self.pkg_fmt) {
-					PackageFormat::Deb => {
-						use super::deb::database::DEBIAN_DATABASE;
-						if let Err(err) = fs::copy(DEBIAN_DATABASE, &self.db) {
-							if err.kind() != std::io::ErrorKind::NotFound {
-								anyhow::bail!(err);
-							} else {
-								fs::File::create(&self.db)?;
-							}
-						}
-					},
-					PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
-					PackageFormat::Other => panic!("Unrecognized package"),
+				if let Some(db) = self.os_info.previous_db.clone() {
+					fs::copy(db, &self.db)?;
+				} else {
+					fs::File::create(&self.db)?;
 				}
+				// match &self.pkg_fmt {
+				// 	PackageFormat::Deb => {
+				// 		use super::deb::database::DEBIAN_DATABASE;
+				// 		if let Err(err) = fs::copy(DEBIAN_DATABASE, &self.db) {
+				// 			if err.kind() != std::io::ErrorKind::NotFound {
+				// 				anyhow::bail!(err);
+				// 			} else {
+				// 				fs::File::create(&self.db)?;
+				// 			}
+				// 		}
+				// 	},
+				// 	PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
+				// 	PackageFormat::Rpm => panic!("We do not support RPM packages for now ..."),
+				// 	PackageFormat::Unknown => panic!("Unrecognized package"),
+				// }
 			},
 			Err(e) => match e.kind() {
 			ErrorKind::AlreadyExists => (),

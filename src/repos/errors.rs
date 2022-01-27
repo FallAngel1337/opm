@@ -39,6 +39,7 @@ pub enum SignatureError {
 
 #[derive(Debug)]
 pub enum ConfigError {
+    ChangeConfig  ( String ),
     SetupError    ( Error ),
     UnexError     { msg: String, err: Option<Error> },
 }
@@ -97,6 +98,7 @@ impl Display for ConfigError {
         match self {
             ConfigError::SetupError ( err ) => write!(f, "Failed to complete setup :: error {:?}", err),
             ConfigError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
+            ConfigError::ChangeConfig ( config ) => write!(f, "Go to {:?} and change the values manually", config),
         }
     }
 }

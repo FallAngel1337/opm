@@ -1,9 +1,9 @@
 use anyhow::Result;
-use super::os_fingerprint::PackageFormat;
+use super::packages::PackageFormat;
 use super::config::Config;
  
 pub fn list_installed(config: &Config) {
-	match PackageFormat::from(&config.pkg_fmt) {
+	match config.os_info.default_package_format {
 		PackageFormat::Deb => {
 			use super::deb;
 			let dump = deb::db_dump(config);
@@ -18,7 +18,10 @@ pub fn list_installed(config: &Config) {
 		PackageFormat::Rpm => {
 			println!("It's a RHEL(-based) distro");
 		}
-		PackageFormat::Other => {
+		PackageFormat::Pkg => {
+			println!("It's a Arch(-based) distro");
+		},
+		PackageFormat::Unknown => {
 			println!("Actually we do not have support for you distro!");
 		}
 	}
@@ -26,7 +29,7 @@ pub fn list_installed(config: &Config) {
 
 
 pub fn search(config: &mut Config, name: &str) -> Result<()> {
-	match PackageFormat::from(&config.pkg_fmt) {
+	match config.os_info.default_package_format {
 		PackageFormat::Deb => {
 			use super::deb;
 			let result = deb::cache::cache_search(config, name)?;
@@ -46,7 +49,11 @@ pub fn search(config: &mut Config, name: &str) -> Result<()> {
 			println!("It's a RHEL(-based) distro");
 			Ok(())
 		},
-		PackageFormat::Other => {
+		PackageFormat::Pkg => {
+			println!("It's a Arch(-based) distro");
+			Ok(())
+		},
+		PackageFormat::Unknown => {
 			println!("Actually we do not have support for you distro!");
 			Ok(())
 		},

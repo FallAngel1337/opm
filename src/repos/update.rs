@@ -3,12 +3,12 @@
 /// 
 
 use anyhow::Result;
-use super::os_fingerprint::PackageFormat;
+use super::packages::PackageFormat;
 use super::config::Config;
 
 #[tokio::main]
 pub async fn update(config: &mut Config) -> Result<()> {
-    match PackageFormat::from(&config.pkg_fmt) {
+    match config.os_info.default_package_format {
         PackageFormat::Deb => {
             use super::deb;
             let repos = deb::sources::DebianSource::new()?;
@@ -17,7 +17,10 @@ pub async fn update(config: &mut Config) -> Result<()> {
         PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");
         }
-        PackageFormat::Other => {
+        PackageFormat::Pkg => {
+            println!("It's a RHEL(-based) distro");
+        }
+        PackageFormat::Unknown => {
             println!("Actually we do not have support for you distro!");
         }
     }
@@ -26,7 +29,7 @@ pub async fn update(config: &mut Config) -> Result<()> {
 }
 
 pub fn clear(config: &Config) -> Result<()> {
-    match PackageFormat::from(&config.pkg_fmt) {
+    match config.os_info.default_package_format {
         PackageFormat::Deb => {
             use super::deb;
             deb::clear(config)?;
@@ -34,7 +37,10 @@ pub fn clear(config: &Config) -> Result<()> {
         PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");
         }
-        PackageFormat::Other => {
+        PackageFormat::Pkg => {
+            println!("It's a RHEL(-based) distro");
+        }
+        PackageFormat::Unknown => {
             println!("Actually we do not have support for you distro!");
         }
     }

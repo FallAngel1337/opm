@@ -1,6 +1,8 @@
 use anyhow::Result;
-use std::{path::Path, io::{self, ErrorKind, Write}};
-use super::{config::Config, os_fingerprint::PackageFormat};
+use std::io::{self, ErrorKind, Write};
+use crate::repos::errors::ConfigError;
+
+use super::{config::Config, os_fingerprint::OsInfo};
 
 fn get_answer() -> Result<String> {
     let mut answer = String::new();
@@ -9,68 +11,36 @@ fn get_answer() -> Result<String> {
     Ok(answer)
 }
 
-pub fn setup(pkg_fmt: Option<&str>) -> Result<Config> {
-    #[allow(deprecated)]
-    let home = std::env::home_dir()
-        .unwrap()
-        .into_os_string()
-        .into_string()
-        .unwrap();
-        
-    let opm_dir = format!("{}/.opm/", home);
-    let config_file = format!("{}/config.toml", opm_dir);
+pub fn setup() -> Result<Config> {
+    let os_info = OsInfo::new()?;
+    let config_file = os_info.install_dir.join("config.json");
 
-    if let Some(pkg_fmt) = pkg_fmt {
-        Ok(Config::new(pkg_fmt)?)
-    } else if !Path::new(&config_file).exists() {
-        println!("Entering setup mode ...");
-        let config = match PackageFormat::get_format()? {
-            PackageFormat::Deb => {
-                print!("Are you on a Debian-based distro? [y/n] ");
-                let fmt = if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
-                    "deb"
-                } else {
-                    print!("Insert the package format: ");
-                    get_answer()?.trim()
-                };
-
-                Config::new(fmt)?
-            },
-            PackageFormat::Rpm => {
-                print!("Are you on a RHEL-based distro? [y/n] ");
-                if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
-                    Config::new("rpm")?
-                } else {
-                    print!("Insert the package format: ");
-                    Config::new(get_answer()?.trim())?
-                }
-            }
-            PackageFormat::Other => panic!("Unrecognized package"),
-        };
+    if config_file.exists() {
+        Ok(Config::from(config_file))
+    } else {
+        let curr_conf = Config::new(&os_info)?;
         
-        if !Path::new(&opm_dir).exists() {
-            config.setup()?;
+        if !os_info.install_dir.exists() {
+            curr_conf.setup()?;
         }
 
-        println!("Done");
-        let config_file = format!("{}config.toml", opm_dir);
-        println!("Saving config file to {}", config_file);
-        config.save(&config_file);
+        println!("Got default configuration:\n{:#?}", curr_conf);
+        print!("Want to keep those? [y/n] ");
 
-        Ok(config)
-    } else {
-        Ok(Config::from(&config_file))
+        if get_answer()?.to_ascii_lowercase().trim().starts_with('y') {
+            curr_conf.save(&config_file);
+            Ok(curr_conf)
+        } else {
+            curr_conf.save(&config_file);
+            anyhow::bail!(ConfigError::ChangeConfig(config_file.to_str().unwrap().to_owned()))
+        }
     }
 }
 
-#[allow(deprecated)]
 pub fn roll_back() {
     println!("Rolling back ...");
-    let home = std::env::home_dir().unwrap()
-    .into_os_string().into_string().unwrap();
-    let root = format!("{}/.opm/", home);
 
-    match std::fs::remove_dir_all(root){
+    match std::fs::remove_dir_all(OsInfo::new().unwrap().install_dir){
         Ok(_) => (),
         Err(e) => match e.kind() {
             ErrorKind::NotFound => (),

@@ -3,7 +3,7 @@ use opm::repos;
 use std::process;
 
 fn main() {
-	let mut config = repos::setup(None).unwrap_or_else(|err| {
+	let mut config = repos::setup().unwrap_or_else(|err| {
 		eprintln!("Could not setup the package manager due {}", err);
 		repos::roll_back();
 		process::exit(1);
@@ -73,21 +73,21 @@ fn main() {
     if let Some(package) = matches.subcommand_matches("install") {
 		let force = !matches!(matches.occurrences_of("force"), 0);
 
-		config = repos::setup(package.value_of("format")).unwrap_or_else(|err| {
-			eprintln!("Could not setup the package manager due {}", err);
+		config = repos::setup().unwrap_or_else(|err| {
+			eprintln!("ConfigError :: {}", err);
 			repos::roll_back();
 			process::exit(1);
 		});
 
         repos::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
-            eprintln!("Got an error during installation :: {}", err);
+            eprintln!("InstallError :: {}", err);
             process::exit(1);
         });
     }
 
     if matches.subcommand_matches("update").is_some() {
         repos::update(&mut config).unwrap_or_else(|err| {
-			eprintln!("Got and error during update :: {}", err);
+			eprintln!("UpdateError :: {}", err);
 			process::exit(1);
 		})
     }

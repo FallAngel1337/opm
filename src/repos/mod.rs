@@ -7,9 +7,10 @@ mod update;
 mod cache;
 mod setup;
 mod remove;
+mod os_fingerprint;
 
 pub mod config;
-pub mod os_fingerprint;
+pub mod packages;
 pub mod errors;
 
 pub use install::install;

@@ -1,8 +1,8 @@
 use anyhow::Result;
-use super::{config::Config, os_fingerprint::PackageFormat};
+use super::{config::Config, packages::PackageFormat};
 
 pub fn remove(config: &Config, name: &str, purge: bool) -> Result<()> {
-    match PackageFormat::from(&config.pkg_fmt) {
+    match config.os_info.default_package_format {
         PackageFormat::Deb => {
             use super::deb;
             deb::remove(config, name, purge)?;
@@ -10,7 +10,10 @@ pub fn remove(config: &Config, name: &str, purge: bool) -> Result<()> {
         PackageFormat::Rpm => {
             println!("It's a RHEL(-based) distro");
         }
-        PackageFormat::Other => {
+        PackageFormat::Pkg => {
+            println!("It's a Arch(-based) distro");
+        }
+        PackageFormat::Unknown => {
             println!("Actually we do not have support for you distro!");
         }
     }
