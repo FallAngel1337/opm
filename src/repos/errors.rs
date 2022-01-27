@@ -2,6 +2,7 @@ use anyhow::Error;
 use std::fmt::{self, Display};
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum InstallError {
     InvalidPackage   { pkg: String, err: Option<Error> },
     BrokenPackage    { pkg: String, err: Option<Error> },
@@ -15,6 +16,7 @@ pub enum InstallError {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum RemoveError {
     NotFoundError    ( String ),
     UnexError        { msg: String, err: Option<Error> },
@@ -22,11 +24,10 @@ pub enum RemoveError {
 
 #[derive(Debug)]
 pub enum ScriptsError {
-    PreInstError,
-    PostInstError,
-    PreRmError,
-    PostRmError,
-    UnexError { msg: String, err: Option<Error> },
+    PreInst,
+    PostInst,
+    PreRm,
+    PostRm,
 }
 
 #[derive(Debug)]
@@ -40,14 +41,12 @@ pub enum SignatureError {
 #[derive(Debug)]
 pub enum ConfigError {
     ChangeConfig  ( String ),
-    SetupError    ( Error ),
     UnexError     { msg: String, err: Option<Error> },
 }
 
 #[derive(Debug)]
 pub enum CacheError {
     NotFoundError { pkg: String, cache: String },
-    UnexError     { msg: String, err: Option<Error> },
     NoCache       ( String ),
 }
 
@@ -96,7 +95,6 @@ impl Display for SignatureError {
 impl Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigError::SetupError ( err ) => write!(f, "Failed to complete setup :: error {:?}", err),
             ConfigError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
             ConfigError::ChangeConfig ( config ) => write!(f, "Go to {:?} and change the values manually", config),
         }
@@ -107,7 +105,6 @@ impl Display for CacheError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CacheError::NotFoundError { pkg, cache } => write!(f, "{:?} was not found at {:?}", pkg, cache),
-            CacheError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
             CacheError::NoCache ( cache ) => write!(f, "No cache file was found at {:?}", cache),
         }
     }
@@ -116,11 +113,10 @@ impl Display for CacheError {
 impl Display for ScriptsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ScriptsError::PreInstError => write!(f, "Could not execute PREINST the script"),
-            ScriptsError::PostInstError => write!(f, "Could not execute POSTINST the script"),
-            ScriptsError::PreRmError => write!(f, "Could not execute PRERM the script"),
-            ScriptsError::PostRmError => write!(f, "Could not execute POSTRM the script"),
-            ScriptsError::UnexError { msg, err } => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
+            ScriptsError::PreInst => write!(f, "Could not execute PREINST the script"),
+            ScriptsError::PostInst => write!(f, "Could not execute POSTINST the script"),
+            ScriptsError::PreRm => write!(f, "Could not execute PRERM the script"),
+            ScriptsError::PostRm => write!(f, "Could not execute POSTRM the script"),
         }
     }
 }
