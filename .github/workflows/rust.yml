@@ -13,8 +13,6 @@ jobs:
   build:
       env:
         RUSTC_FLAGS: -C target-cpu=native
-        PKG_FMT: deb
-      continue-on-error: true
 
       runs-on: ubuntu-latest
 
@@ -22,5 +20,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: cargo build --verbose --release
+      - name: Setup
+        run: sudo target/release/opm
       - name: Run tests
         run: cargo test --verbose --release
