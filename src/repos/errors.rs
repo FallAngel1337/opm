@@ -60,7 +60,7 @@ impl Display for InstallError {
         match self {
             InstallError::InvalidPackage { pkg, err } => write!(f, "{:?} is a invalid package :: error {:?}", pkg, err),
             InstallError::BrokenPackage { pkg, err } => write!(f, "Perhaps {:?} is broken due some missing files :: error {:?}", pkg, err),
-            InstallError::AlreadyInstalled ( pkg ) => write!(f, "{:?} is already installed", pkg),
+            InstallError::AlreadyInstalled ( pkg ) => write!(f, "{:?} is already installed on the newest version", pkg),
             InstallError::UnexError { msg, err }  => write!(f, "Unexpected Error {:?} :: {:?}", msg, err),
             InstallError::Breaks ( pkg ) => write!(f, "Package {:?} can break others", pkg),
             InstallError::WrongVersion { pkg, reqv, curv } => write!(f, "Package \"{}({})\" does not satisfy \"{}({})\"", pkg, curv, pkg, reqv),
