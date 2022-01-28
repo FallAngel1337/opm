@@ -41,14 +41,9 @@ You'll need to have [rust and cargo](https://www.rust-lang.org/tools/install) in
 $ git clone git@github.com:0xc0ffeec0de/opm.git
 $ cd opm/
 $ cargo build --release
-$ ./target/releases/opm
+$ sudo ./target/releases/opm
 ```
-If you have [docker](https://www.docker.com/) installed
-```
-$ docker build -t opm .
-$ docker container run -dit --name opt_test opm
-$ docker container exec -it opm_test bash
-```
+If you have [docker](https://www.docker.com/) installed you can build the image inside the repository.
 
 ## Supported Packages:
   - [X] deb
@@ -57,7 +52,7 @@ $ docker container exec -it opm_test bash
 
 ## Usage
 ```
-Oxidized Package Manager v1.5-beta
+Oxidized Package Manager v1.5.1-beta
 FallAngel <fallangel@protonmail.com>
 A package manager fully written in Rust
 
