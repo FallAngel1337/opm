@@ -25,4 +25,4 @@ jobs:
       - name: Setup
         run: sudo target/release/opm
       - name: Run tests
-        run: cargo test --verbose --release --
+        run: cargo test --verbose --release
