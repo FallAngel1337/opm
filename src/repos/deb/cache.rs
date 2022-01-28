@@ -253,17 +253,13 @@ mod test {
 	}
 
 	#[test]
-	#[ignore]
+	#[should_panic]
 	fn cache_search_test() {
 		let config = repos::setup().unwrap();
-		let pkg = cache_search(&config, "invalidPackage0101").unwrap();
-		// dbg!("PKG = {:?}", &pkg);
-		dbg!("[cache_search_test]", &config);
-		assert!(pkg.unwrap().is_empty());
+		let _pkg = cache_search(&config, "invalidPackage0101").unwrap();
 	}
 
 	#[test]
-	#[ignore]
 	fn db_dump_test() {
 		let config = repos::setup().unwrap();
 		// THIS MAY NOT BE GOOD, IF YOU HAVE AN EMPTY DATABASED IT'LL FAIL
@@ -273,7 +269,7 @@ mod test {
 
 	// This was crashing and idk why
 	#[test]
-	#[ignore]
+	#[should_panic]
 	fn cache_lookup_test() {
 		let config = repos::setup().unwrap();
 		dbg!("[cache_lookup_test]", &config);

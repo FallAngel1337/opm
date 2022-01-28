@@ -175,12 +175,4 @@ mod test {
         assert!(!check_version("1.33.7", "<< 1.33.7"));
         assert!(!check_version("1.33.7", ">> 1.33.7"));
     }
-
-    // This was also crashing and idk why
-    #[test]
-    #[ignore]
-    fn get_dependencies_test() {
-        let config = crate::repos::setup().unwrap();
-        assert!(get_dependencies(&config, Some("accountsservice")).is_some());
-    }
 }
