@@ -1,6 +1,7 @@
 # OPM's usage 
 
 ## Table of Contents
+- [Configuration file](#configuration-file)
 - [Basic Usage](#basic-usage)
     - [Package Installation](#package-installation)
     - [Package Removing](#package-removing)
@@ -8,7 +9,10 @@
     - [Package Listing](#package-listing)
 - [Advanced Usage](#advanced-usage)
     - [Package building](#package-building)
-    - [Package inspect](#package-inspect)
+    - [Package inspect](#package-inspecting)
+
+## Configuration file
+You can(should) check more about it [here](CONFIG.md)
 
 ## Basic Usage
 This all involves the high-level API
