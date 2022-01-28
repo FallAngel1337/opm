@@ -15,7 +15,19 @@ use super::{cache, scripts};
 use futures::future;
 use async_recursion::async_recursion;
 
-// TODO: Check for newer versions of the package if installed
+fn user_input() -> Result<()> {
+    let mut answer = String::new();
+    std::io::stdout().flush()?;
+    std::io::stdin().read_line(&mut answer)?;
+
+    if answer.to_ascii_lowercase().trim().starts_with('y') {
+        Ok(())
+    } else {
+        eprintln!("Exiting installation process...");
+        anyhow::bail!(InstallError::UserInterrupt);
+    }
+}
+
 // TODO: Get rid of most of those `clone()` calls
 #[async_recursion]
 pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
@@ -35,9 +47,19 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
         finish(Path::new(&data.control_path)).unwrap();
         cache::add_package(config, pkg)?;
     } else {
+        // TODO: Find out a better way of checking for new packages
         if let Some(pkg) = cache::check_installed(config, name) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
-            anyhow::bail!(InstallError::AlreadyInstalled(pkg.control.package));
+            let new = cache::cache_lookup(config, &pkg.control.package)?.unwrap();
+            if new.control.version != pkg.control.version {
+                println!("A new version is available");
+                println!("Old: {:#?} | New: {:#?}", new.control.version , pkg.control.version);
+                
+                print!("Want to update? [Y/n] ");
+                user_input()?;
+            } else {
+                anyhow::bail!(InstallError::AlreadyInstalled(pkg.control.package));
+            }
         }
 
         println!("Installing {} for debian ...", name);
@@ -48,6 +70,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
             let mut depgraph = DepGraph::new();
             let mut tasks = vec![];
 
+            depgraph.register_dependency(Some(pkg.control.clone()), None);
             get_dependencies(config, pkg.control.clone(), pkg.control.clone().depends, &mut depgraph, force)?;
 
             let pkgs = depgraph.dependencies_of(&Some(pkg.control)).unwrap()
@@ -66,15 +89,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
 
             println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));
             print!("Do you want to continue? [Y/n] ");
-            let mut answer = String::new();
-            std::io::stdout().flush()?;
-            std::io::stdin().read_line(&mut answer)?;
-            let answer = answer.to_ascii_lowercase().trim().chars().next().unwrap();
-
-            if answer != 'y' {
-                eprintln!("Exiting installation process...");
-                anyhow::bail!(InstallError::UserInterrupt);
-            }
+            user_input()?;
 
             let mp = MultiProgress::new();
             for pkg in pkgs.clone().into_iter() {
