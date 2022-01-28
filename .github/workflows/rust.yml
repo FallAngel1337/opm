@@ -21,6 +21,6 @@ jobs:
       - name: Build
         run: cargo build --verbose --release
       - name: Setup
-        run: sudo target/release/opm
+        run: sudo target/release/opm || true
       - name: Run tests
         run: cargo test --verbose --release
