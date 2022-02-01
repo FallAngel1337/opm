@@ -5,10 +5,14 @@
 use anyhow::Result;
 use super::os_fingerprint::{Os, Distro};
 
+pub trait PackageSource {
+    fn source(os: &Os) -> Self;
+}
+
 pub const DEB: &str = "deb";
 pub const RPM: &str = "rpm";
 pub const PKG: &str = "pkg";
-pub const UNKNOWN: &str = "unknown"; // Unknown format (hope there's no `unk` package format)
+pub const UNKNOWN: &str = "unknown";
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum PackageFormat {
@@ -19,7 +23,7 @@ pub enum PackageFormat {
 }
 
 impl PackageFormat {
-    pub fn get_format(os: &Os) -> Result<Self> {
+    pub fn format(os: &Os) -> Result<Self> {
         use {Os::*, Distro::*};
         match os {
             Linux(distro) => {
