@@ -38,12 +38,17 @@ You can find a binary release for you architecture in the [releases](https://git
 
 You'll need to have [rust and cargo](https://www.rust-lang.org/tools/install) installed on your machine
 ```
-$ git clone git@github.com:0xc0ffeec0de/opm.git
+$ git clone git@github.com:0xc0ffeec0de/opm.git # If fail https://github.com/0xc0ffeec0de/opm.git
 $ cd opm/
 $ cargo build --release
-$ sudo ./target/releases/opm
+$ sudo ./target/releases/opm update
 ```
 If you have [docker](https://www.docker.com/) installed you can build the image inside the repository.
+
+## Tested on
+  - [X] Debian 11
+  - [X] Ubuntu 20.04.3
+  - [ ] ...
 
 ## Supported Packages:
   - [X] deb
