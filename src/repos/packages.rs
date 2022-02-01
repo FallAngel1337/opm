@@ -20,17 +20,18 @@ pub enum PackageFormat {
 
 impl PackageFormat {
     pub fn get_format(os: &OS) -> Result<Self> {
+        use {OS::*, Distro::*};
         match os {
-            OS::Linux(distro) => {
+            Linux(distro) => {
                 match distro {
-                    Distro::Arch => panic!("Using Arch ..."),
-                    Distro::Debian => Ok(Self::Deb),
-                    Distro::Rhel => Ok(Self::Rpm),
+                    Arch => panic!("Using Arch ..."),
+                    Debian | Ubuntu => Ok(Self::Deb),
+                    OpenSuse => Ok(Self::Rpm),
                     Distro::Unknown => Ok(Self::Unknown),
                 }
             },
-            OS::Windows => panic!("Using windows"),
-            OS::Mac => panic!("Using Mac"),
+            Windows => panic!("Using windows"),
+            Mac => panic!("Using Mac"),
             OS::Unknown => panic!("Could not detect your OS"),
         }
     }
