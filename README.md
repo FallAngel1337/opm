@@ -45,10 +45,14 @@ $ sudo ./target/releases/opm update
 ```
 If you have [docker](https://www.docker.com/) installed you can build the image inside the repository.
 
-## Tested on
-  - [X] Debian 11
-  - [X] Ubuntu 20.04.3
-  - [ ] ...
+### Tested distros
+
+| Distro | Version | Tested |
+| -------| ------- | ------ |
+| Debian | 11      | Yes    |
+| Ubuntu | 20.04.3 | Yes    |
+| openSUSE Leap | 15.2 | No |
+| Arch Linux | X | No |
 
 ## Supported Packages:
   - [X] deb
