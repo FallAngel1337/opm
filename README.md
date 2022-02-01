@@ -54,7 +54,7 @@ If you have [docker](https://www.docker.com/) installed you can build the image 
 | openSUSE Leap | 15.2 | No |
 | Arch Linux | X | No |
 
-## Supported Packages:
+### Supported Packages:
   - [X] deb
   - [ ] rpm
   - [ ] ...
