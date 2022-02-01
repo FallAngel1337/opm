@@ -3,7 +3,7 @@
 /// 
 
 use anyhow::Result;
-use super::os_fingerprint::{OS, Distro};
+use super::os_fingerprint::{Os, Distro};
 
 pub const DEB: &str = "deb";
 pub const RPM: &str = "rpm";
@@ -19,8 +19,8 @@ pub enum PackageFormat {
 }
 
 impl PackageFormat {
-    pub fn get_format(os: &OS) -> Result<Self> {
-        use {OS::*, Distro::*};
+    pub fn get_format(os: &Os) -> Result<Self> {
+        use {Os::*, Distro::*};
         match os {
             Linux(distro) => {
                 match distro {
@@ -32,7 +32,7 @@ impl PackageFormat {
             },
             Windows => panic!("Using windows"),
             Mac => panic!("Using Mac"),
-            OS::Unknown => panic!("Could not detect your OS"),
+            Os::Unknown => panic!("Could not detect your OS"),
         }
     }
 }
