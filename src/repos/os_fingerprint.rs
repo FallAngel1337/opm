@@ -57,9 +57,9 @@ pub struct OsInfo {
 }
 
 impl Os {
-    fn get_os() -> Result<Os> {
+    fn new() -> Result<Os> {
         if cfg!(linux) || cfg!(unix) {
-            Ok(Os::Linux(Distro::get_distro(&OsRelease::new()?.name)?))
+            Ok(Os::Linux(Distro::new(&OsRelease::new()?.name)?))
         } else if cfg!(macos) {
             Ok(Os::Mac)
         } else if cfg!(windows) {
@@ -71,7 +71,7 @@ impl Os {
 }
 
 impl Distro {
-    fn get_distro(name: &str) -> Result<Self> {
+    fn new(name: &str) -> Result<Self> {
         use std::path::Path;
         use Distro::*;
 
@@ -109,17 +109,17 @@ impl ToString for Distro {
 
 impl Archs {
     #[cfg(target_arch="x86")]
-    pub const fn get_arch() -> Self {
+    pub const fn new() -> Self {
         Self::I386
     }
 
     #[cfg(target_arch="x86_64")]
-    pub const fn get_arch() -> Self {
+    pub const fn new() -> Self {
         Self::Amd64
     }
 
     #[cfg(not(any(target_arch="x86_64", target_arch="x86_64")))]
-    pub const fn get_arch() -> Self {
+    pub const fn new() -> Self {
         Self::Unknown
     }
 }
@@ -136,12 +136,12 @@ impl ToString for Archs {
 
 impl OsInfo {
     pub fn new() -> Result<Self> {
-        let os = Os::get_os()?;
-        let arch = Archs::get_arch();
-        let version = Self::get_version(&os)?;
-        let previous_db = Self::get_db(&os);
-        let default_package_format = Self::get_default_package_format(&os)?;
-        let install_dir = Self::get_install_dir(&os).join(default_package_format.to_string());
+        let os = Os::new()?;
+        let arch = Archs::new();
+        let version = Self::version(&os)?;
+        let previous_db = Self::db(&os);
+        let default_package_format = Self::default_package_format(&os)?;
+        let install_dir = Self::install_dir(&os).join(default_package_format.to_string());
 
         Ok(
             Self {
@@ -156,7 +156,7 @@ impl OsInfo {
     }
 
     //TODO: Remove all the panics
-    fn get_db(os: &Os) -> Option<PathBuf> {
+    fn db(os: &Os) -> Option<PathBuf> {
         use Os::*;
         match os {
             Linux(distro) => {
@@ -177,11 +177,11 @@ impl OsInfo {
         }
     }
 
-    fn get_default_package_format(os: &Os) -> Result<PackageFormat> {
-        PackageFormat::get_format(os)
+    fn default_package_format(os: &Os) -> Result<PackageFormat> {
+        PackageFormat::format(os)
     }
 
-    fn get_install_dir(os: &Os) -> PathBuf {
+    fn install_dir(os: &Os) -> PathBuf {
         use Os::*;
         match os {
             Linux(distro) => {
@@ -206,7 +206,7 @@ impl OsInfo {
         }
     }
 
-    fn get_version(os: &Os) -> Result<String> {
+    fn version(os: &Os) -> Result<String> {
         use Os::*;
         match os {
             Linux(_) => Ok(OsRelease::new()?.version_id),
