@@ -25,8 +25,8 @@ impl PackageFormat {
             Linux(distro) => {
                 match distro {
                     Arch => panic!("Using Arch ..."),
-                    Debian | Ubuntu => Ok(Self::Deb),
-                    OpenSuse => Ok(Self::Rpm),
+                    Debian => Ok(Self::Deb),
+                    Rhel => Ok(Self::Rpm),
                     Distro::Unknown => Ok(Self::Unknown),
                 }
             },

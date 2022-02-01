@@ -10,9 +10,10 @@ use super::packages::PackageFormat;
 
 const DEBIAN: &str = "Debian";
 const UBUNTU: &str = "Ubuntu";
+const MINT: &str = "Mint";
 const ARCH: &str = "Arch";
-const OPENSUSE: &str = "openSUSE"; // /etc/issue from opensuse is weird
-const UNKNOWN: &str = "Unknown"; // /etc/issue from opensuse is weird
+const OPENSUSE: &str = "openSUSE";
+const UNKNOWN: &str = "Unknown";
 
 ///
 /// Default Installation dir
@@ -33,8 +34,7 @@ pub enum Os {
 pub enum Distro {
     Arch,
     Debian,
-    Ubuntu,
-    OpenSuse,
+    Rhel,
     Unknown,
 }
 
@@ -50,7 +50,6 @@ pub enum Archs {
 pub struct OsInfo {
     pub os: Os,
     pub arch: Archs,
-    pub version: String,
     pub previous_db: Option<PathBuf>,
     pub default_package_format: PackageFormat,
     pub install_dir: PathBuf,
@@ -76,7 +75,7 @@ impl Distro {
         use Distro::*;
 
         let name = name.split_whitespace().next().unwrap();
-        let re = regex::Regex::new(r"\b(Debian|Ubuntu|Arch|openSuse)\b")?;
+        let re = regex::Regex::new(r"\b(Debian|Ubuntu|Mint|Arch|openSuse)\b")?;
 
         if !re.is_match(name) {
             Ok(Unknown)
@@ -85,10 +84,9 @@ impl Distro {
                 .unwrap()
                 .as_str()
             {
-                DEBIAN => Ok(Debian),
-                UBUNTU => Ok(Ubuntu),
+                DEBIAN | UBUNTU | MINT => Ok(Debian),
                 ARCH if Path::new("/etc/arch-release").exists() => Ok(Arch),
-                OPENSUSE => Ok(OpenSuse),
+                OPENSUSE => Ok(Rhel),
                 _ => Ok(Unknown),
             }
         }
@@ -99,9 +97,8 @@ impl ToString for Distro {
     fn to_string(&self) -> String {
         match self {
             Self::Debian => DEBIAN.to_owned(),
-            Self::Ubuntu => UBUNTU.to_owned(),
             Self::Arch => ARCH.to_owned(),
-            Self::OpenSuse => OPENSUSE.to_owned(),
+            Self::Rhel => OPENSUSE.to_owned(),
             _ => UNKNOWN.to_owned(),
         }
     }
@@ -138,7 +135,6 @@ impl OsInfo {
     pub fn new() -> Result<Self> {
         let os = Os::new()?;
         let arch = Archs::new();
-        let version = Self::version(&os)?;
         let previous_db = Self::db(&os);
         let default_package_format = Self::default_package_format(&os)?;
         let install_dir = Self::install_dir(&os).join(default_package_format.to_string());
@@ -147,7 +143,6 @@ impl OsInfo {
             Self {
                 os,
                 arch,
-                version,
                 previous_db,
                 default_package_format,
                 install_dir
@@ -163,11 +158,11 @@ impl OsInfo {
                 use Distro::*;
                 match distro {
                     Arch => panic!("Using Arch ..."),
-                    Debian | Ubuntu => {
+                    Debian => {
                         use super::deb::database::DEBIAN_DATABASE;
                         Self::check_exists(DEBIAN_DATABASE)
                     },
-                    OpenSuse => panic!("Using OpenSuse ..."),
+                    Rhel => panic!("Using Rhel ..."),
                     Unknown => panic!("Using UNKNOWN ..."),
                 }
             },
@@ -187,7 +182,7 @@ impl OsInfo {
             Linux(distro) => {
                 use Distro::*; 
                 match distro {
-                    Arch | Debian | Ubuntu | OpenSuse => PathBuf::from(UNIX_INSTALL_DIR),
+                    Arch | Debian | Rhel => PathBuf::from(UNIX_INSTALL_DIR),
                     Unknown => panic!("Using UNKNOWN ..."),
                 }
             },
@@ -203,16 +198,6 @@ impl OsInfo {
             Some(db)
         } else {
             None
-        }
-    }
-
-    fn version(os: &Os) -> Result<String> {
-        use Os::*;
-        match os {
-            Linux(_) => Ok(OsRelease::new()?.version_id),
-            Windows => panic!("Using windows"),
-            Mac => panic!("Using Mac"),
-            Unknown => panic!("Could not detect your Os"),
         }
     }
 }
