@@ -16,14 +16,19 @@ impl DebianSource {
         let mut v: Vec<Self> = Vec::new();
 
         for d in contents.lines() {
-            if !d.contains('#') && d.starts_with("deb") && !d.contains("cdrom") {
-                let split = d.split(' ').collect::<Vec<&str>>().iter()
-                    .map(|x| x.to_string()).collect::<Vec<String>>();
+            if d.starts_with("deb") && !d.contains("cdrom") {
+                let split = d.split(' ').map(|e| e.to_owned()).collect::<Vec<_>>();
+                let (mut url, distribution, components) = (split[1].to_owned(), split[2].to_owned(), split[3..].to_vec());
+
+                if !url.ends_with('/') {
+                    url.push('/');
+                }
+
                 v.push(
                     DebianSource {
-                        url: split[1].clone(),
-                        distribution: split[2].clone(),
-                        components: Vec::from(&split[3..])
+                        url,
+                        distribution,
+                        components,
                     }
                 );
             }
