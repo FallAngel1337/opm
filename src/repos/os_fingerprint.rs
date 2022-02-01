@@ -18,6 +18,7 @@ const DEBIAN: &str = "Debian";
 const UBUNTU: &str = "Ubuntu";
 const ARCH: &str = "Arch";
 const OPENSUSE: &str = "Kernel"; // /etc/issue from opensuse is weird
+const UNKNOWN: &str = "Unknown"; // /etc/issue from opensuse is weird
 
 ///
 /// Default Installation dir
@@ -43,9 +44,18 @@ pub enum Distro {
     Unknown,
 }
 
+// TODO: Add more architectures (https://wiki.debian.org/SupportedArchitectures)
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum Archs {
+    Amd64,
+    I386,
+    Unknown,
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OsInfo {
     pub os: OS,
+    pub arch: Archs,
     pub previous_db: Option<PathBuf>,
     pub default_package_format: PackageFormat,
     pub install_dir: PathBuf,
@@ -89,9 +99,50 @@ impl Distro {
     }
 }
 
+
+impl ToString for Distro {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Debian => DEBIAN.to_owned(),
+            Self::Ubuntu => UBUNTU.to_owned(),
+            Self::Arch => ARCH.to_owned(),
+            Self::OpenSuse => OPENSUSE.to_owned(),
+            _ => UNKNOWN.to_owned(),
+        }
+    }
+}
+
+impl Archs {
+    #[cfg(target_arch="x86")]
+    pub const fn get_arch() -> Self {
+        Self::I386
+    }
+
+    #[cfg(target_arch="x86_64")]
+    pub const fn get_arch() -> Self {
+        Self::Amd64
+    }
+
+    #[cfg(not(any(target_arch="x86_64", target_arch="x86_64")))]
+    pub const fn get_arch() -> Self {
+        Self::Unknown
+    }
+}
+
+impl ToString for Archs {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Amd64 => "amd64".to_owned(),
+            Self::I386 => "i386".to_owned(),
+            _ => "unknown".to_owned()
+        }
+    }
+}
+
 impl OsInfo {
     pub fn new() -> Result<Self> {
         let os = OS::get_os()?;
+        let arch = Archs::get_arch();
         let previous_db = Self::get_db(&os);
         let default_package_format = Self::get_default_package_format(&os)?;
         let install_dir = Self::get_install_dir(&os).join(default_package_format.to_string());
@@ -99,6 +150,7 @@ impl OsInfo {
         Ok(
             Self {
                 os,
+                arch,
                 previous_db,
                 default_package_format,
                 install_dir
