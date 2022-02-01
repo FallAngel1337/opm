@@ -7,8 +7,17 @@ use super::packages::PackageFormat;
 /// Distro fingerprint files
 ///
 
-const DEBIAN: &str = "/etc/issue";      // Check if have "Debian GNU/Linux"
-const ARCH: &str = "/etc/arch-release"; // Check if exists
+const ISSUE: &str = "/etc/issue";
+const ARCH_RELEASE: &str = "/etc/arch-release"; // Check if exists
+
+///
+/// Supported Distros
+/// 
+
+const DEBIAN: &str = "Debian";
+const UBUNTU: &str = "Ubuntu";
+const ARCH: &str = "Arch";
+const OPENSUSE: &str = "Kernel"; // /etc/issue from opensuse is weird
 
 ///
 /// Default Installation dir
@@ -28,8 +37,9 @@ pub enum OS {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum Distro {
     Arch,
-    Debian, // Basically all debian-based
-    Rhel,
+    Debian,
+    Ubuntu,
+    OpenSuse,
     Unknown,
 }
 
@@ -58,13 +68,23 @@ impl OS {
 impl Distro {
     fn get_distro() -> Result<Self> {
         use std::{path::Path, fs};
-        use Distro::{Arch, Debian, Rhel, Unknown};
-        let data = fs::read_to_string(DEBIAN)?;
-        match ((Path::new(ARCH)).exists(), (data.contains("Debian") || data.contains("Ubuntu"))) {
-            (true, false) => Ok(Arch),
-            (false, true) => Ok(Debian),
-            (false, false) => Ok(Rhel), // TODO: Find a way of detecting this
-            _ => Ok(Unknown)
+        use Distro::*;
+        let issue = fs::read_to_string(ISSUE)?;
+        let re = regex::Regex::new(r"\b(Debian|Ubuntu|Mint|Arch|Kernel)\b")?;
+
+        if !re.is_match(&issue) {
+            Ok(Unknown)
+        } else {
+            match re.captures(&issue).unwrap().get(0)
+                .unwrap()
+                .as_str()
+            {
+                DEBIAN => Ok(Debian),
+                UBUNTU => Ok(Ubuntu),
+                ARCH if Path::new(ARCH_RELEASE).exists() => Ok(Arch),
+                OPENSUSE => Ok(OpenSuse),
+                _ => Ok(Unknown),
+            }
         }
     }
 }
@@ -88,21 +108,23 @@ impl OsInfo {
 
     //TODO: Remove all the panics
     fn get_db(os: &OS) -> Option<PathBuf> {
+        use OS::*;
         match os {
-            OS::Linux(distro) => {
+            Linux(distro) => {
+                use Distro::*;
                 match distro {
-                    Distro::Arch => panic!("Using Arch ..."),
-                    Distro::Debian => {
+                    Arch => panic!("Using Arch ..."),
+                    Debian | Ubuntu => {
                         use super::deb::database::DEBIAN_DATABASE;
                         Self::check_exists(DEBIAN_DATABASE)
                     },
-                    Distro::Rhel => panic!("Using RHEL ..."),
-                    Distro::Unknown => panic!("Using UNKNOWN ..."),
+                    OpenSuse => panic!("Using OpenSuse ..."),
+                    Unknown => panic!("Using UNKNOWN ..."),
                 }
             },
-            OS::Windows => panic!("Using windows"),
-            OS::Mac => panic!("Using Mac"),
-            OS::Unknown => panic!("Could not detect your OS"),
+            Windows => panic!("Using windows"),
+            Mac => panic!("Using Mac"),
+            Unknown => panic!("Could not detect your OS"),
         }
     }
 
@@ -111,16 +133,18 @@ impl OsInfo {
     }
 
     fn get_install_dir(os: &OS) -> PathBuf {
+        use OS::*;
         match os {
-            OS::Linux(distro) => {
+            Linux(distro) => {
+                use Distro::*; 
                 match distro {
-                    Distro::Arch | Distro::Debian | Distro::Rhel => PathBuf::from(UNIX_INSTALL_DIR),
-                    Distro::Unknown => panic!("Using UNKNOWN ..."),
+                    Arch | Debian | Ubuntu | OpenSuse => PathBuf::from(UNIX_INSTALL_DIR),
+                    Unknown => panic!("Using UNKNOWN ..."),
                 }
             },
-            OS::Windows => panic!("Using windows"),
-            OS::Mac => panic!("Using Mac"),
-            OS::Unknown => panic!("Could not detect your OS"),
+            Windows => panic!("Using windows"),
+            Mac => panic!("Using Mac"),
+            Unknown => panic!("Could not detect your OS"),
         }
     }
 
