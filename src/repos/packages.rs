@@ -5,10 +5,6 @@
 use anyhow::Result;
 use super::os_fingerprint::{Os, Distro};
 
-pub trait PackageSource {
-    fn source(os: &Os) -> Self;
-}
-
 pub const DEB: &str = "deb";
 pub const RPM: &str = "rpm";
 pub const PKG: &str = "pkg";
