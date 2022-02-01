@@ -126,7 +126,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
 fn finish(p: &Path) -> Result<()> {
     use fs_extra::error::ErrorKind;
     let mut options = fs_extra::dir::CopyOptions::new();
-    options.overwrite = true;
+    options.skip_exist = true;
     
 
     for path in std::fs::read_dir(p)?
