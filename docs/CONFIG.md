@@ -15,6 +15,7 @@ By moving to a fixed place, this will not happen anymore. The downside of it, is
         "os":{
             "Linux":"Debian"
         },
+        "arch":"Amd64",
         "previous_db":"/var/lib/dpkg/status",
         "default_package_format":"Deb",
         "install_dir":"/opt/opm/deb"
