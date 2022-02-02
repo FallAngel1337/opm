@@ -44,8 +44,11 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
         scripts::execute_install_pre(&info)?;
         scripts::execute_install_pos(&info)?;
 
-        finish(Path::new(&data.control_path), dest).unwrap();
-        cache::add_package(config, pkg)?;
+        finish(Path::new(&data.control_path), dest.clone()).unwrap();
+        if dest.is_none() {
+            println!("Adding the package")
+            // cache::add_package(config, pkg)?;
+        }
     } else {
         // TODO: Find out a better way of checking for new packages
         if let Some(pkg) = cache::check_installed(config, name) {
@@ -140,7 +143,7 @@ fn finish(p: &Path, dest: Option<String>) -> Result<()> {
         match fs_extra::dir::copy(&path, std::path::Path::new(&dest), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
-                ErrorKind::InvalidFolder | ErrorKind::AlreadyExists | ErrorKind::NotFound => continue,
+                ErrorKind::AlreadyExists  => continue,
                 _ => panic!("{} -> {:?}", e, path)
             }
         }
