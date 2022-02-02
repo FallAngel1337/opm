@@ -30,7 +30,7 @@ fn user_input() -> Result<()> {
 
 // TODO: Get rid of most of those `clone()` calls
 #[async_recursion]
-pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
+pub async fn install(config: &Config, name: &str, force: bool, dest: Option<String>) -> Result<()> {
     if name.ends_with(".deb") {
         let pkg = extract::extract(config, name, name.rsplit('/').next().unwrap().split(".deb").next().unwrap())?;
         let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
@@ -44,7 +44,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
         scripts::execute_install_pre(&info)?;
         scripts::execute_install_pos(&info)?;
 
-        finish(Path::new(&data.control_path)).unwrap();
+        finish(Path::new(&data.control_path), dest).unwrap();
         cache::add_package(config, pkg)?;
     } else {
         // TODO: Find out a better way of checking for new packages
@@ -109,7 +109,7 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
                 .zip(pkgs.into_iter().map(|ctrl| ctrl.package)) 
             {
                 let (path, _name) = data;
-                install(config, path.to_str().unwrap(), force).await?;
+                install(config, path.to_str().unwrap(), force, dest.clone()).await?;
             }
             let duration = start.elapsed();
             println!("Installed {} in {}", name, HumanDuration(duration));
@@ -123,17 +123,21 @@ pub async fn install(config: &Config, name: &str, force: bool) -> Result<()> {
     Ok(())
 }
 
-fn finish(p: &Path) -> Result<()> {
+fn finish(p: &Path, dest: Option<String>) -> Result<()> {
     use fs_extra::error::ErrorKind;
     let mut options = fs_extra::dir::CopyOptions::new();
     options.skip_exist = true;
     
+    let dest = match dest {
+        Some(dest) => dest,
+        None => "/".to_owned()
+    };
 
     for path in std::fs::read_dir(p)?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
-        match fs_extra::dir::copy(&path, std::path::Path::new("/tmp/fake_root"), &options) {
+        match fs_extra::dir::copy(&path, std::path::Path::new(&dest), &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
                 ErrorKind::InvalidFolder | ErrorKind::AlreadyExists | ErrorKind::NotFound => continue,

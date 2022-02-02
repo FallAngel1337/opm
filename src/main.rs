@@ -28,6 +28,12 @@ fn main() {
 							.index(1)
 							.required(true))
 						.arg(Arg::with_name("force")
+							.short("d")
+							.long("dest")
+							.takes_value(true)
+							.index(2)
+							.help("Install the package on <dest>/ folder"))
+						.arg(Arg::with_name("force")
 							.short("f")
 							.long("force")
 							.takes_value(false)
@@ -66,7 +72,7 @@ fn main() {
     if let Some(package) = matches.subcommand_matches("install") {
 		let force = !matches!(matches.occurrences_of("force"), 0);
 
-        opm::install(&mut config, package.value_of("package").unwrap(), force).unwrap_or_else(|err| {
+        opm::install(&mut config, package.value_of("package").unwrap(), force, package.value_of("dest").map(|a| a.to_string())).unwrap_or_else(|err| {
             eprintln!("InstallError :: {}", err);
             process::exit(1);
         });
