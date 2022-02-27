@@ -1,24 +1,46 @@
-use indicatif::{HumanBytes, MultiProgress,ProgressBar, ProgressStyle, HumanDuration};
+use crate::repos::{
+    errors::{
+        InstallError,
+        CacheError
+    },
+    deb::{
+        package::{
+            DebPackage,
+            PkgKind
+        },
+        dependencies::get_dependencies
+    },
+    config::Config,
+};
+use super::{
+    extract::extract,
+    download::download,
+};
+use super::{
+    cache,
+    scripts,
+};
+use indicatif::{
+    HumanBytes,
+    MultiProgress,
+    ProgressBar,
+    ProgressStyle,
+    HumanDuration,
+};
 use anyhow::{self, Result};
 use solvent::DepGraph;
 use tokio::time::Instant;
-use std::{path::Path, io::Write};
+use std::{path::Path, io::{self, Write}};
 
 ///
 /// Debian package install
 ///
-
-use crate::repos::{errors::{InstallError, CacheError}, deb::{package::{DebPackage, PkgKind}, dependencies::get_dependencies}};
-use crate::repos::config::Config;
-use super::{extract, download};
-use super::{cache, scripts};
 use futures::future;
-use async_recursion::async_recursion;
 
 fn user_input() -> Result<()> {
     let mut answer = String::new();
-    std::io::stdout().flush()?;
-    std::io::stdin().read_line(&mut answer)?;
+    io::stdout().flush()?;
+    io::stdin().read_line(&mut answer)?;
 
     if answer.to_ascii_lowercase().trim().starts_with('y') {
         Ok(())
@@ -29,10 +51,9 @@ fn user_input() -> Result<()> {
 }
 
 // TODO: Get rid of most of those `clone()` calls
-#[async_recursion]
 pub async fn install(config: &Config, name: &str, force: bool, dest: Option<String>) -> Result<()> {
     if name.ends_with(".deb") {
-        let pkg = extract::extract(config, name, name.rsplit('/').next().unwrap().split(".deb").next().unwrap())?;
+        let pkg = extract(config, name, name.rsplit('/').next().unwrap().split(".deb").next().unwrap())?;
         let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
@@ -44,7 +65,7 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
         scripts::execute_install_pre(&info)?;
         scripts::execute_install_pos(&info)?;
 
-        finish(Path::new(&data.control_path), dest).unwrap();
+        finish(&data.control_path, &dest).unwrap();
         cache::add_package(config, pkg)?;
     } else {
         // TODO: Find out a better way of checking for new packages
@@ -52,9 +73,7 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
             println!("{} - {}", pkg.control.package, pkg.control.version);
             let new = cache::cache_lookup(config, &pkg.control.package)?.unwrap();
             if new.control.version != pkg.control.version {
-                println!("A new version is available");
-                println!("Old: {:#?} | New: {:#?}", new.control.version , pkg.control.version);
-                
+                println!("A new version is available\nOld: {:#?} | New: {:#?}", pkg.control.version, new.control.version);
                 print!("Want to update? [Y/n] ");
                 user_input()?;
             } else {
@@ -81,13 +100,12 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
             println!("Installing {} NEW package", pkgs.len());
 
             let mut total = 0;
-            for pkg in pkgs.iter() {
+            pkgs.iter().for_each(|pkg| {
                 print!(" {}", pkg.package);
                 total += pkg.size.parse::<u64>().unwrap();
-            }
-            println!();
+            });
 
-            println!("After this operation, {} of additional disk space will be used.", HumanBytes(total));
+            println!("\nAfter this operation, {} of additional disk space will be used.", HumanBytes(total));
             print!("Do you want to continue? [Y/n] ");
             user_input()?;
 
@@ -98,7 +116,7 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
                     .template(" [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")
                     .progress_chars("#>-"));
 
-                tasks.push(download::download(config, DebPackage { control: pkg, kind: PkgKind::Binary }, bar));
+                tasks.push(download(config, DebPackage { control: pkg, kind: PkgKind::Binary }, bar));
             }
             let handle = tokio::task::spawn_blocking(move || mp.join().unwrap());
 
@@ -108,12 +126,11 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
                 .filter_map(|r| r.ok())
                 .zip(pkgs.into_iter().map(|ctrl| ctrl.package)) 
             {
-                let (path, _name) = data;
-                install(config, path.to_str().unwrap(), force, dest.clone()).await?;
+                let (path, _) = data;
+                extract(config, path.to_str().unwrap(), name)?;
+                finish(&config.tmp, &dest)?;        
             }
-            let duration = start.elapsed();
-            println!("Installed {} in {}", name, HumanDuration(duration));
-            fs_extra::dir::create(&config.tmp, true)?;
+            println!("Installed {} in {}", name, HumanDuration(start.elapsed()));
             handle.await?;
         } else {
             anyhow::bail!(CacheError::NotFoundError { pkg: name.to_owned(), cache: config.cache.clone() });
@@ -123,24 +140,30 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
     Ok(())
 }
 
-fn finish(p: &Path, dest: Option<String>) -> Result<()> {
+fn finish<P: AsRef<Path>>(p: &P, dest: &Option<String>) -> Result<()> {
     use fs_extra::error::ErrorKind;
     let mut options = fs_extra::dir::CopyOptions::new();
     options.skip_exist = true;
-    
+
     let dest = match dest {
-        Some(dest) => dest,
-        None => "/".to_owned()
+        Some(dest) => {
+            let dest = Path::new(dest);
+            if !dest.exists() {
+                fs_extra::dir::create_all(dest, false)?;
+            }
+            dest
+        },
+        None => Path::new("/"),
     };
 
     for path in std::fs::read_dir(p)?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
-        match fs_extra::dir::copy(&path, std::path::Path::new(&dest), &options) {
+        match fs_extra::dir::copy(&path, dest, &options) {
             Ok(_) => (),
             Err(e) => match e.kind { 
-                ErrorKind::InvalidFolder | ErrorKind::AlreadyExists | ErrorKind::NotFound => continue,
+                ErrorKind::InvalidFolder | ErrorKind::AlreadyExists => continue,
                 _ => panic!("{} -> {:?}", e, path)
             }
         }
