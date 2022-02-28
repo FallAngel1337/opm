@@ -30,7 +30,7 @@ pub async fn download(config: &Config, pkg: DebPackage, pb: ProgressBar) -> Resu
         pb.set_position(progress);
     }
 
-    match signatures::verify_sig(&pkg, &content) {
+    match signatures::hashes::verify_sig(&pkg, &content) {
         Ok(()) => (),
         Err(e) => eprintln!("Failed to check package signature :: {}", e)
     }
