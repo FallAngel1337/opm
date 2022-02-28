@@ -54,7 +54,7 @@ fn user_input() -> Result<()> {
 pub async fn install(config: &Config, name: &str, force: bool, dest: Option<String>) -> Result<()> {
     if name.ends_with(".deb") {
         let pkg = extract(config, name, name.rsplit('/').next().unwrap().split(".deb").next().unwrap())?;
-        let (pkg, info, data) = (pkg.0, pkg.1, pkg.2);
+        let (pkg, info) = (pkg.0, pkg.1);
 
         if let Some(pkg) = cache::check_installed(config, &pkg.control.package) {
             println!("{} - {}", pkg.control.package, pkg.control.version);
@@ -65,8 +65,7 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
         scripts::execute_install_pre(&info)?;
         scripts::execute_install_pos(&info)?;
 
-        finish(&data.control_path, &dest).unwrap();
-        cache::add_package(config, pkg)?;
+        finish(config, pkg, &dest)?;
     } else {
         // TODO: Find out a better way of checking for new packages
         if let Some(pkg) = cache::check_installed(config, name) {
@@ -127,8 +126,8 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
                 .zip(pkgs.into_iter().map(|ctrl| ctrl.package)) 
             {
                 let (path, _) = data;
-                extract(config, path.to_str().unwrap(), name)?;
-                finish(&config.tmp, &dest)?;        
+                let pkg = extract(config, path.to_str().unwrap(), name)?.0;
+                finish(config, pkg, &dest)?;
             }
             println!("Installed {} in {}", name, HumanDuration(start.elapsed()));
             handle.await?;
@@ -140,10 +139,11 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
     Ok(())
 }
 
-fn finish<P: AsRef<Path>>(p: &P, dest: &Option<String>) -> Result<()> {
+fn finish(config: &Config, pkg: DebPackage, dest: &Option<String>) -> Result<()> {
     use fs_extra::error::ErrorKind;
     let mut options = fs_extra::dir::CopyOptions::new();
     options.skip_exist = true;
+    let mut register_package = false;
 
     let dest = match dest {
         Some(dest) => {
@@ -153,10 +153,13 @@ fn finish<P: AsRef<Path>>(p: &P, dest: &Option<String>) -> Result<()> {
             }
             dest
         },
-        None => Path::new("/"),
+        None => {
+            register_package = true;
+            Path::new("/")
+        },
     };
 
-    for path in std::fs::read_dir(p)?
+    for path in std::fs::read_dir(&config.tmp)?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
     {
@@ -167,6 +170,10 @@ fn finish<P: AsRef<Path>>(p: &P, dest: &Option<String>) -> Result<()> {
                 _ => panic!("{} -> {:?}", e, path)
             }
         }
+    }
+
+    if register_package {
+        cache::add_package(config, pkg)?;
     }
 
     Ok(())
