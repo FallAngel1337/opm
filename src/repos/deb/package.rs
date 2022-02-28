@@ -93,6 +93,7 @@ pub struct ControlFile {
     pub maintainer: String,
     pub description: String,
     pub depends: Option<Vec<String>>,
+    pub provides: Option<Vec<String>>,
     pub recommends: Option<Vec<String>>,
     pub suggests: Option<Vec<String>>,
     pub enhances: Option<Vec<String>>,
@@ -131,6 +132,7 @@ impl ControlFile {
                 // But, when reading /var/lib/dpkg/status it does not have those fields
                 priority: Self::try_get(&map, "Priority").unwrap_or_default(),
                 depends: Self::split_optional(Some(&Self::try_get(&map, "Depends").unwrap_or_default())),
+                provides: Self::split_optional(Some(&Self::try_get(&map, "Provides").unwrap_or_default())),
                 recommends: Self::split_optional(Some(&Self::try_get(&map, "Recommends").unwrap_or_default())),
                 suggests: Self::split_optional(Some(&Self::try_get(&map, "Suggests").unwrap_or_default())),
                 enhances: Self::split_optional(Some(&Self::try_get(&map, "Enhances").unwrap_or_default())),
