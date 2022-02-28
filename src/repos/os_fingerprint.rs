@@ -115,7 +115,7 @@ impl Archs {
         Self::Amd64
     }
 
-    #[cfg(not(any(target_arch="x86_64", target_arch="x86_64")))]
+    #[cfg(not(any(target_arch="x86", target_arch="x86_64")))]
     pub const fn new() -> Self {
         Self::Unknown
     }
