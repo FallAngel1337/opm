@@ -84,12 +84,17 @@ pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<()> {
 }
 
 async fn update_cache(config: &Config, url: &str, dist: &str, perm: &str, pb: ProgressBar, counter: usize) -> Result<()> {
+    let pgp = format!("{}dists/{}/Release.gpg", url, dist);
+    if reqwest::get(&pgp).await.is_err() {
+        panic!("Could not verify the repository due missing PGP Signarure (URL: {})", url);
+    };
     // Binary packages ONLY for now
     let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.xz", url, dist, perm);
     let response = match reqwest::get(&pkgcache).await {
         Ok(r) => Some(r),
         Err(_) => {
-            let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.gz", url, dist, perm);
+            // let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.gz", url, dist, perm);
+            let pkgcache = pkgcache.replace(&['a', 'b'], "Packages.gz");
             match reqwest::get(&pkgcache).await {
                 Ok(r) => Some(r),
                 Err(e) => {
@@ -100,8 +105,8 @@ async fn update_cache(config: &Config, url: &str, dist: &str, perm: &str, pb: Pr
         }
     };
 
-    let url = str::replace(url, "http://", "");
-    let url = str::replace(&url, "/", "_");    
+    let url = url.replace("http://", "");
+    let url = url.replace("/", "_");    
     
     if let Some(response) = response {
         let size = response.content_length().unwrap_or_default();
