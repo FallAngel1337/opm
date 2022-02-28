@@ -52,17 +52,6 @@ fn user_input() -> Result<()> {
 
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool, dest: Option<String>) -> Result<()> {
-    let dest_str = match &dest {
-        Some(dest) => {
-            std::fs::File::create(std::path::Path::new(&dest).join(".keep"))?;
-            dest
-        },
-        None => {
-            std::fs::read_dir("/root")?;
-            "/"
-        }
-    };
-
     if name.ends_with(".deb") {
         let pkg = extract(config, name, name.rsplit('/').next().unwrap().split(".deb").next().unwrap())?;
         let (pkg, info) = (pkg.0, pkg.1);
