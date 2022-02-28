@@ -30,25 +30,12 @@ use indicatif::{
 use anyhow::{self, Result};
 use solvent::DepGraph;
 use tokio::time::Instant;
-use std::{path::Path, io::{self, Write}};
+use std::path::Path;
 
 ///
 /// Debian package install
 ///
 use futures::future;
-
-fn user_input() -> Result<()> {
-    let mut answer = String::new();
-    io::stdout().flush()?;
-    io::stdin().read_line(&mut answer)?;
-
-    if answer.to_ascii_lowercase().trim().starts_with('y') {
-        Ok(())
-    } else {
-        eprintln!("Exiting installation process...");
-        anyhow::bail!(InstallError::UserInterrupt);
-    }
-}
 
 // TODO: Get rid of most of those `clone()` calls
 pub async fn install(config: &Config, name: &str, force: bool, dest: Option<String>) -> Result<()> {
@@ -73,8 +60,7 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
             let new = cache::cache_lookup(config, &pkg.control.package)?.unwrap();
             if new.control.version != pkg.control.version {
                 println!("A new version is available\nOld: {:#?} | New: {:#?}", pkg.control.version, new.control.version);
-                print!("Want to update? [Y/n] ");
-                user_input()?;
+                crate::user_input("Want to update? [Y/n] ")?;
             } else {
                 anyhow::bail!(InstallError::AlreadyInstalled(pkg.control.package));
             }
@@ -105,8 +91,7 @@ pub async fn install(config: &Config, name: &str, force: bool, dest: Option<Stri
             });
 
             println!("\nAfter this operation, {} of additional disk space will be used.", HumanBytes(total));
-            print!("Do you want to continue? [Y/n] ");
-            user_input()?;
+            crate::user_input("Do you want to continue? [Y/n] ")?;
 
             let mp = MultiProgress::new();
             for pkg in pkgs.clone().into_iter() {
