@@ -1,3 +1,7 @@
+extern "C" {
+    pub fn getuid() -> u32;
+}
+
 mod repos;
 
 pub use repos::{setup, roll_back};

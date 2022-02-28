@@ -25,7 +25,6 @@ sha-1 = "0.10.0"
 md5 = "0.7.0"
 indicatif = "0.16.2"
 solvent = "0.8.3"
-async-recursion = "1.0.0"
 os-release = "0.1.0"
 
 [dependencies.clap]
