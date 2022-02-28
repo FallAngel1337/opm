@@ -45,42 +45,53 @@ fn check_version(pkgv: &str, depv: &str) -> bool {
 }
 
 pub fn get_dependencies(config: &Config, pkg: ControlFile, deps: Option<Vec<String>>, depgraph: &mut DepGraph<Option<ControlFile>>, force: bool) -> Result<()> {
+    println!("Getting dependencies of {:?}", pkg.package);
+
     if let Some(deps) = deps {
         if !deps.is_empty() {
             for name in deps.iter()
             .flat_map(|name| parse_name(name).trim().split(" | "))
             .filter(|name| cache::check_installed(config, name).is_none())
             {                
-                if let Some(deb) = cache::cache_lookup(config, name)? {
-                    if !force {
-                        match (deb.control.breaks.clone(), deb.control.conflicts.clone()) {
-                            (Some(b), Some(c)) => {
-                                check_if_breaks(config, &b)?;
-                                check_if_breaks(config, &c)?;
-                            },
-                            (Some(b), None) => check_if_breaks(config, &b)?,
-                            (None, Some(c)) => check_if_breaks(config, &c)?,
-                            (None, None) => (),
+                match cache::cache_lookup(config, name) {
+                    Ok(Some(deb)) => {
+                        if !force {
+                            match (deb.control.breaks.clone(), deb.control.conflicts.clone()) {
+                                (Some(b), Some(c)) => {
+                                    check_if_breaks(config, &b)?;
+                                    check_if_breaks(config, &c)?;
+                                },
+                                (Some(b), None) => check_if_breaks(config, &b)?,
+                                (None, Some(c)) => check_if_breaks(config, &c)?,
+                                (None, None) => (),
+                            }
+                        }
+                        
+                        if let Some(version) = get_version(&deb.control.version) {
+                            if !check_version(version, &pkg.version) {
+                                anyhow::bail!(InstallError::WrongVersion { pkg: deb.control.package, reqv: pkg.version, curv: deb.control.version });
+                            }
+                        }
+                        
+                        if depgraph.dependencies_of(&Some(deb.control.clone())).is_err() {
+                            depgraph.register_dependency(Some(pkg.clone()), Some(deb.control.clone()));
+        
+                            if deb.control.depends.is_some() {
+                                get_dependencies(config, deb.control.clone(), deb.control.depends, depgraph, force)?;
+                            }
                         }
                     }
-                    
-                    if let Some(version) = get_version(&deb.control.version) {
-                        if !check_version(version, &pkg.version) {
-                            // format!("Version {} ({}) is not satisfied! Need version {} ({})", deb.control.version, deb.control.package, pkg.version, pkg.package))
-                            anyhow::bail!(InstallError::WrongVersion { pkg: deb.control.package, reqv: pkg.version, curv: deb.control.version });
-                        }
+                    _ => match cache::cache_search(config, name) {
+                        Ok(Some(deb)) => {
+                            let deb = deb.get(0).unwrap();
+                            println!("{} was not found, but found similar named package: `{}`", name, deb.control.package);
+                            crate::user_input("Do you want to proceed? [y/N] ")?;
+                            get_dependencies(config, deb.control.clone(), deb.control.depends.clone(), depgraph, force)?;
+                        },
+                        // _ => anyhow::bail!(CacheError::NotFoundError { pkg: pkg.package, cache: config.cache.clone() }),
+                        Ok(None) => println!("Ok(None) for {}", name),
+                        Err(err) => /*anyhow::bail!(err)*/ println!("Err(err) = {:?}", err),
                     }
-                    
-                    if depgraph.dependencies_of(&Some(deb.control.clone())).is_err() {
-                        depgraph.register_dependency(Some(pkg.clone()), Some(deb.control.clone()));
-    
-                        if deb.control.depends.is_some() {
-                            get_dependencies(config, deb.control.clone(), deb.control.depends, depgraph, force)?;
-                        }
-                    }
-
-                } else {
-                    anyhow::bail!(CacheError::NotFoundError { pkg: pkg.package, cache: config.cache.clone() });
                 }
             }
         } else {
