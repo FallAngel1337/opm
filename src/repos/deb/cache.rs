@@ -89,23 +89,17 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 		};
 
 		let mut control = control
-		.split("\n\n")
-		.map(|contents| ControlFile::new(config, contents))
-		.filter_map(|pkg| pkg.ok());
+			.split("\n\n")
+			.map(|contents| ControlFile::new(config, contents))
+			.filter_map(|pkg| pkg.ok());
 
-		let entry = path
-		.into_os_string()
-		.into_string()
-		.unwrap();
-
-		let url =  &entry
-		.split('/')
-		.last()
-		.unwrap()
-		.replace("_", "/")
-		.split('/')
-		.collect::<Vec<_>>()[..2]
-		.join("/");
+		let mut path = path
+			.file_name().unwrap()
+			.to_str().unwrap()
+			.split('_')
+			.collect::<Vec<_>>();
+		path.pop();
+		let url = path.join("/");
 
 		if exact {
 			let control = control.find(|pkg| pkg.package == name);
