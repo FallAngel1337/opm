@@ -70,9 +70,10 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
 
-	for entry in fs::read_dir(cache.cache)? {
-		let entry = entry.unwrap();
-		let path = entry.path();
+	for path in fs::read_dir(cache.cache)?
+		.filter_map(|entry| entry.ok())
+		.map(|entry| entry.path())
+	{
 		let path_str = path.clone().into_os_string().into_string().unwrap();
 
 		if path.is_dir() || !path_str.contains('_') {
@@ -92,7 +93,7 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 		.map(|contents| ControlFile::new(config, contents))
 		.filter_map(|pkg| pkg.ok());
 
-		let entry = entry.path()
+		let entry = path
 		.into_os_string()
 		.into_string()
 		.unwrap();
