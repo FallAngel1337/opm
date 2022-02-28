@@ -23,6 +23,23 @@ impl Config {
 		let dir = os_info.install_dir.clone();
 		Ok(
 			Self {
+					os_info: os_info.clone(),
+					cache: dir.join("cache/pkg").to_str().unwrap().to_owned(),
+					rls: dir.join("cache/rls").to_str().unwrap().to_owned(),
+					tmp: dir.join("tmp").to_str().unwrap().to_owned(),
+					archive: dir.join("archive").to_str().unwrap().to_owned(),
+					info: dir.join("info").to_str().unwrap().to_owned(),
+					db: dir.join("db").to_str().unwrap().to_owned(),
+					use_pre_existing_cache: false,
+					use_pre_existing_db: false,
+				}
+			)
+	}
+
+	pub fn tmp(os_info: &OsInfo) -> Result<Self> {
+		let dir = std::env::temp_dir().join("opm");
+		Ok(
+			Self {
 				os_info: os_info.clone(),
 				cache: dir.join("cache/pkg").to_str().unwrap().to_owned(),
 				rls: dir.join("cache/rls").to_str().unwrap().to_owned(),
