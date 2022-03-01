@@ -94,12 +94,11 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 			.map(|contents| ControlFile::new(config, contents))
 			.filter_map(|pkg| pkg.ok());
 
-		let mut path = path
+		let path = &path
 			.file_name().unwrap()
 			.to_str().unwrap()
 			.split('_')
-			.collect::<Vec<_>>();
-		path.pop();
+			.collect::<Vec<_>>()[..2];
 		let url = path.join("/");
 
 		if exact {
