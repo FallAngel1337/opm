@@ -69,6 +69,7 @@ pub fn db_dump(config: &Config) -> Vec<DebPackage> {
 fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> {
 	let cache = Cache::get_cache(config)
 		.context("Failed to read the cache file")?;
+	let mut pkgs = vec![];
 
 	for path in fs::read_dir(cache.cache)?
 		.filter_map(|entry| entry.ok())
@@ -102,11 +103,16 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 		let url = path.join("/");
 
 		if exact {
-			let control = control.find(|pkg| pkg.package == name);
+			let control = control.find(|pkg| pkg.package == name || 
+				if let Some(pkg) = &pkg.provides {
+					pkg.iter().any(|vname| vname == name)
+				} else {
+					false
+				}
+			);
 
 			if let Some(mut pkg) = control {
-				let url = format!("{}/{}", url, &pkg.filename);
-				pkg.set_filename(&url);
+				pkg.set_filename(&format!("{}/{}", url, &pkg.filename));
 				return Ok(
 					CacheResult {
 						pkg: Some(
@@ -122,30 +128,39 @@ fn cache_inter(config: &Config, name: &str, exact: bool) -> Result<CacheResult> 
 		} else {
 			let re = Regex::new(name)?;
 
-			let pkgs = control
-				.filter(|pkg| re.is_match(&pkg.package))
-				.map(|mut pkg| {
-					let url = format!("{}/{}", url, &pkg.filename);
-					pkg.set_filename(&url);
-					DebPackage {
-						control: pkg,
-						kind: PkgKind::Binary
+			control
+				.filter(|pkg| re.is_match(&pkg.package) || 
+					if let Some(vpkg) = &pkg.provides {
+						vpkg.iter().any(|vname| re.is_match(vname))
+					} else {
+						false
 					}
-				})
-				.collect::<Vec<_>>();
+				)
+				.for_each(|mut pkg| {
+					pkg.set_filename(&format!("{}/{}", url, &pkg.filename));
+					if !pkgs.iter().any(|item: &DebPackage| item.control.package.contains(&pkg.package)) {
+						pkgs.push(
+							DebPackage {
+								control: pkg,
+								kind: PkgKind::Binary
+							}
+						);
+					}
+				});
 
-			if !pkgs.is_empty() {
-				return Ok(
-					CacheResult {
-						pkg: None,
-						pkgs: Some(pkgs)
-					}
-				);
 			}
 		}
-	}
-
-	anyhow::bail!(CacheError::NotFoundError { pkg: name.to_string(), cache: config.cache.clone() });
+		
+		if !pkgs.is_empty() {
+			Ok(
+				CacheResult {
+					pkg: None,
+					pkgs: Some(pkgs)
+				}
+			)
+		} else {
+			anyhow::bail!(CacheError::NotFoundError { pkg: name.to_string(), cache: config.cache.clone() });
+		}
 }
 
 ///
