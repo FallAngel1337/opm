@@ -3,14 +3,16 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle, HumanBytes};
 use xz2::read::XzDecoder;
 use flate2::read::GzDecoder;
 use std::{
-    io::{ErrorKind, prelude::*},
-    fs,
+    io::prelude::*,
     path::Path,
     str
 };
 use futures::{future, StreamExt};
 use super::sources::DebianSource;
-use crate::repos::config::Config;
+use crate::repos::{
+    os_fingerprint::Archs::*,
+    config::Config,
+};
 
 fn unpack(filename: &str, data: &[u8], bytes: &mut Vec<u8>) {
     if filename.ends_with(".gz") {
@@ -23,36 +25,18 @@ fn unpack(filename: &str, data: &[u8], bytes: &mut Vec<u8>) {
 }
 
 pub fn clear(config: &Config) -> Result<()> {
-    match fs::remove_dir_all(&config.cache){
-        Ok(_) => (),
-        Err(e) => match e.kind() {
-            ErrorKind::AlreadyExists => (),
-            ErrorKind::NotFound => (),
-            _ => panic!("Got and unexpected error :: {}", e)
-        }
-    }
-    match fs::remove_dir_all(&config.rls){
-        Ok(_) => (),
-        Err(e) => match e.kind() {
-            ErrorKind::AlreadyExists => (),
-            ErrorKind::NotFound => (),
-            _ => panic!("Got and unexpected error :: {}", e)
-        }
-    }
-    match fs::remove_dir_all(&config.tmp){
-        Ok(_) => (),
-        Err(e) => match e.kind() {
-            ErrorKind::AlreadyExists => (),
-            ErrorKind::NotFound => (),
-            _ => panic!("Got and unexpected error :: {}", e)
-        }
-    }
-
-    fs::create_dir(&config.cache)?;
-    fs::create_dir(&config.rls)?;
-    fs::create_dir(&config.tmp)?;
-
+    fs_extra::dir::create(&config.cache, true)?;
+    fs_extra::dir::create(&config.rls, true)?;
+    fs_extra::dir::create(&config.tmp, true)?;
     Ok(())
+}
+
+const fn os_arch(config: &Config) -> &'static str {
+    match &config.os_info.arch {
+        Amd64 => "binary-amd64",
+        I386 => "binary-i386",
+        _ => panic!("Unknown architecture"),
+    }
 }
 
 pub async fn update(config: &mut Config, repos: &[DebianSource]) -> Result<()> {
@@ -89,12 +73,11 @@ async fn update_cache(config: &Config, url: &str, dist: &str, perm: &str, pb: Pr
         panic!("Could not verify the repository due missing PGP Signarure (URL: {})", url);
     };
     // Binary packages ONLY for now
-    let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.xz", url, dist, perm);
+    let pkgcache = format!("{}dists/{}/{}/{}/Packages.xz", url, dist, perm, os_arch(config));
     let response = match reqwest::get(&pkgcache).await {
         Ok(r) => Some(r),
         Err(_) => {
-            // let pkgcache = format!("{}dists/{}/{}/binary-amd64/Packages.gz", url, dist, perm);
-            let pkgcache = pkgcache.replace(&['a', 'b'], "Packages.gz");
+            let pkgcache = format!("{}dists/{}/{}/{}/Packages.gz", url, dist, perm, os_arch(config));
             match reqwest::get(&pkgcache).await {
                 Ok(r) => Some(r),
                 Err(e) => {
@@ -116,7 +99,7 @@ async fn update_cache(config: &Config, url: &str, dist: &str, perm: &str, pb: Pr
         let (mut stream, mut downloaded) = (response.bytes_stream(), 0u64);
         
         let mut content = Vec::with_capacity(size as usize);
-        let pkg = Path::new(&config.cache).join(format!("{}dists_{}_{}_binary-amd64_Packages", url, dist, perm));
+        let pkg = Path::new(&config.cache).join(format!("{}dists_{}_{}_{}_Packages", url, dist, perm, os_arch(config)));
 
         while let Some(item) = stream.next().await {
             let chunk = item?;
@@ -155,7 +138,7 @@ async fn update_releases(config: &Config, url: &str, dist: &str, perm: &str, pb:
     let (mut stream, mut downloaded) = (response.bytes_stream(), 0u64);
 
     let mut content = Vec::with_capacity(size as usize);
-    let rls = Path::new(&config.rls).join(format!("{}dists_{}_{}_binary-amd64_InRelease", url, dist, perm));
+    let rls = Path::new(&config.rls).join(format!("{}dists_{}_{}_{}_InRelease", url, dist, perm, os_arch(config)));
 
     while let Some(item) = stream.next().await {
         let chunk = item?;
